@@ -31,46 +31,51 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.dismu.p2p.utilities;
+package com.dismu.p2p.server;
 
-import java.io.*;
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.utilities.PacketSerialize;
+import com.dismu.p2p.packets.RequestSeedsPacket;
+import com.dismu.p2p.packets.RequestSeedsResponsePacket;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.Socket;
 
 /**
- * Created by r00tman on 2/14/14.
+ * Created by r00tman on 2/15/14.
  */
-public class Packet {
-    public int type = -1;
-    public byte[] data = null;
+public class ServerWorker implements Runnable {
+    private Socket socket;
 
-    public void read(InputStream is) throws IOException {
-        DataInputStream dis = new DataInputStream(is);
-        this.type = dis.readInt();
-        int size = dis.readInt();
-        this.data = new byte[size];
-        dis.read(this.data);
-        this.parse();
+    public ServerWorker(Socket s) {
+        this.socket = s;
     }
 
-    public void write(OutputStream os) throws IOException {
-        this.serialize();
-        DataOutputStream dos = new DataOutputStream(os);
-        dos.writeInt(this.type);
-        dos.writeInt(this.data.length);
-        dos.write(this.data);
+    @Override
+    public void run() {
+        try {
+            OutputStream os = this.socket.getOutputStream();
+            InputStream is = this.socket.getInputStream();
 
-        dos.flush();
-        os.flush();
-    }
+            Packet packet = null;
+            packet = PacketSerialize.readPacket(is);
+            if (packet instanceof RequestSeedsPacket) {
+                RequestSeedsResponsePacket rp = new RequestSeedsResponsePacket();
+                rp.addresses = new InetAddress[2];
+                rp.addresses[0] = InetAddress.getLocalHost();
+                rp.addresses[1] = InetAddress.getByName("8.8.8.8");
+                rp.write(os);
+            }
 
-    public boolean isMine() {
-        return false;
-    }
-
-    public void parse() {
-
-    }
-
-    public void serialize() {
+            os.close();
+            is.close();
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 }

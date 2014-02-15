@@ -33,6 +33,9 @@
 
 package com.dismu.p2p.utilities;
 
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.RequestSeedsPacket;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -47,9 +50,9 @@ public class PacketSerialize {
         Packet packet = new Packet();
         packet.read(is);
 
-        for (int i = 0; i < cl.length; ++i) {
+        for (Class cPacket : cl) {
             try {
-                Packet p = (Packet)cl[i].newInstance();
+                Packet p = (Packet) cPacket.newInstance();
                 p.data = packet.data;
                 p.type = packet.type;
 

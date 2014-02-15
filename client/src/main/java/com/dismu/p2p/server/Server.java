@@ -33,16 +33,7 @@
 
 package com.dismu.p2p.server;
 
-import com.dismu.p2p.utilities.Packet;
-import com.dismu.p2p.utilities.PacketSerialize;
-import com.dismu.p2p.utilities.RequestSeedsPacket;
-import com.dismu.p2p.utilities.RequestSeedsResponsePacket;
-import com.sun.xml.internal.bind.v2.runtime.reflect.Lister;
-
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -50,14 +41,13 @@ import java.net.Socket;
  * Created by r00tman on 2/14/14.
  */
 public class Server {
-    private InetAddress address;
     private ServerSocket ss;
     private int port;
+    protected boolean isStopped = false;
 
     public static void main(String[] args) {
         Server server = new Server();
         try {
-            server.address = InetAddress.getLocalHost();
             server.port = 1775;
             server.ss = new ServerSocket(server.port);
             server.start();
@@ -67,22 +57,31 @@ public class Server {
     }
 
     public void start() throws IOException {
-        Socket socket = ss.accept();
-        OutputStream os = socket.getOutputStream();
-        InputStream in = socket.getInputStream();
-
-        Packet packet = PacketSerialize.readPacket(in);
-
-        if (packet instanceof RequestSeedsPacket) {
-            RequestSeedsResponsePacket rp = new RequestSeedsResponsePacket();
-            rp.addresses = new InetAddress[2];
-            rp.addresses[0] = InetAddress.getLocalHost();
-            rp.addresses[1] = InetAddress.getByName("8.8.8.8");
-            rp.write(os);
+        while (!isStopped()) {
+            try {
+                Socket socket = this.ss.accept();
+                new Thread(new ServerWorker(socket)).start();
+            } catch (IOException e) {
+                if (isStopped()) {
+                    System.out.println("Server Stopped.");
+                    return;
+                }
+                throw new RuntimeException(
+                        "Error accepting client connection", e);
+            }
         }
+    }
 
-        os.close();
-        in.close();
-        socket.close();
+    private synchronized boolean isStopped() {
+        return this.isStopped;
+    }
+
+    public synchronized void stop() {
+        this.isStopped = true;
+        try {
+            this.ss.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Error closing server", e);
+        }
     }
 }

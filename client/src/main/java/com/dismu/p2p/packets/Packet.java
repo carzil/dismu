@@ -31,49 +31,46 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.dismu.p2p.client;
+package com.dismu.p2p.packets;
 
-import com.dismu.p2p.packets.RequestSeedsPacket;
-import com.dismu.p2p.packets.RequestSeedsResponsePacket;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
+import java.io.*;
 
 /**
  * Created by r00tman on 2/14/14.
  */
-public class Client {
-    private InetAddress address;
-    private int port;
-    private Socket socket;
+public class Packet {
+    public int type = -1;
+    public byte[] data = null;
 
-    public static void main(String[] args) {
-        Client client = new Client();
-        try {
-            client.address = InetAddress.getLocalHost();
-            client.port = 1775;
-            client.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void read(InputStream is) throws IOException {
+        DataInputStream dis = new DataInputStream(is);
+        this.type = dis.readInt();
+        int size = dis.readInt();
+        this.data = new byte[size];
+        dis.read(this.data);
+        this.parse();
     }
 
-    public void start() throws IOException {
-        socket = new Socket(address, port);
-        OutputStream os = socket.getOutputStream();
-        InputStream in = socket.getInputStream();
-        RequestSeedsPacket rsp = new RequestSeedsPacket();
-        rsp.groupId = 1;
-        rsp.write(os);
+    public void write(OutputStream os) throws IOException {
+        this.serialize();
+        DataOutputStream dos = new DataOutputStream(os);
+        dos.writeInt(this.type);
+        dos.writeInt(this.data.length);
+        dos.write(this.data);
 
-        RequestSeedsResponsePacket rsrp = new RequestSeedsResponsePacket();
-        rsrp.read(in);
+        dos.flush();
+        os.flush();
+    }
 
-        os.close();
-        in.close();
-        socket.close();
+    public boolean isMine() {
+        return false;
+    }
+
+    public void parse() {
+
+    }
+
+    public void serialize() {
+
     }
 }

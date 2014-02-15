@@ -31,26 +31,27 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.dismu.p2p.utilities;
+package com.dismu.p2p.packets;
+
+import com.dismu.p2p.packets.Packet;
 
 import java.io.*;
-import java.net.InetAddress;
 
 /**
  * Created by r00tman on 2/14/14.
  */
-public class RequestSeedsResponsePacket extends Packet {
-    final int PT_REQUEST_SEEDS_RESPONSE = 1;
+public class RequestSeedsPacket extends Packet {
+    final int PT_REQUEST_SEEDS = 0;
 
-    public InetAddress[] addresses;
+    public int groupId;
 
-    public RequestSeedsResponsePacket() {
-        this.type = PT_REQUEST_SEEDS_RESPONSE;
+    public RequestSeedsPacket() {
+        this.type = PT_REQUEST_SEEDS;
     }
 
     @Override
     public boolean isMine() {
-        return super.type == PT_REQUEST_SEEDS_RESPONSE;
+        return this.type == PT_REQUEST_SEEDS;
     }
 
     @Override
@@ -60,17 +61,7 @@ public class RequestSeedsResponsePacket extends Packet {
             bis = new ByteArrayInputStream(this.data);
 
             DataInputStream dis = new DataInputStream(bis);
-            int len = dis.readInt();
-            byte[] s = new byte[len];
-            dis.read(s);
-            String str = new String(s);
-            String[] raw_addr = str.split("\n");
-            this.addresses = new InetAddress[raw_addr.length];
-            for (int i = 0; i < raw_addr.length; ++i) {
-                this.addresses[i] =
-                        InetAddress.getByName(raw_addr[i]);
-            }
-
+            groupId = dis.readInt();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -84,14 +75,7 @@ public class RequestSeedsResponsePacket extends Packet {
 
             DataOutputStream dos = new DataOutputStream(bos);
 
-            StringBuilder str = new StringBuilder();
-            for (int i = 0; i < this.addresses.length; ++i) {
-                str.append(this.addresses[i].getHostAddress());
-                str.append('\n');
-            }
-            byte[] res = str.toString().getBytes();
-            dos.writeInt(res.length);
-            dos.write(res);
+            dos.writeInt(groupId);
             dos.flush();
             bos.flush();
             this.data = bos.toByteArray();

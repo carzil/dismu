@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import com.dismu.p2p.utilities.Logging;
+
 public class Server {
     private ServerSocket ss;
     private int port;
@@ -21,23 +23,23 @@ public class Server {
     }
 
     public void start() throws IOException {
+        Logging.serverLogger.info("server started");
         while (!isStopped()) {
             try {
                 Socket socket = this.ss.accept();
                 new Thread(new ServerWorker(socket)).start();
             } catch (IOException e) {
                 if (isStopped()) {
-                    System.out.println("Server Stopped.");
+                    Logging.serverLogger.info("server stopped");
                     return;
                 }
-                throw new RuntimeException(
-                        "Error accepting client connection", e);
+                throw new RuntimeException("Error accepting client connection", e);
             }
         }
     }
 
     private synchronized boolean isStopped() {
-        return this.isStopped;
+       return this.isStopped;
     }
 
     public synchronized void stop() {

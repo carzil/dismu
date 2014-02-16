@@ -2,35 +2,28 @@ package com.dismu.p2p.utilities;
 
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.RequestSeedsPacket;
+import com.dismu.p2p.packets.PacketManager;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 
 public class PacketSerialize {
-    public static Packet readPacket(InputStream is) throws IOException {
-        Class[] cl = new Class[1];
-        cl[0] = RequestSeedsPacket.class;
+    private static PacketManager packetManager = new PacketManager();
 
-        Packet packet = new Packet();
-        packet.read(is);
+    public static Packet readPacket(InputStream inputStream) throws IOException {
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+        int packetType = dataInputStream.readInt();
+        try {
+            Packet packet = (Packet)packetManager.getPacket(packetType).newInstance();
+            packet.read(inputStream);
+            return packet;
+        } catch (IllegalAccessException e) {
 
-        for (Class cPacket : cl) {
-            try {
-                Packet p = (Packet) cPacket.newInstance();
-                p.data = packet.data;
-                p.type = packet.type;
+        } catch (InstantiationException e) {
 
-                if (p.isMine()) {
-                    p.parse();
-                    return p;
-                }
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
         }
-        return packet;
+    return null;
     }
 }

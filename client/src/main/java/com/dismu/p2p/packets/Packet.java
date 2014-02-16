@@ -1,40 +1,40 @@
 package com.dismu.p2p.packets;
 
+import com.dismu.p2p.utilities.Logging;
+
 import java.io.*;
 
-public class Packet {
+public abstract class Packet {
     public int type = -1;
-    public byte[] data = null;
 
-    public void read(InputStream is) throws IOException {
-        DataInputStream dis = new DataInputStream(is);
-        this.type = dis.readInt();
-        int size = dis.readInt();
+    public byte[] data;
+
+    public void read(InputStream inputStream) throws IOException {
+        DataInputStream dataInputStream = new DataInputStream(inputStream);
+        int size = dataInputStream.readInt();
+        Logging.serverLogger.info("read new packet, size = {}, type = {}", size, this.type);
         this.data = new byte[size];
-        dis.read(this.data);
+        dataInputStream.read(this.data);
         this.parse();
     }
 
-    public void write(OutputStream os) throws IOException {
+    public void write(OutputStream outputStream) throws IOException {
         this.serialize();
-        DataOutputStream dos = new DataOutputStream(os);
-        dos.writeInt(this.type);
-        dos.writeInt(this.data.length);
-        dos.write(this.data);
+        DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+        dataOutputStream.writeInt(this.type);
+        dataOutputStream.writeInt(this.data.length);
+        dataOutputStream.write(this.data);
 
-        dos.flush();
-        os.flush();
+        Logging.serverLogger.info("wrote new packet, size = {}, type = {}", this.data.length, this.type);
+
+        dataOutputStream.flush();
+        outputStream.flush();
     }
 
-    public boolean isMine() {
-        return false;
-    }
+    public boolean isMine(int type) {
+        return this.type == type;
+    };
 
-    public void parse() {
-
-    }
-
-    public void serialize() {
-
-    }
+    public abstract void parse() throws IOException;
+    public abstract void serialize() throws IOException;
 }

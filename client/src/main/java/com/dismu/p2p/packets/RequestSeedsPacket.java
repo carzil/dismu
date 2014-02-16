@@ -1,51 +1,33 @@
 package com.dismu.p2p.packets;
 
 import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.PacketManager;
+import com.dismu.p2p.utilities.Logging;
 
 import java.io.*;
 
-
 public class RequestSeedsPacket extends Packet {
-    final int PT_REQUEST_SEEDS = 0;
-
     public int groupId;
 
     public RequestSeedsPacket() {
-        this.type = PT_REQUEST_SEEDS;
+        this.type = PacketType.PT_REQUEST_SEEDS;
     }
 
-    @Override
-    public boolean isMine() {
-        return this.type == PT_REQUEST_SEEDS;
+    public void parse() throws IOException {
+        ByteArrayInputStream byteArrayInputStream;
+        byteArrayInputStream = new ByteArrayInputStream(this.data);
+
+        DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream);
+        groupId = dataInputStream.readInt();
     }
 
-    @Override
-    public void parse() {
-        try {
-            ByteArrayInputStream bis;
-            bis = new ByteArrayInputStream(this.data);
+    public void serialize() throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
 
-            DataInputStream dis = new DataInputStream(bis);
-            groupId = dis.readInt();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void serialize() {
-        try {
-            ByteArrayOutputStream bos;
-            bos = new ByteArrayOutputStream();
-
-            DataOutputStream dos = new DataOutputStream(bos);
-
-            dos.writeInt(groupId);
-            dos.flush();
-            bos.flush();
-            this.data = bos.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataOutputStream.writeInt(groupId);
+        dataOutputStream.flush();
+        outputStream.flush();
+        this.data = outputStream.toByteArray();
     }
 }

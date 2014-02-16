@@ -1,39 +1,44 @@
 package com.dismu.p2p.server;
 
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.ServerSocket;
 
 import com.dismu.p2p.utilities.Logging;
+import com.dismu.p2p.server.ServerWorker;
 
 public class Server {
-    private ServerSocket ss;
+    private ServerSocket serverSocket;
     private int port;
     protected boolean isStopped = false;
 
     public static void main(String[] args) {
-        Server server = new Server();
+        Server server = new Server(1775);
         try {
-            server.port = 1775;
-            server.ss = new ServerSocket(server.port);
             server.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            Logging.serverLogger.error("unhandled exception", e);
         }
     }
 
+    public Server(int port) {
+        this.port = port;
+    }
+
+    public void configureSocket() throws IOException {
+        this.serverSocket = new ServerSocket(this.port);
+    }
+
     public void start() throws IOException {
+        configureSocket();
         Logging.serverLogger.info("server started");
         while (!isStopped()) {
             try {
-                Socket socket = this.ss.accept();
+                Socket socket = this.serverSocket.accept();
+                Logging.serverLogger.info("new client accepted");
                 new Thread(new ServerWorker(socket)).start();
-            } catch (IOException e) {
-                if (isStopped()) {
-                    Logging.serverLogger.info("server stopped");
-                    return;
-                }
-                throw new RuntimeException("Error accepting client connection", e);
+            } catch (Exception e) {
+                Logging.serverLogger.error("unhandled exception occurred, while accepting client", e);
             }
         }
     }
@@ -45,7 +50,7 @@ public class Server {
     public synchronized void stop() {
         this.isStopped = true;
         try {
-            this.ss.close();
+            this.serverSocket.close();
         } catch (IOException e) {
             throw new RuntimeException("Error closing server", e);
         }

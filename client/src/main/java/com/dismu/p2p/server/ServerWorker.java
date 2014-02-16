@@ -1,7 +1,8 @@
 package com.dismu.p2p.server;
 
-import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.PacketManager;
 import com.dismu.p2p.utilities.PacketSerialize;
+import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.RequestSeedsPacket;
 import com.dismu.p2p.packets.RequestSeedsResponsePacket;
 
@@ -12,31 +13,31 @@ import java.net.InetAddress;
 import java.net.Socket;
 
 public class ServerWorker implements Runnable {
-    private Socket socket;
+    private final Socket clientSocket;
 
     public ServerWorker(Socket s) {
-        this.socket = s;
+        this.clientSocket = s;
     }
 
     @Override
     public void run() {
         try {
-            OutputStream os = this.socket.getOutputStream();
-            InputStream is = this.socket.getInputStream();
+            OutputStream outputStream = clientSocket.getOutputStream();
+            InputStream inputStream = clientSocket.getInputStream();
 
-            Packet packet = null;
-            packet = PacketSerialize.readPacket(is);
+            Packet packet = PacketSerialize.readPacket(inputStream);
+
             if (packet instanceof RequestSeedsPacket) {
                 RequestSeedsResponsePacket rp = new RequestSeedsResponsePacket();
                 rp.addresses = new InetAddress[2];
                 rp.addresses[0] = InetAddress.getLocalHost();
                 rp.addresses[1] = InetAddress.getByName("8.8.8.8");
-                rp.write(os);
+                rp.write(outputStream);
             }
 
-            os.close();
-            is.close();
-            socket.close();
+            outputStream.close();
+            inputStream.close();
+            clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

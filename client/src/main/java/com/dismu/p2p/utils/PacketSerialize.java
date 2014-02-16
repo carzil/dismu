@@ -1,7 +1,6 @@
-package com.dismu.p2p.utilities;
+package com.dismu.p2p.utils;
 
 import com.dismu.p2p.packets.Packet;
-import com.dismu.p2p.packets.RequestSeedsPacket;
 import com.dismu.p2p.packets.PacketManager;
 
 import java.io.DataInputStream;

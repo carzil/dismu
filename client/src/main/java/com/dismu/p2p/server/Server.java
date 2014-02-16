@@ -4,8 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.ServerSocket;
 
-import com.dismu.p2p.utilities.Logging;
-import com.dismu.p2p.server.ServerWorker;
+import com.dismu.p2p.utils.Loggers;
 
 public class Server {
     private ServerSocket serverSocket;
@@ -17,7 +16,7 @@ public class Server {
         try {
             server.start();
         } catch (Exception e) {
-            Logging.serverLogger.error("unhandled exception", e);
+            Loggers.serverLogger.error("unhandled exception", e);
         }
     }
 
@@ -31,14 +30,14 @@ public class Server {
 
     public void start() throws IOException {
         configureSocket();
-        Logging.serverLogger.info("server started");
+        Loggers.serverLogger.info("server started");
         while (!isStopped()) {
             try {
                 Socket socket = this.serverSocket.accept();
-                Logging.serverLogger.info("new client accepted");
+                Loggers.serverLogger.info("new client accepted");
                 new Thread(new ServerWorker(socket)).start();
             } catch (Exception e) {
-                Logging.serverLogger.error("unhandled exception occurred, while accepting client", e);
+                Loggers.serverLogger.error("unhandled exception occurred, while accepting client", e);
             }
         }
     }

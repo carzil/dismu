@@ -1,7 +1,6 @@
 package com.dismu.p2p.server;
 
-import com.dismu.p2p.packets.PacketManager;
-import com.dismu.p2p.utilities.PacketSerialize;
+import com.dismu.p2p.utils.PacketSerialize;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.RequestSeedsPacket;
 import com.dismu.p2p.packets.RequestSeedsResponsePacket;

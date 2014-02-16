@@ -1,9 +1,5 @@
 package com.dismu.p2p.packets;
 
-import com.dismu.p2p.packets.Packet;
-import com.dismu.p2p.packets.PacketManager;
-import com.dismu.p2p.utilities.Logging;
-
 import java.io.*;
 
 public class RequestSeedsPacket extends Packet {

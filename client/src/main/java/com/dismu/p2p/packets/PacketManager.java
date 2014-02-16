@@ -1,8 +1,8 @@
 package com.dismu.p2p.packets;
 
 import java.util.HashMap;
-import com.dismu.p2p.packets.PacketType;
-import com.dismu.p2p.utilities.Logging;
+
+import com.dismu.p2p.utils.Loggers;
 
 public class PacketManager {
     private static HashMap<Integer, Class> packets = new HashMap<Integer, Class>();
@@ -13,7 +13,7 @@ public class PacketManager {
     }
 
     public Class getPacket(int type) {
-        Logging.serverLogger.info("getPacket({})", type);
+        Loggers.serverLogger.info("getPacket({})", type);
         return packets.get(type);
     }
 }

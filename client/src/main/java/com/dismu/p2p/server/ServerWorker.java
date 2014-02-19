@@ -8,6 +8,7 @@ import com.dismu.p2p.scenarios.SendSeedListScenario;
 import com.dismu.p2p.utils.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,6 +24,7 @@ public class ServerWorker implements Runnable {
 
     @Override
     public void run() {
+        Packet packet;
         try {
             OutputStream outputStream = clientSocket.getOutputStream();
             InputStream inputStream = clientSocket.getInputStream();
@@ -31,7 +33,12 @@ public class ServerWorker implements Runnable {
                     = new LinkedList<Scenario>();
 
             while (true) {
-                Packet packet = PacketSerialize.readPacket(inputStream);
+                try {
+                    packet = PacketSerialize.readPacket(inputStream);
+                } catch (EOFException e) {
+                    Loggers.serverLogger.info("client disconnected");
+                    break;
+                }
                 if (packet instanceof ExitPacket) {
                     Loggers.serverLogger.info("received ExitPacket. terminating connection.");
                     break;

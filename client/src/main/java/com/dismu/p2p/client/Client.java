@@ -1,9 +1,10 @@
 package com.dismu.p2p.client;
 
+import com.dismu.p2p.packets.ExitPacket;
 import com.dismu.p2p.packets.RequestSeedsPacket;
 import com.dismu.p2p.packets.RequestSeedsResponsePacket;
+import com.dismu.p2p.utils.PacketSerialize;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,13 +34,18 @@ public class Client {
         socket = new Socket(address, port);
         OutputStream os = socket.getOutputStream();
         InputStream in = socket.getInputStream();
-        RequestSeedsPacket rsp = new RequestSeedsPacket();
-        rsp.groupId = 1;
-        rsp.write(os);
 
-        RequestSeedsResponsePacket rsrp = new RequestSeedsResponsePacket();
-        new DataInputStream(in).readInt();
-        rsrp.read(in);
+        for (int i = 0; i < 2; ++i) {
+            RequestSeedsPacket rsp = new RequestSeedsPacket();
+            rsp.groupId = 1;
+            rsp.write(os);
+
+            RequestSeedsResponsePacket rsrp;
+            rsrp = (RequestSeedsResponsePacket) PacketSerialize.readPacket(in);
+        }
+
+        ExitPacket ep = new ExitPacket();
+        ep.write(os);
 
         os.close();
         in.close();

@@ -1,14 +1,9 @@
 package com.dismu.p2p.packets;
 
-import com.dismu.p2p.packets.Packet;
-import com.dismu.p2p.packets.PacketType;
-
 import java.io.*;
 import java.net.InetAddress;
 
 public class RequestSeedsResponsePacket extends Packet {
-    public int type = PacketType.PT_REQUEST_SEEDS_RESPONSE;
-
     public InetAddress[] addresses;
 
     public RequestSeedsResponsePacket() {
@@ -41,8 +36,8 @@ public class RequestSeedsResponsePacket extends Packet {
         DataOutputStream dos = new DataOutputStream(bos);
 
         StringBuilder str = new StringBuilder();
-        for (int i = 0; i < this.addresses.length; ++i) {
-            str.append(this.addresses[i].getHostAddress());
+        for (InetAddress address : this.addresses) {
+            str.append(address.getHostAddress());
             str.append('\n');
         }
         byte[] res = str.toString().getBytes();

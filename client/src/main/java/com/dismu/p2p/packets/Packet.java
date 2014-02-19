@@ -7,7 +7,7 @@ import java.io.*;
 public abstract class Packet {
     public int type = -1;
 
-    public byte[] data;
+    public byte[] data = new byte[0];
 
     public void read(InputStream inputStream) throws IOException {
         DataInputStream dataInputStream = new DataInputStream(inputStream);
@@ -33,8 +33,11 @@ public abstract class Packet {
 
     public boolean isMine(int type) {
         return this.type == type;
-    };
+    }
+
+    ;
 
     public abstract void parse() throws IOException;
+
     public abstract void serialize() throws IOException;
 }

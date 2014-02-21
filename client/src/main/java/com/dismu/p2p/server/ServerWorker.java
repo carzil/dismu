@@ -3,6 +3,8 @@ package com.dismu.p2p.server;
 import com.dismu.p2p.packets.ExitPacket;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.RequestSeedsPacket;
+import com.dismu.p2p.packets.StartTransactionPacket;
+import com.dismu.p2p.scenarios.RespondFileScenario;
 import com.dismu.p2p.scenarios.Scenario;
 import com.dismu.p2p.scenarios.SendSeedListScenario;
 import com.dismu.p2p.utils.Loggers;
@@ -50,8 +52,15 @@ public class ServerWorker implements Runnable {
                     }
                 }
                 if (null == sc) {
+                    boolean activated = false;
                     if (packet instanceof RequestSeedsPacket) {
                         sc = new SendSeedListScenario();
+                        activated = true;
+                    } else if (packet instanceof StartTransactionPacket) {
+                        sc = new RespondFileScenario();
+                        activated = true;
+                    }
+                    if (activated) {
                         Loggers.serverLogger.info("activated {} scenario", sc.getClass().getName());
                     }
                 }

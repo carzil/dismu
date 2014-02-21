@@ -11,6 +11,12 @@ public class PacketManager {
         packets.put(PacketType.PT_REQUEST_SEEDS, RequestSeedsPacket.class);
         packets.put(PacketType.PT_REQUEST_SEEDS_RESPONSE, RequestSeedsResponsePacket.class);
         packets.put(PacketType.PT_EXIT, ExitPacket.class);
+
+        packets.put(PacketType.PT_START_TRANSACTION, StartTransactionPacket.class);
+        packets.put(PacketType.PT_ACCEPT_TRANSACTION, AcceptTransactionPacket.class);
+        packets.put(PacketType.PT_REQUEST_CHUNK, RequestChunkPacket.class);
+        packets.put(PacketType.PT_RESPONSE_CHUNK, ResponseChunkPacket.class);
+        packets.put(PacketType.PT_END_TRANSACTION, EndTransactionPacket.class);
     }
 
     public Class getPacket(int type) {

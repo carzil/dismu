@@ -1,7 +1,7 @@
 package com.dismu.p2p.scenarios;
 
 import com.dismu.p2p.packets.Packet;
-import com.dismu.p2p.packets.RequestSeedsResponsePacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 
 import java.net.InetAddress;
 

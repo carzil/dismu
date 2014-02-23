@@ -1,4 +1,7 @@
-package com.dismu.p2p.packets;
+package com.dismu.p2p.packets.node_control;
+
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.PacketType;
 
 import java.io.IOException;
 

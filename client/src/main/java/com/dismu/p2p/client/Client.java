@@ -1,8 +1,12 @@
 package com.dismu.p2p.client;
 
-import com.dismu.p2p.packets.ExitPacket;
-import com.dismu.p2p.packets.RequestSeedsPacket;
-import com.dismu.p2p.packets.RequestSeedsResponsePacket;
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.node_control.ExitPacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
+import com.dismu.p2p.packets.transaction.StartTransactionPacket;
+import com.dismu.p2p.scenarios.RequestFileScenario;
+import com.dismu.p2p.utils.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
 import java.io.IOException;
@@ -10,6 +14,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class Client {
     private InetAddress address;
@@ -43,6 +48,33 @@ public class Client {
             RequestSeedsResponsePacket rsrp;
             rsrp = (RequestSeedsResponsePacket) PacketSerialize.readPacket(in);
         }
+
+        StartTransactionPacket stp = new StartTransactionPacket();
+        stp.filename = "oh";
+        stp.write(os);
+
+        RequestFileScenario rfc = new RequestFileScenario();
+        Packet packet;
+        while (true) {
+            try {
+                packet = PacketSerialize.readPacket(in);
+            } catch (SocketException e) {
+                Loggers.clientLogger.error("server disconnected");
+                break;
+            }
+
+            Packet[] packets = rfc.handle(packet);
+            for (Packet sp : packets) {
+                sp.write(os);
+            }
+
+            if (rfc.isFinished()) {
+                break;
+            }
+        }
+
+        String file = new String(rfc.data);
+        Loggers.clientLogger.info("Received new file: {}", file);
 
         ExitPacket ep = new ExitPacket();
         ep.write(os);

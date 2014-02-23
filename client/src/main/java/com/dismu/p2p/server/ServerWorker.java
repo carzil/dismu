@@ -1,18 +1,20 @@
 package com.dismu.p2p.server;
 
-import com.dismu.p2p.packets.ExitPacket;
 import com.dismu.p2p.packets.Packet;
-import com.dismu.p2p.packets.RequestSeedsPacket;
+import com.dismu.p2p.packets.node_control.ExitPacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
+import com.dismu.p2p.packets.transaction.StartTransactionPacket;
+import com.dismu.p2p.scenarios.RespondFileScenario;
 import com.dismu.p2p.scenarios.Scenario;
 import com.dismu.p2p.scenarios.SendSeedListScenario;
 import com.dismu.p2p.utils.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.LinkedList;
 
 public class ServerWorker implements Runnable {
@@ -35,7 +37,7 @@ public class ServerWorker implements Runnable {
             while (true) {
                 try {
                     packet = PacketSerialize.readPacket(inputStream);
-                } catch (EOFException e) {
+                } catch (SocketException e) {
                     Loggers.serverLogger.info("client disconnected");
                     break;
                 }
@@ -50,8 +52,17 @@ public class ServerWorker implements Runnable {
                     }
                 }
                 if (null == sc) {
+                    boolean activated = false;
                     if (packet instanceof RequestSeedsPacket) {
                         sc = new SendSeedListScenario();
+                        activeScenarios.add(sc);
+                        activated = true;
+                    } else if (packet instanceof StartTransactionPacket) {
+                        sc = new RespondFileScenario();
+                        activeScenarios.add(sc);
+                        activated = true;
+                    }
+                    if (activated) {
                         Loggers.serverLogger.info("activated {} scenario", sc.getClass().getName());
                     }
                 }

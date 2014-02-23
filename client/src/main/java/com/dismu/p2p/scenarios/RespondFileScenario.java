@@ -1,6 +1,7 @@
 package com.dismu.p2p.scenarios;
 
-import com.dismu.p2p.packets.*;
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.TransactionIdPool;
 
 import java.util.ArrayList;
@@ -44,13 +45,16 @@ public class RespondFileScenario extends Scenario {
             this.state = ST_WAITING_FOR_CHUNKS;
             StartTransactionPacket packet = (StartTransactionPacket) p;
 
+            this.transactionId = TransactionIdPool.getNext();
+
             AcceptTransactionPacket response = new AcceptTransactionPacket();
-            response.transactionId = TransactionIdPool.getNext();
+            response.transactionId = this.transactionId;
 
             Adler32 adler32 = new Adler32();
             adler32.update(sample_data, 0, sample_data.length);
 
             response.fileHash = adler32.getValue();
+            response.fileSize = sample_data.length;
             response.error = "";
 
             return new Packet[]{response};
@@ -73,6 +77,8 @@ public class RespondFileScenario extends Scenario {
             for (int i = 0; i < sb.size(); ++i) {
                 response.chunk[i] = sb.get(i);
             }
+            response.offset = packet.offset;
+            response.count = sb.size();
 
             response.computeHash();
             return new Packet[]{response};

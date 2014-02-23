@@ -12,7 +12,7 @@ public abstract class Packet {
     public void read(InputStream inputStream) throws IOException {
         DataInputStream dataInputStream = new DataInputStream(inputStream);
         int size = dataInputStream.readInt();
-        Loggers.serverLogger.info("read new packet, size = {}, type = {}", size, this.type);
+        Loggers.packetLogger.debug("read new packet, size = {}, type = {}", size, this.type);
         this.data = new byte[size];
         dataInputStream.read(this.data);
         this.parse();
@@ -25,17 +25,11 @@ public abstract class Packet {
         dataOutputStream.writeInt(this.data.length);
         dataOutputStream.write(this.data);
 
-        Loggers.serverLogger.info("wrote new packet, size = {}, type = {}", this.data.length, this.type);
+        Loggers.packetLogger.debug("wrote new packet, size = {}, type = {}", this.data.length, this.type);
 
         dataOutputStream.flush();
         outputStream.flush();
     }
-
-    public boolean isMine(int type) {
-        return this.type == type;
-    }
-
-    ;
 
     public abstract void parse() throws IOException;
 

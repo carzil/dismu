@@ -1,5 +1,9 @@
 package com.dismu.p2p.packets;
 
+import com.dismu.p2p.packets.node_control.ExitPacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
+import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
+import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.Loggers;
 
 import java.util.HashMap;
@@ -20,7 +24,7 @@ public class PacketManager {
     }
 
     public Class getPacket(int type) {
-        Loggers.serverLogger.info("getPacket({})", type);
+        Loggers.packetLogger.debug("getPacket({})", type);
         return packets.get(type);
     }
 }

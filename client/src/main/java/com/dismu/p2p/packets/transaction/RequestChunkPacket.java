@@ -1,12 +1,16 @@
-package com.dismu.p2p.packets;
+package com.dismu.p2p.packets.transaction;
+
+import com.dismu.p2p.packets.Packet;
+import com.dismu.p2p.packets.PacketType;
 
 import java.io.*;
 
-public class EndTransactionPacket extends Packet {
+public class RequestChunkPacket extends Packet {
     public int transactionId = -1;
+    public int offset = -1, count = -1;
 
-    public EndTransactionPacket() {
-        this.type = PacketType.PT_END_TRANSACTION;
+    public RequestChunkPacket() {
+        this.type = PacketType.PT_REQUEST_CHUNK;
     }
 
     @Override
@@ -16,6 +20,8 @@ public class EndTransactionPacket extends Packet {
 
         DataInputStream dis = new DataInputStream(bis);
         this.transactionId = dis.readInt();
+        this.offset = dis.readInt();
+        this.count = dis.readInt();
     }
 
     @Override
@@ -26,6 +32,8 @@ public class EndTransactionPacket extends Packet {
         DataOutputStream dos = new DataOutputStream(bos);
 
         dos.writeInt(this.transactionId);
+        dos.writeInt(this.offset);
+        dos.writeInt(this.count);
 
         dos.flush();
         bos.flush();

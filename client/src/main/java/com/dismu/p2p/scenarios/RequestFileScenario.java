@@ -12,7 +12,7 @@ public class RequestFileScenario extends Scenario {
     private static final int ST_WAITING_FOR_CHUNKS = 1;
     private static final int ST_FINISHED = 2;
 
-    private static final int BLOCK_SIZE = 16*1024;
+    private static final int BLOCK_SIZE = 512*1024;
 
     private int state = ST_WAITING_FOR_ACCEPT;
     private int transactionId = -1;
@@ -100,14 +100,14 @@ public class RequestFileScenario extends Scenario {
                 return new Packet[]{request};
             }
 
-            /*if (!packet.checkHash()) {
+            if (!packet.checkHash()) {
                 RequestChunkPacket request = generateChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
                 Loggers.clientLogger.info(
                         "Chunk hash check failed, resending request: transactionId = {}, offset = {}, count = {}",
                         this.transactionId, request.offset, request.count
                 );
                 return new Packet[]{request};
-            }*/
+            }
 
             System.arraycopy(packet.chunk, 0, this.data, packet.offset, packet.chunk.length);
 

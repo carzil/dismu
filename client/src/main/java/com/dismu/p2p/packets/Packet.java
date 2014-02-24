@@ -14,7 +14,7 @@ public abstract class Packet {
         int size = dataInputStream.readInt();
         Loggers.packetLogger.debug("read new packet, size = {}, type = {}", size, this.type);
         this.data = new byte[size];
-        dataInputStream.read(this.data);
+        dataInputStream.readFully(this.data);
         this.parse();
     }
 

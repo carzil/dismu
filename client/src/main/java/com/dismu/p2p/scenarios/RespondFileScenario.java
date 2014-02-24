@@ -1,8 +1,8 @@
 package com.dismu.p2p.scenarios;
 
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
-import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.TransactionIdPool;
 
 import java.io.FileInputStream;
@@ -60,6 +60,11 @@ public class RespondFileScenario extends Scenario {
 
             AcceptTransactionPacket response = new AcceptTransactionPacket();
             response.transactionId = this.transactionId;
+
+            sample_data = new byte[10000000];
+            for (int i = 0; i < sample_data.length; ++i) {
+                sample_data[i] = (byte) ('0' + i%10);
+            }
 
             Adler32 adler32 = new Adler32();
             adler32.update(sample_data, 0, sample_data.length);

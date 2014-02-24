@@ -1,12 +1,12 @@
 package com.dismu.p2p.client;
 
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 import com.dismu.p2p.packets.transaction.StartTransactionPacket;
 import com.dismu.p2p.scenarios.RequestFileScenario;
-import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
 import java.io.IOException;
@@ -74,7 +74,7 @@ public class Client {
         }
 
         String file = new String(rfc.data);
-        Loggers.clientLogger.info("Received new file: {}", file);
+        Loggers.clientLogger.info("Received new file");
 
         ExitPacket ep = new ExitPacket();
         ep.write(os);

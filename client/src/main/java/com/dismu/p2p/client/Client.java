@@ -6,7 +6,7 @@ import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 import com.dismu.p2p.packets.transaction.StartTransactionPacket;
 import com.dismu.p2p.scenarios.RequestFileScenario;
-import com.dismu.p2p.utils.Loggers;
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
 import java.io.IOException;

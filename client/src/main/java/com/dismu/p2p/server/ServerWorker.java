@@ -7,7 +7,7 @@ import com.dismu.p2p.packets.transaction.StartTransactionPacket;
 import com.dismu.p2p.scenarios.RespondFileScenario;
 import com.dismu.p2p.scenarios.Scenario;
 import com.dismu.p2p.scenarios.SendSeedListScenario;
-import com.dismu.p2p.utils.Loggers;
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class ServerWorker implements Runnable {
                     break;
                 }
                 if (packet instanceof ExitPacket) {
-                    Loggers.serverLogger.info("received ExitPacket. terminating connection.");
+                    Loggers.serverLogger.info("received ExitPacket, terminating connection.");
                     break;
                 }
                 Scenario sc = null;
@@ -63,7 +63,7 @@ public class ServerWorker implements Runnable {
                         activated = true;
                     }
                     if (activated) {
-                        Loggers.serverLogger.info("activated {} scenario", sc.getClass().getName());
+                        Loggers.serverLogger.info("activated {}", sc.getClass().getSimpleName());
                     }
                 }
                 if (null == sc) {
@@ -71,8 +71,8 @@ public class ServerWorker implements Runnable {
                 } else {
                     Loggers.serverLogger.info(
                             "{} scenario handled {}",
-                            sc.getClass().getName(),
-                            packet.getClass().getName()
+                            sc.getClass().getSimpleName(),
+                            packet.getClass().getSimpleName()
                     );
 
                     Packet[] packets = sc.handle(packet);

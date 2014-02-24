@@ -4,7 +4,7 @@ import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 import com.dismu.p2p.packets.transaction.*;
-import com.dismu.p2p.utils.Loggers;
+import com.dismu.logging.Loggers;
 
 import java.util.HashMap;
 

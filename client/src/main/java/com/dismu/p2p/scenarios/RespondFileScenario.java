@@ -2,8 +2,10 @@ package com.dismu.p2p.scenarios;
 
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.TransactionIdPool;
 
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.zip.Adler32;
 
@@ -15,7 +17,16 @@ public class RespondFileScenario extends Scenario {
     private int state = ST_WAITING_FOR_START;
     private int transactionId = -1;
 
-    private byte[] sample_data = "lalka".getBytes();
+    private byte[] sample_data = new byte[6 * (1 << 21)];
+
+    public RespondFileScenario() {
+        try {
+            FileInputStream fis = new FileInputStream("rise_against-prayer_of_the_refugee.mp3");
+            fis.read(this.sample_data);
+        } catch (Exception e) {
+            Loggers.serverLogger.error("oops", e);
+        }
+    }
 
     @Override
     public boolean isMine(Packet p) {
@@ -52,6 +63,8 @@ public class RespondFileScenario extends Scenario {
 
             Adler32 adler32 = new Adler32();
             adler32.update(sample_data, 0, sample_data.length);
+
+            Loggers.serverLogger.info("{}", sample_data.length);
 
             response.fileHash = adler32.getValue();
             response.fileSize = sample_data.length;

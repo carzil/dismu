@@ -1,6 +1,6 @@
 package com.dismu.p2p.packets;
 
-import com.dismu.p2p.utils.Loggers;
+import com.dismu.logging.Loggers;
 
 import java.io.*;
 

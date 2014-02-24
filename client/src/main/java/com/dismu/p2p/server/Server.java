@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.ServerSocket;
 
-import com.dismu.p2p.utils.Loggers;
+import com.dismu.logging.Loggers;
 
 public class Server {
     private ServerSocket serverSocket;

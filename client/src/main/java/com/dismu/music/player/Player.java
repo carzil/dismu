@@ -9,18 +9,16 @@ public class Player {
 
     public static void main(String[] args) {
         Player player = new Player();
-        player.loop();
+        player.run();
     }
 
     public Player() {
         this.trackStorage = new PCTrackStorage();
-        Track track = this.trackStorage.saveTrack(new File("rise_against-prayer_of_the_refugee.mp3"));
-        Loggers.playerLogger.info("got track, id={}", track.getID());
+        this.trackStorage.saveTrack(new File("rise_against-prayer_of_the_refugee.mp3"));
+        for (Track track : this.trackStorage.getTracks()) {
+            Loggers.playerLogger.info("got track from storage, id={}", track.getID());
+        }
     }
 
-    public void loop() {
-//        while (true) {
-//
-//        }
-    }
+    public void run() {}
 }

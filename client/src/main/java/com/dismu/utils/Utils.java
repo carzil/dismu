@@ -1,4 +1,4 @@
-package com.dismu;
+package com.dismu.utils;
 
 import com.dismu.logging.Loggers;
 

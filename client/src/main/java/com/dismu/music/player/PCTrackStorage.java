@@ -4,7 +4,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.dismu.Utils;
+import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;
 
 public class PCTrackStorage extends TrackStorage {
@@ -16,7 +16,7 @@ public class PCTrackStorage extends TrackStorage {
         return new File(Utils.getAppFolderPath(), "tracks");
     }
 
-    private void parseIndex() throws IOException {
+    private synchronized void parseIndex() throws IOException {
         if (!this.trackIndex.exists()) {
             Loggers.playerLogger.info("index doesn't exists");
             this.trackIndex.createNewFile();
@@ -30,10 +30,7 @@ public class PCTrackStorage extends TrackStorage {
         for (int i = 0; i < tracksCount; i++) {
             int trackID = index.readInt();
             this.maxTrackID = Math.max(this.maxTrackID, trackID);
-            int trackFileNameSize = index.readInt();
-            byte[] trackFileNameBytes = new byte[trackFileNameSize];
-            index.read(trackFileNameBytes);
-            String trackFileName = new String(trackFileNameBytes);
+            String trackFileName = index.readUTF();
             Track track = new Track(trackID);
             File trackFile = new File(this.getTrackFolder(), trackFileName);
             if (trackFile.exists()) {
@@ -44,18 +41,18 @@ public class PCTrackStorage extends TrackStorage {
         }
     }
 
-    private void saveIndex() throws IOException {
+    private synchronized void saveIndex() throws IOException {
         DataOutputStream index = new DataOutputStream(new FileOutputStream(this.trackIndex));
         index.writeInt(this.tracks.size());
         for (Map.Entry<Track, File> entry : this.tracks.entrySet()) {
             Track track = entry.getKey();
-            String trackName = entry.getValue().getName();
             index.writeInt(track.getID());
-            index.writeInt(trackName.length());
-            index.writeBytes(trackName);
+            index.writeUTF(entry.getValue().getName());
+            Loggers.playerLogger.debug("track id={}, name='{}' registered in index", track.getID(), entry.getValue().getName());
         }
         index.flush();
         index.close();
+        Loggers.playerLogger.info("index successfully saved");
     }
 
     public PCTrackStorage() {
@@ -68,12 +65,12 @@ public class PCTrackStorage extends TrackStorage {
 
     }
 
-    public Track[] getTracks() {
-        return null;
+    public synchronized Track[] getTracks() {
+        return this.tracks.keySet().toArray(new Track[0]);
     }
 
-    public Track saveTrack(File trackFile) {
-        File copiedTrackFile = new File(this.getTrackFolder(), trackFile.getName()) ;
+    public synchronized Track saveTrack(File trackFile) {
+        File copiedTrackFile = new File(this.getTrackFolder(), trackFile.getName());
         try {
             Utils.copyFile(trackFile, copiedTrackFile);
             this.maxTrackID++;
@@ -87,7 +84,7 @@ public class PCTrackStorage extends TrackStorage {
         return null;
     }
 
-    public File getTrackFile(Track track) {
-        return null;
+    public synchronized File getTrackFile(Track track) {
+        return this.tracks.get(track);
     }
 }

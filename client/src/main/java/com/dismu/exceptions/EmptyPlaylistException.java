@@ -1,4 +1,4 @@
-package com.dismu.music.exceptions;
+package com.dismu.exceptions;
 
 public class EmptyPlaylistException extends Exception {
     public EmptyPlaylistException() { super(); }

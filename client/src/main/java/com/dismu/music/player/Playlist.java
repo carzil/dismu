@@ -2,8 +2,7 @@ package com.dismu.music.player;
 
 import java.util.ArrayList;
 
-import com.dismu.music.player.Track;
-import com.dismu.music.exceptions.EmptyPlaylistException;
+import com.dismu.exceptions.EmptyPlaylistException;
 
 public class Playlist {
     private ArrayList<Track> tracks;

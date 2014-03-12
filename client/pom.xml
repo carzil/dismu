@@ -35,13 +35,4 @@
             <version>1.1.1</version>
         </dependency>
     </dependencies>
-<!--
-    <dependencies>
-        <dependency>
-            <groupI>io.netty</groupId>
-            <artifactId>netty</artifactId>
-            <version>3.6.0.Final</version>
-        </dependency>
-    </dependencies>
--->
 </project>

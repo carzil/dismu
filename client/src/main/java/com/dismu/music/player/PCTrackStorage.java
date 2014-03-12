@@ -1,13 +1,18 @@
 package com.dismu.music.player;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;
 
-public class PCTrackStorage extends TrackStorage {
+public class PCTrackStorage implements TrackStorage {
     private HashMap<Track, File> tracks = new HashMap<Track, File>();
     private File trackIndex;
     private int maxTrackID = -1;
@@ -28,16 +33,12 @@ public class PCTrackStorage extends TrackStorage {
         int tracksCount = index.readInt();
         Loggers.playerLogger.info("index tracksCount = {}", tracksCount);
         for (int i = 0; i < tracksCount; i++) {
-            int trackID = index.readInt();
-            this.maxTrackID = Math.max(this.maxTrackID, trackID);
+            Track track = Track.readFromStream(index);
+            this.maxTrackID = Math.max(this.maxTrackID, track.getID());
             String trackFileName = index.readUTF();
-            Track track = new Track(trackID);
             File trackFile = new File(this.getTrackFolder(), trackFileName);
-            if (trackFile.exists()) {
-                // Should we keep tracks which are in index but isn't in track folder?
-                Loggers.playerLogger.info("read track from index, id={}, filename='{}'", trackID, trackFileName);
-                this.tracks.put(track, trackFile);
-            }
+            Loggers.playerLogger.info("read track from index, id={}, filename='{}'", track.getID(), trackFileName);
+            this.tracks.put(track, trackFile);
         }
     }
 
@@ -46,9 +47,10 @@ public class PCTrackStorage extends TrackStorage {
         index.writeInt(this.tracks.size());
         for (Map.Entry<Track, File> entry : this.tracks.entrySet()) {
             Track track = entry.getKey();
-            index.writeInt(track.getID());
-            index.writeUTF(entry.getValue().getName());
-            Loggers.playerLogger.debug("track id={}, name='{}' registered in index", track.getID(), entry.getValue().getName());
+            String trackName = entry.getValue().getName();
+            track.writeToStream(index);
+            index.writeUTF(trackName);
+            Loggers.playerLogger.debug("track id={}, name='{}' registered in index", track.getID(), trackName);
         }
         index.flush();
         index.close();
@@ -86,5 +88,13 @@ public class PCTrackStorage extends TrackStorage {
 
     public synchronized File getTrackFile(Track track) {
         return this.tracks.get(track);
+    }
+
+    public void close() {
+        try {
+            this.saveIndex();
+        } catch (IOException e) {
+            Loggers.playerLogger.error("cannot save index", e);
+        }
     }
 }

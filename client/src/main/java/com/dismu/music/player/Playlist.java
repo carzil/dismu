@@ -1,6 +1,10 @@
 package com.dismu.music.player;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import com.dismu.exceptions.EmptyPlaylistException;
 
@@ -9,6 +13,10 @@ public class Playlist {
     private int currentTrackIndex = -1;
     private boolean isCycled;
     private String name;
+
+    public Playlist() {
+        this.tracks = new ArrayList<Track>();
+    }
 
     private void fixCurrentTrackIndex() {
         if (this.currentTrackIndex >= this.tracks.size()) {
@@ -65,5 +73,27 @@ public class Playlist {
         this.checkIsEmpty();
         this.currentTrackIndex--;
         this.fixCurrentTrackIndex();
+    }
+
+    public void writeToStream(DataOutputStream stream) throws IOException {
+        stream.writeUTF(this.getName());
+        stream.writeBoolean(this.isCycled());
+        stream.writeInt(this.tracks.size());
+        for (Iterator<Track> it = this.tracks.iterator(); it.hasNext();) {
+            Track track = it.next();
+            track.writeToStream(stream);
+        }
+    }
+
+    public static Playlist readFromStream(DataInputStream stream) throws IOException {
+        Playlist playlist = new Playlist();
+        playlist.setName(stream.readUTF());
+        playlist.setCycled(stream.readBoolean());
+        int trackCount = stream.readInt();
+        for (int i = 0; i < trackCount; i++) {
+            Track track = Track.readFromStream(stream);
+            playlist.addTrack(track);
+        }
+        return playlist;
     }
 }

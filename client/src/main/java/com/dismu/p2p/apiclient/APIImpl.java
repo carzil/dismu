@@ -32,6 +32,7 @@ public class APIImpl implements API {
                 } catch (UnknownHostException e) {
                     e.printStackTrace();
                 }
+                seed.port = ((Long) current.get("port")).intValue();
                 result.add(seed);
             }
             Seed[] res = new Seed[result.size()];
@@ -45,7 +46,7 @@ public class APIImpl implements API {
     }
 
     @Override
-    public void register(String userId, String groupId) {
+    public void register(String userId, String groupId, int port) {
         String localIP = "", remoteIP = "";
         try {
             localIP = InetAddress.getLocalHost().getHostAddress();
@@ -61,8 +62,9 @@ public class APIImpl implements API {
                         "{\"userId\":\"%s\", " +
                         "\"groupId\":\"%s\", " +
                         "\"localIP\":\"%s\", " +
-                        "\"remoteIP\":\"%s\"}",
-                        userId, groupId, localIP, remoteIP
+                        "\"remoteIP\":\"%s\", " +
+                        "\"port\":%d}",
+                        userId, groupId, localIP, remoteIP, port
                 )
         );
     }

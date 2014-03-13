@@ -25,4 +25,9 @@ public class Track {
     public static Track readFromStream(DataInputStream stream) throws IOException {
         return new Track(stream.readInt());
     }
+
+    public int hashCode() {
+        return this.trackID;
+    }
+
 }

@@ -34,10 +34,13 @@ public class PCPlaylistStorage implements PlaylistStorage {
         this.save();
     }
 
+    private File getIndexFile() {
+        return new File(Utils.getAppFolderPath(), "playlists.index");
+    }
+
     private synchronized void save() {
-        // TODO: move 'playlists.index' to separate class like Constants
-        Loggers.playerLogger.debug("starting saving playlist index");
-        File indexFile = new File(Utils.getAppFolderPath(), "playlists.index");
+        Loggers.playerLogger.debug("saving playlist index");
+        File indexFile = getIndexFile();
         DataOutputStream index = null;
         if (!indexFile.exists()) {
             Loggers.playerLogger.debug("playlist index doesn't exists");
@@ -46,6 +49,7 @@ public class PCPlaylistStorage implements PlaylistStorage {
                 Loggers.playerLogger.debug("successfully created new playlist index file");
             } catch (IOException e) {
                 Loggers.playerLogger.error("cannot create playlist index file", e);
+                return;
             }
         }
         try {
@@ -56,8 +60,7 @@ public class PCPlaylistStorage implements PlaylistStorage {
         }
         try {
             index.writeInt(this.playlists.size());
-            for (Iterator<Playlist> it = this.playlists.iterator(); it.hasNext();) {
-                Playlist playlist = it.next();
+            for (Playlist playlist : this.playlists) {
                 playlist.writeToStream(index);
                 Loggers.playerLogger.debug("saved playlist, name='{}'", playlist.getName());
             }
@@ -68,8 +71,7 @@ public class PCPlaylistStorage implements PlaylistStorage {
     }
 
     private synchronized void load() {
-        File indexFile = new File(Utils.getAppFolderPath(), "playlists.index");
-        Loggers.playerLogger.debug("playlist index path = '{}'", indexFile.getAbsolutePath());
+        File indexFile = getIndexFile();
         DataInputStream index = null;
         try {
             index = new DataInputStream(new FileInputStream(indexFile));

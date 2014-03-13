@@ -8,7 +8,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.Map;
-
 import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;
 
@@ -84,6 +83,10 @@ public class PCTrackStorage implements TrackStorage {
             Loggers.playerLogger.error("cannot save track file", e);
         }
         return null;
+    }
+
+    public synchronized void removeTrack(Track track) {
+        this.tracks.remove(track);
     }
 
     public synchronized File getTrackFile(Track track) {

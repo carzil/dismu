@@ -7,12 +7,14 @@ import java.io.DataOutputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;
 
 public class PCTrackStorage implements TrackStorage {
     private HashMap<Track, File> tracks = new HashMap<Track, File>();
+    private HashSet<Long> trackHashes = new HashSet<Long>();
     private File trackIndex;
     private int maxTrackID = -1;
 
@@ -36,6 +38,12 @@ public class PCTrackStorage implements TrackStorage {
             this.maxTrackID = Math.max(this.maxTrackID, track.getID());
             String trackFileName = index.readUTF();
             File trackFile = new File(this.getTrackFolder(), trackFileName);
+            try {
+                this.trackHashes.add(Utils.getAdler32FileHash(trackFile));
+            } catch (IOException e) {
+                Loggers.playerLogger.error("hash computing failed", e);
+                continue;
+            }
             Loggers.playerLogger.info("read track from index, id={}, filename='{}'", track.getID(), trackFileName);
             this.tracks.put(track, trackFile);
         }
@@ -71,11 +79,17 @@ public class PCTrackStorage implements TrackStorage {
     }
 
     public synchronized Track saveTrack(File trackFile) {
+        Loggers.playerLogger.info("saving track '{}'", trackFile.getAbsolutePath());
         File copiedTrackFile = new File(this.getTrackFolder(), trackFile.getName());
         try {
             Utils.copyFile(trackFile, copiedTrackFile);
             this.maxTrackID++;
             Track track = new Track(this.maxTrackID);
+            long fileHash = Utils.getAdler32FileHash(trackFile);
+            if (this.trackHashes.contains(fileHash)) {
+                Loggers.playerLogger.info("track already in index");
+                return null;
+            }
             this.tracks.put(track, copiedTrackFile);
             this.saveIndex();
             return track;

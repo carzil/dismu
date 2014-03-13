@@ -28,7 +28,7 @@ public class Player {
         try {
             this.runInternal();
         } catch (Throwable e) {
-            Loggers.playerLogger.error("unhandled exception occurred, aborting");
+            Loggers.playerLogger.error("unhandled exception occurred, aborting", e);
         } finally {
             this.trackStorage.close();
             this.playlistStorage.close();
@@ -37,12 +37,13 @@ public class Player {
     }
 
     private void runInternal() {
-        Track[] tracks = this.trackStorage.getTracks();
-        Playlist playlist = new Playlist();
-        playlist.setCycled(true);
-        playlist.addTrack(tracks[0]);
-        playlist.setName("#1");
-        this.playlistStorage.addPlaylist(playlist);
+//        Track[] tracks = this.trackStorage.getTracks();
+//        Playlist playlist = new Playlist();
+//        playlist.setCycled(true);
+//        playlist.addTrack(tracks[0]);
+//        playlist.setName("#1");
+//        this.playlistStorage.addPlaylist(playlist);
+        this.trackStorage.saveTrack(new File("rise_against_-_prayer_of_the_refugee.mp3"));
     }
 
 }

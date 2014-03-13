@@ -8,6 +8,8 @@ import org.json.simple.parser.ParseException;
 import java.io.*;
 import java.net.*;
 import java.nio.channels.FileChannel;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 public class Utils {
     public static JSONObject sendJSONRequest(String address, String s) {
@@ -94,5 +96,16 @@ public class Utils {
 
         String ip = in.readLine(); //you get the IP as a String
         return ip;
+    }
+
+    public static long getAdler32FileHash(File file) throws IOException {
+        int readCount = 0;
+        FileInputStream fileInputStream = new FileInputStream(file);
+        byte[] chunk = new byte[1024];
+        Checksum checksum = new Adler32();
+        while ((readCount = fileInputStream.read(chunk)) != -1) {
+            checksum.update(chunk, 0, readCount);
+        }
+        return checksum.getValue();
     }
 }

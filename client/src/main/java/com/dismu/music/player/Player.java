@@ -37,20 +37,22 @@ public class Player {
     }
 
     private void runInternal() throws Exception {
-        Track[] tracks = this.trackStorage.getTracks();
-        this.playerBackend.setTrack(tracks[0]);
-        this.playerBackend.play();
-        this.playerBackend.seek(0.5);
-        this.playerBackend.play();
-        Loggers.playerLogger.debug("yep");
-        while (this.playerBackend.isPlaying()) {}
+        Track[] tracks = trackStorage.getTracks();
+//        this.playerBackend.setTrack(tracks[0]);
+//        this.playerBackend.play();
+//        this.playerBackend.seek(0.5);
+//        this.playerBackend.play();
+//        Loggers.playerLogger.debug("yep");
+//        while (this.playerBackend.isPlaying()) {}
 //        Playlist playlist = new Playlist();
 //        playlist.setCycled(true);
 //        playlist.addTrack(tracks[0]);
 //        playlist.setName("#1");
 //        this.playlistStorage.addPlaylist(playlist);
 //        trackStorage.saveTrack(new File("rise_against-prayer_of_the_refugee.mp3"));
-        trackStorage.saveTrack(new File("ra-potr.mp3"));
+        Track track = trackStorage.saveTrack(new File("ra-potr.mp3"));
+        trackStorage.removeTrack(track);
+//        Loggers.playerLogger.info("{} - {}", track.getTrackArtist(), track.getTrackName());
     }
 
 }

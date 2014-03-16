@@ -1,21 +1,19 @@
 package com.dismu.music.player;
 
-import java.io.*;
-import java.net.MalformedURLException;
-import javax.media.Player;
-import javax.media.Manager;
-import javax.media.NoPlayerException;
-import javax.media.CannotRealizeException;
-import javax.media.Controller;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
+import javazoom.jl.decoder.JavaLayerException;
 
 public class PCPlayerBackend implements PlayerBackend {
     private TrackStorage trackStorage;
     private Track currentTrack;
     private File currentTrackFile;
-    private Player player;
+    private FileInputStream currentFileInputStream;
+    private PausablePlayer player;
 
     public PCPlayerBackend(TrackStorage trackStorage) {
         this.trackStorage = trackStorage;
@@ -26,13 +24,26 @@ public class PCPlayerBackend implements PlayerBackend {
         return true;
     }
 
+    /**
+     * starting playing track, last indicated by setTrack(); async method
+     */
     public boolean play() {
-        this.player.start();
+        try {
+            this.player.play();
+        } catch (JavaLayerException e) {
+            Loggers.playerLogger.error("exception occurred while playing track id={}", currentTrack.getID(), e);
+            return false;
+        }
         return true;
     }
 
     public boolean pause() {
-        return this.stop();
+        return this.player.pause();
+    }
+
+    public boolean seek(double seconds) {
+        this.player.seek(seconds);
+        return true;
     }
 
     public void close() {
@@ -43,18 +54,16 @@ public class PCPlayerBackend implements PlayerBackend {
         this.currentTrack = track;
         this.currentTrackFile = this.trackStorage.getTrackFile(track);
         try {
-            this.player = Manager.createRealizedPlayer(this.currentTrackFile.toURI().toURL());
-        } catch (IOException e) {
+            this.currentFileInputStream = new FileInputStream(this.currentTrackFile);
+            this.player = new PausablePlayer(this.currentFileInputStream);
+        } catch (FileNotFoundException e) {
             throw new TrackNotFoundException();
-        } catch (NoPlayerException e) {
-            throw new TrackNotFoundException();
-        } catch (CannotRealizeException e) {
-            throw new TrackNotFoundException();
+        } catch (JavaLayerException e) {
+            // TODO: throw exception here
         }
     }
 
     public boolean isPlaying() {
-        return this.player.getState() == Controller.Started;
+        return this.player.getState() == PausablePlayer.PLAYING || this.player.getState() == PausablePlayer.SEEKING;
     }
-
 }

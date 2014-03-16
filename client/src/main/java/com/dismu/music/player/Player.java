@@ -36,8 +36,14 @@ public class Player {
         }
     }
 
-    private void runInternal() {
-//        Track[] tracks = this.trackStorage.getTracks();
+    private void runInternal() throws Exception {
+        Track[] tracks = this.trackStorage.getTracks();
+        this.playerBackend.setTrack(tracks[0]);
+        this.playerBackend.play();
+        this.playerBackend.seek(0.5);
+        this.playerBackend.play();
+        Loggers.playerLogger.debug("yep");
+        while (this.playerBackend.isPlaying()) {}
 //        Playlist playlist = new Playlist();
 //        playlist.setCycled(true);
 //        playlist.addTrack(tracks[0]);

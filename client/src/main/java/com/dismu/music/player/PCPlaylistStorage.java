@@ -39,14 +39,14 @@ public class PCPlaylistStorage implements PlaylistStorage {
     }
 
     private synchronized void save() {
-        Loggers.playerLogger.debug("saving playlist index");
+        Loggers.playerLogger.info("saving playlist index");
         File indexFile = getIndexFile();
         DataOutputStream index = null;
         if (!indexFile.exists()) {
-            Loggers.playerLogger.debug("playlist index doesn't exists");
+            Loggers.playerLogger.info("playlist index doesn't exists");
             try {
                 indexFile.createNewFile();
-                Loggers.playerLogger.debug("successfully created new playlist index file");
+                Loggers.playerLogger.info("successfully created new playlist index file");
             } catch (IOException e) {
                 Loggers.playerLogger.error("cannot create playlist index file", e);
                 return;
@@ -62,12 +62,12 @@ public class PCPlaylistStorage implements PlaylistStorage {
             index.writeInt(this.playlists.size());
             for (Playlist playlist : this.playlists) {
                 playlist.writeToStream(index);
-                Loggers.playerLogger.debug("saved playlist, name='{}'", playlist.getName());
+                Loggers.playerLogger.info("saved playlist, name='{}'", playlist.getName());
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot write to playlist index file", e);
         }
-        Loggers.playerLogger.debug("index successfully saved");
+        Loggers.playerLogger.info("index successfully saved");
     }
 
     private synchronized void load() {
@@ -81,11 +81,11 @@ public class PCPlaylistStorage implements PlaylistStorage {
         }
         try {
             int playlistCount = index.readInt();
-            Loggers.playerLogger.debug("playlistCount = {}", playlistCount);
+            Loggers.playerLogger.info("playlistCount = {}", playlistCount);
             for (int i = 0; i < playlistCount; i++) {
                 Playlist playlist = Playlist.readFromStream(index);
                 this.playlists.add(playlist);
-                Loggers.playerLogger.debug("read playlist '{}'", playlist.getName());
+                Loggers.playerLogger.info("read playlist '{}'", playlist.getName());
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot read from playlist index", e);

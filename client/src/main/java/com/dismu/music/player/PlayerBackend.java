@@ -8,5 +8,6 @@ public interface PlayerBackend {
     public boolean stop();
     public boolean pause();
     public boolean isPlaying();
+    public boolean seek(double seconds);
     public void close();
 }

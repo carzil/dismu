@@ -57,7 +57,7 @@ public class PCTrackStorage implements TrackStorage {
             String trackName = entry.getValue().getName();
             track.writeToStream(index);
             index.writeUTF(trackName);
-            Loggers.playerLogger.debug("track id={}, name='{}' registered in index", track.getID(), trackName);
+            Loggers.playerLogger.info("track id={}, name='{}' registered in index", track.getID(), trackName);
         }
         index.flush();
         index.close();

@@ -1,6 +1,7 @@
 package com.dismu.utils;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.player.Track;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -77,12 +78,18 @@ public class Utils {
      */
     public static void copyFile(File sourceFile, File destinationFile) throws IOException {
         if (!destinationFile.exists()) {
-            Loggers.playerLogger.info("{}", destinationFile.getAbsolutePath());
             destinationFile.createNewFile();
         }
         FileChannel source = new FileInputStream(sourceFile).getChannel();
         FileChannel destination = new FileOutputStream(destinationFile).getChannel();
         destination.transferFrom(source, 0, source.size());
+    }
+
+    public static void renameFile(File sourceFile, File destinationFile) throws IOException {
+        copyFile(sourceFile, destinationFile);
+        if (!sourceFile.delete()) {
+            Loggers.playerLogger.debug("panic >.<");
+        }
     }
 
     public static String getMasterServerAPIUrl() {

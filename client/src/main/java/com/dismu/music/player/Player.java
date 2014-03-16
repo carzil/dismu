@@ -19,19 +19,19 @@ public class Player {
     }
 
     public Player() {
-        this.trackStorage = new PCTrackStorage();
-        this.playerBackend = new PCPlayerBackend(this.trackStorage);
-        this.playlistStorage = new PCPlaylistStorage();
+        trackStorage = new PCTrackStorage();
+        playerBackend = new PCPlayerBackend(this.trackStorage);
+        playlistStorage = new PCPlaylistStorage();
     }
 
     public void run() {
         try {
-            this.runInternal();
+            runInternal();
         } catch (Throwable e) {
             Loggers.playerLogger.error("unhandled exception occurred, aborting", e);
         } finally {
-            this.trackStorage.close();
-            this.playlistStorage.close();
+            trackStorage.close();
+            playlistStorage.close();
 //            this.playerBackend.close();
         }
     }
@@ -43,7 +43,8 @@ public class Player {
 //        playlist.addTrack(tracks[0]);
 //        playlist.setName("#1");
 //        this.playlistStorage.addPlaylist(playlist);
-        this.trackStorage.saveTrack(new File("rise_against_-_prayer_of_the_refugee.mp3"));
+//        trackStorage.saveTrack(new File("rise_against-prayer_of_the_refugee.mp3"));
+        trackStorage.saveTrack(new File("ra-potr.mp3"));
     }
 
 }

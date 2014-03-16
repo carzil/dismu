@@ -23,21 +23,21 @@ public class PCTrackStorage implements TrackStorage {
     }
 
     private synchronized void parseIndex() throws IOException {
-        if (!this.trackIndex.exists()) {
+        if (!trackIndex.exists()) {
             Loggers.playerLogger.info("index doesn't exists");
-            this.trackIndex.createNewFile();
-            this.getTrackFolder().mkdir();
-            new DataOutputStream(new FileOutputStream(this.trackIndex)).writeInt(0);
+            trackIndex.createNewFile();
+            getTrackFolder().mkdir();
+            new DataOutputStream(new FileOutputStream(trackIndex)).writeInt(0);
         }
-        DataInputStream index = new DataInputStream(new FileInputStream(this.trackIndex));
+        DataInputStream index = new DataInputStream(new FileInputStream(trackIndex));
         Loggers.playerLogger.info("index exists");
         int tracksCount = index.readInt();
         Loggers.playerLogger.info("index tracksCount = {}", tracksCount);
         for (int i = 0; i < tracksCount; i++) {
             Track track = Track.readFromStream(index);
-            this.maxTrackID = Math.max(this.maxTrackID, track.getID());
+            maxTrackID = Math.max(maxTrackID, track.getID());
             String trackFileName = index.readUTF();
-            File trackFile = new File(this.getTrackFolder(), trackFileName);
+            File trackFile = new File(getTrackFolder(), trackFileName);
             try {
                 this.trackHashes.add(Utils.getAdler32FileHash(trackFile));
             } catch (IOException e) {
@@ -50,9 +50,9 @@ public class PCTrackStorage implements TrackStorage {
     }
 
     private synchronized void saveIndex() throws IOException {
-        DataOutputStream index = new DataOutputStream(new FileOutputStream(this.trackIndex));
+        DataOutputStream index = new DataOutputStream(new FileOutputStream(trackIndex));
         index.writeInt(this.tracks.size());
-        for (Map.Entry<Track, File> entry : this.tracks.entrySet()) {
+        for (Map.Entry<Track, File> entry : tracks.entrySet()) {
             Track track = entry.getKey();
             String trackName = entry.getValue().getName();
             track.writeToStream(index);
@@ -66,33 +66,38 @@ public class PCTrackStorage implements TrackStorage {
 
     public PCTrackStorage() {
         try {
-            this.trackIndex = new File(Utils.getAppFolderPath(), "tracks.index");
-            this.parseIndex();
+            trackIndex = new File(Utils.getAppFolderPath(), "tracks.index");
+            parseIndex();
         } catch (IOException e) {
-            Loggers.clientLogger.error("impossible error", e);
+            Loggers.clientLogger.error("exception occurred while parsing track index", e);
         }
 
     }
 
     public synchronized Track[] getTracks() {
-        return this.tracks.keySet().toArray(new Track[0]);
+        return tracks.keySet().toArray(new Track[0]);
     }
 
     public synchronized Track saveTrack(File trackFile) {
-        Loggers.playerLogger.info("saving track '{}'", trackFile.getAbsolutePath());
-        File copiedTrackFile = new File(this.getTrackFolder(), trackFile.getName());
+        Loggers.playerLogger.info("got track '{}' for saving", trackFile.getAbsolutePath());
         try {
-            Utils.copyFile(trackFile, copiedTrackFile);
-            this.maxTrackID++;
-            Track track = new Track(this.maxTrackID);
+            Track track = Track.fromMp3File(trackFile);
             long fileHash = Utils.getAdler32FileHash(trackFile);
-            if (this.trackHashes.contains(fileHash)) {
-                Loggers.playerLogger.info("track already in index");
+            Loggers.playerLogger.debug("track hash = {}", fileHash);
+            if (trackHashes.contains(fileHash)) {
+                Loggers.playerLogger.info("track already registered in index");
                 return null;
+            } else {
+                maxTrackID++;
+                track.setID(maxTrackID);
+                File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());
+                Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
+                tracks.put(track, finalTrackFile);
+                Utils.copyFile(trackFile, finalTrackFile);
+                Loggers.playerLogger.info("track registered in index");
+                saveIndex();
+                return track;
             }
-            this.tracks.put(track, copiedTrackFile);
-            this.saveIndex();
-            return track;
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot save track file", e);
         }
@@ -100,16 +105,16 @@ public class PCTrackStorage implements TrackStorage {
     }
 
     public synchronized void removeTrack(Track track) {
-        this.tracks.remove(track);
+        tracks.remove(track);
     }
 
     public synchronized File getTrackFile(Track track) {
-        return this.tracks.get(track);
+        return tracks.get(track);
     }
 
     public void close() {
         try {
-            this.saveIndex();
+            saveIndex();
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot save index", e);
         }

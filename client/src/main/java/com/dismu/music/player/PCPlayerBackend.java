@@ -64,6 +64,6 @@ public class PCPlayerBackend implements PlayerBackend {
     }
 
     public boolean isPlaying() {
-        return this.player.getState() == PausablePlayer.PLAYING || this.player.getState() == PausablePlayer.SEEKING;
+        return this.player.getState() == PausablePlayer.PLAYING;
     }
 }

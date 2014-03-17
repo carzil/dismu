@@ -137,8 +137,6 @@ public class PausablePlayer {
     public final static int PLAYING = 1;
     public final static int PAUSED = 2;
     public final static int FINISHED = 3;
-    public final static int SEEKING = 4;
-    public final static int SOUGHT = 5;
 
     private final MyPlayer player;
     private final Object playerLock = new Object();
@@ -180,16 +178,17 @@ public class PausablePlayer {
     }
 
     public void seek(double st) {
-        int lastStatus = playerStatus;
         synchronized (playerLock) {
-            playerStatus = SEEKING;
-            seekTo = st * 1000;
+            while (Double.isNaN(player.getPosition()) || player.getPosition() <= st * 1000.0) {
+                try {
+                    player.skipFrame();
+                } catch (JavaLayerException e) {
+                    Loggers.playerLogger.error("exception occurred while seeking", e);
+                    return;
+                }
+            }
             playerLock.notifyAll();
         }
-        Loggers.playerLogger.debug("{}", playerStatus);
-        while (playerStatus != SOUGHT) {
-        }
-        Loggers.playerLogger.debug("{}", playerStatus);
     }
 
     public boolean pause() {
@@ -224,12 +223,6 @@ public class PausablePlayer {
                 if (playerStatus == PLAYING) {
                     if (!player.play(1)) {
                         playerStatus = FINISHED;
-                    }
-                } else if (playerStatus == SEEKING) {
-                    if (player.getPosition() >= seekTo) {
-                        playerStatus = SOUGHT;
-                    } else {
-                        player.skipFrame();
                     }
                 }
             } catch (final JavaLayerException e) {

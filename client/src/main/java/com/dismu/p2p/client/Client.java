@@ -57,6 +57,8 @@ public class Client {
                     while ((bytesRead = fin.read(buffer)) != -1) {
                         fos.write(buffer, 0, bytesRead);
                     }
+                    fos.flush();
+                    fos.close();
                     ts.saveTrack(new File(ofs));
                 }
             } catch (IOException e) {

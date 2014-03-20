@@ -50,13 +50,17 @@ public class Utils {
         return null;
     }
 
+    /**
+     * Checks if current OS is Windows
+     * @return true, if Windows, otherwise false
+     */
     public static boolean isWindows() {
         return System.getProperty("os.name").contains("Windows");
     }
 
     /**
      * Returns folder for application data, if it hasn't created yet, creates it.
-     * @return File application data folder's path
+     * @return File application data folder's path.
      */
     public static File getAppFolderPath() {
         File appFolder;
@@ -85,17 +89,14 @@ public class Utils {
         destination.transferFrom(source, 0, source.size());
     }
 
-    public static void renameFile(File sourceFile, File destinationFile) throws IOException {
-        copyFile(sourceFile, destinationFile);
-        if (!sourceFile.delete()) {
-            Loggers.playerLogger.debug("panic >.<");
-        }
-    }
-
     public static String getMasterServerAPIUrl() {
         return "http://dismu-head-nodejs-85224.euw1.nitrousbox.com/api/";
     }
 
+    /**
+     * Returns remote IP of current host.
+     * @return String, containing IP address
+     */
     public static String getRemoteIP() throws IOException {
         URL whatismyip = new URL("http://checkip.amazonaws.com/");
         BufferedReader in = new BufferedReader(new InputStreamReader(
@@ -105,8 +106,14 @@ public class Utils {
         return ip;
     }
 
+    /**
+     * Get Adler32 hash of file.
+     * @param file file to get hash
+     * @return hash of file
+     * @throws IOException
+     */
     public static long getAdler32FileHash(File file) throws IOException {
-        int readCount = 0;
+        int readCount;
         FileInputStream fileInputStream = new FileInputStream(file);
         byte[] chunk = new byte[1024];
         Checksum checksum = new Adler32();

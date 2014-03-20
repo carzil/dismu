@@ -40,16 +40,18 @@ public class Player {
         Track[] tracks = trackStorage.getTracks();
         Track track = trackStorage.saveTrack(new File("ra-potr.mp3"));
         playerBackend.setTrack(track);
-        playerBackend.seek(15.0);
+        playerBackend.seek(3 * 60.0 + 11.0);
         playerBackend.play();
-        while (playerBackend.isPlaying()) {}
+        while (playerBackend.isPlaying()) {
+//            Loggers.playerLogger.debug("{}", playerBackend.isPlaying());
+        }
 //        Playlist playlist = new Playlist();
 //        playlist.setCycled(true);
 //        playlist.addTrack(tracks[0]);
 //        playlist.setName("#1");
 //        this.playlistStorage.addPlaylist(playlist);
 //        trackStorage.saveTrack(new File("rise_against-prayer_of_the_refugee.mp3"));
-//        Loggers.playerLogger.info("{} - {}", track.getTrackArtist(), track.getTrackName());
+        Loggers.playerLogger.info("{} - {}", track.getTrackArtist(), track.getTrackName());
     }
 
 }

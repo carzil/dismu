@@ -20,6 +20,7 @@ class MyPlayer {
     private AudioDevice audio;
     private boolean closed = false;
     private boolean complete = false;
+    private boolean isInited = false;
     private int lastPosition = 0;
     private int framesConsumed = 0;
 
@@ -79,7 +80,7 @@ class MyPlayer {
 
     public double getPosition() {
         // where we can find sample per frame constant?
-//        Loggers.playerLogger.debug("{}", 1000.0 / decoder.getOutputFrequency());
+//        Loggers.playerLogger.debug("{}", decoder.getOutputFrequency());
         return framesConsumed * (1000.0 / decoder.getOutputFrequency()) * 1152.0;
     }
 
@@ -95,6 +96,7 @@ class MyPlayer {
             }
 
             SampleBuffer output = (SampleBuffer)decoder.decodeFrame(header, bitstream);
+            isInited = true;
 
             synchronized (this) {
                 if (audio != null) {
@@ -121,7 +123,10 @@ class MyPlayer {
                 return false;
             }
 
-            SampleBuffer output = (SampleBuffer)decoder.decodeFrame(header, bitstream);
+            if (!isInited) {
+                decoder.decodeFrame(header, bitstream);
+                isInited = true;
+            }
 
             bitstream.closeFrame();
             framesConsumed++;
@@ -141,7 +146,6 @@ public class PausablePlayer {
     private final MyPlayer player;
     private final Object playerLock = new Object();
     private int playerStatus = NOT_STARTED;
-    private double seekTo = 0;
 
     public PausablePlayer(final InputStream inputStream) throws JavaLayerException {
         this.player = new MyPlayer(inputStream);

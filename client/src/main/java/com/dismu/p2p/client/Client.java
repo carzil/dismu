@@ -1,20 +1,16 @@
 package com.dismu.p2p.client;
 
-import com.dismu.logging.Loggers;
-import com.dismu.p2p.packets.Packet;
+import com.dismu.music.player.Track;
 import com.dismu.p2p.packets.node_control.ExitPacket;
-import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
-import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
-import com.dismu.p2p.packets.transaction.StartTransactionPacket;
-import com.dismu.p2p.scenarios.RequestFileScenario;
-import com.dismu.p2p.utils.PacketSerialize;
+import com.dismu.p2p.utils.TransactionHelper;
+import com.dismu.utils.MediaUtils;
+import com.dismu.utils.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.net.SocketException;
 
 public class Client {
     private InetAddress address;
@@ -40,41 +36,14 @@ public class Client {
         OutputStream os = socket.getOutputStream();
         InputStream in = socket.getInputStream();
 
-        for (int i = 0; i < 2; ++i) {
-            RequestSeedsPacket rsp = new RequestSeedsPacket();
-            rsp.groupId = 1;
-            rsp.write(os);
+        TransactionHelper helper = new TransactionHelper(os, in);
+        InputStream is = helper.receiveFile("tracklist");
+        byte[] tracks_bytes = Utils.readStreamToBytes(is);
 
-            RequestSeedsResponsePacket rsrp;
-            rsrp = (RequestSeedsResponsePacket) PacketSerialize.readPacket(in);
-        }
+        Track[] tracks = MediaUtils.ByteArrayToTrackList(tracks_bytes);
 
-        StartTransactionPacket stp = new StartTransactionPacket();
-        stp.filename = "oh";
-        stp.write(os);
-
-        RequestFileScenario rfc = new RequestFileScenario();
-        Packet packet;
-        while (true) {
-            try {
-                packet = PacketSerialize.readPacket(in);
-            } catch (SocketException e) {
-                Loggers.clientLogger.error("server disconnected");
-                break;
-            }
-
-            Packet[] packets = rfc.handle(packet);
-            for (Packet sp : packets) {
-                sp.write(os);
-            }
-
-            if (rfc.isFinished()) {
-                break;
-            }
-        }
-
-        String file = new String(rfc.data);
-        Loggers.clientLogger.info("Received new file");
+        // 1. ???? # TODO
+        // 2. PROFIT
 
         ExitPacket ep = new ExitPacket();
         ep.write(os);
@@ -83,4 +52,5 @@ public class Client {
         in.close();
         socket.close();
     }
+
 }

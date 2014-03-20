@@ -1,12 +1,16 @@
 package com.dismu.p2p.scenarios;
 
-import com.dismu.logging.Loggers;
+import com.dismu.music.player.PCTrackStorage;
+import com.dismu.music.player.Track;
+import com.dismu.music.player.TrackStorage;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.TransactionIdPool;
+import com.dismu.utils.MediaUtils;
+import com.dismu.utils.Utils;
 
+import java.io.*;
 import java.util.ArrayList;
-import java.util.zip.Adler32;
 
 public class RespondFileScenario extends Scenario {
     private static final int ST_WAITING_FOR_START = 0;
@@ -16,7 +20,8 @@ public class RespondFileScenario extends Scenario {
     private int state = ST_WAITING_FOR_START;
     private int transactionId = -1;
 
-    private byte[] sample_data = "lalka".getBytes();
+    private InputStream stream;
+    private int size;
 
     @Override
     public boolean isMine(Packet p) {
@@ -51,16 +56,57 @@ public class RespondFileScenario extends Scenario {
             AcceptTransactionPacket response = new AcceptTransactionPacket();
             response.transactionId = this.transactionId;
 
-            sample_data = new byte[10000000];
-            for (int i = 0; i < sample_data.length; ++i) {
-                sample_data[i] = (byte) ('0' + i%10);
+            TrackStorage ts = new PCTrackStorage();
+            Track[] tracks = ts.getTracks();
+
+            if (packet.filename.equals("tracklist")) {
+                byte[] tracklist = MediaUtils.TrackListToByteArray(tracks);
+                stream = new ByteArrayInputStream(tracklist);
+                response.fileSize = tracklist.length;
+                this.size = tracklist.length;
+                try {
+                    response.fileHash =
+                            Utils.getAdler32StreamHash(new ByteArrayInputStream(tracklist));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else if (packet.filename.startsWith("tracks/")) {
+                packet.filename = packet.filename.replaceFirst("tracks/", "");
+                String[] exploded = packet.filename.split("/");
+                if (exploded.length != 3) {
+                    response.error = "400";
+                    return new Packet[]{response};
+                }
+
+                Track track = null;
+                for (Track curr : tracks) {
+                    if (!curr.getTrackArtist().equals(exploded[0])) {
+                        continue;
+                    }
+                    if (!curr.getTrackName().equals(exploded[1])) {
+                        continue;
+                    }
+                    if (!curr.getTrackAlbum().equals(exploded[2])) {
+                        continue;
+                    }
+                    track = curr;
+                }
+                if (track == null) {
+                    response.error = "404";
+                    return new Packet[]{response};
+                } else {
+                    File file = ts.getTrackFile(track);
+                    try {
+                        response.fileHash = Utils.getAdler32FileHash(file);
+                        response.fileSize = (int) file.length();
+                        this.size = (int) file.length();
+                        this.stream = new BufferedInputStream(new FileInputStream(file));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
-            Adler32 adler32 = new Adler32();
-            adler32.update(sample_data, 0, sample_data.length);
-
-            response.fileHash = adler32.getValue();
-            response.fileSize = sample_data.length;
             response.error = "";
 
             return new Packet[]{response};
@@ -74,9 +120,17 @@ public class RespondFileScenario extends Scenario {
             ResponseChunkPacket response = new ResponseChunkPacket();
             response.transactionId = this.transactionId;
 
-            ArrayList<Byte> sb = new ArrayList<Byte>();
-            for (int i = packet.offset; i < Math.min(packet.count+packet.offset, sample_data.length); ++i) {
-                sb.add(sample_data[i]);
+            ArrayList<Byte> sb = new ArrayList<>();
+            try {
+                for (int i = packet.offset; i < Math.min(packet.count+packet.offset, this.size); ++i) {
+                    int a = this.stream.read();
+                    if (a == -1) {
+                        break;
+                    }
+                    sb.add((byte) a);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
             response.chunk = new byte[sb.size()];

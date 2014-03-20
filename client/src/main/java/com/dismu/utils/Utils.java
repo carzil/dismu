@@ -1,13 +1,12 @@
 package com.dismu.utils;
 
-import com.dismu.logging.Loggers;
-import com.dismu.music.player.Track;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
@@ -21,7 +20,7 @@ public class Utils {
             conn.setDoInput(true);
             conn.setDoOutput(true);
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", type );
+            conn.setRequestProperty("Content-Type", type);
             conn.setRequestProperty("Content-Length", String.valueOf(s.length()));
             OutputStream os = conn.getOutputStream();
             os.write(s.getBytes());
@@ -36,15 +35,8 @@ public class Utils {
             bos.flush();
             JSONParser parser = new JSONParser();
             String str = new String(bos.toByteArray());
-            JSONObject obj = (JSONObject)parser.parse(str);
-            return obj;
-        } catch (ProtocolException e) {
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
+            return (JSONObject)parser.parse(str);
+        } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
         return null;
@@ -90,7 +82,7 @@ public class Utils {
     }
 
     public static String getMasterServerAPIUrl() {
-        return "http://dismu-head-nodejs-85224.euw1.nitrousbox.com/api/";
+        return "http://dismu.tk/api/";
     }
 
     /**
@@ -102,8 +94,23 @@ public class Utils {
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 whatismyip.openStream()));
 
-        String ip = in.readLine(); //you get the IP as a String
-        return ip;
+        return in.readLine(); //you get the IP as a String
+    }
+
+    /**
+     * Get Adler32 hash of input stream.
+     * @param stream stream to get hash
+     * @return hash of stream
+     * @throws IOException
+     */
+    public static long getAdler32StreamHash(InputStream stream) throws IOException {
+        int readCount;
+        byte[] chunk = new byte[1024];
+        Checksum checksum = new Adler32();
+        while ((readCount = stream.read(chunk)) != -1) {
+            checksum.update(chunk, 0, readCount);
+        }
+        return checksum.getValue();
     }
 
     /**
@@ -113,13 +120,19 @@ public class Utils {
      * @throws IOException
      */
     public static long getAdler32FileHash(File file) throws IOException {
-        int readCount;
-        FileInputStream fileInputStream = new FileInputStream(file);
-        byte[] chunk = new byte[1024];
-        Checksum checksum = new Adler32();
-        while ((readCount = fileInputStream.read(chunk)) != -1) {
-            checksum.update(chunk, 0, readCount);
+        return getAdler32StreamHash(new BufferedInputStream(new FileInputStream(file)));
+    }
+
+    public static byte[] readStreamToBytes(InputStream is) throws IOException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[16384];
+
+        while ((nRead = is.read(data, 0, data.length)) != -1) {
+            buffer.write(data, 0, nRead);
         }
-        return checksum.getValue();
+
+        buffer.flush();
+        return buffer.toByteArray();
     }
 }

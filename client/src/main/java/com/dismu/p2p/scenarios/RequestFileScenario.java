@@ -1,11 +1,13 @@
 package com.dismu.p2p.scenarios;
 
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.AcceptTransactionPacket;
 import com.dismu.p2p.packets.transaction.EndTransactionPacket;
 import com.dismu.p2p.packets.transaction.RequestChunkPacket;
 import com.dismu.p2p.packets.transaction.ResponseChunkPacket;
-import com.dismu.logging.Loggers;
+
+import java.io.IOException;
 
 public class RequestFileScenario extends Scenario {
     private static final int ST_WAITING_FOR_ACCEPT = 0;
@@ -47,16 +49,17 @@ public class RequestFileScenario extends Scenario {
     }
 
     @Override
-    public Packet[] handle(Packet p) {
+    public Packet[] handle(Packet p) throws IOException {
         if (p instanceof AcceptTransactionPacket) {
             assert(this.state == ST_WAITING_FOR_ACCEPT);
             this.state = ST_WAITING_FOR_CHUNKS;
             AcceptTransactionPacket packet = (AcceptTransactionPacket) p;
 
-            if (!packet.error.equals("")) {
+            if (!packet.error.isEmpty()) {
                 Loggers.clientLogger.error("Error while accepting: {}", packet.error);
                 this.state = ST_FINISHED;
-                return new Packet[0];
+                throw new IOException(packet.error);
+                //return new Packet[0];
             }
 
             this.transactionId = packet.transactionId;

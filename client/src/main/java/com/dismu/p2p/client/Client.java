@@ -1,14 +1,14 @@
 package com.dismu.p2p.client;
 
+import com.dismu.music.player.PCTrackStorage;
 import com.dismu.music.player.Track;
+import com.dismu.music.player.TrackStorage;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.utils.TransactionHelper;
 import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -42,8 +42,27 @@ public class Client {
 
         Track[] tracks = MediaUtils.ByteArrayToTrackList(tracks_bytes);
 
-        // 1. ???? # TODO
-        // 2. PROFIT
+        TrackStorage ts = new PCTrackStorage();
+
+        for (Track curr : tracks) {
+            try {
+                if (ts.getTrackFile(curr) == null) {
+                    String ofs = curr.getPrettifiedFileName();
+                    OutputStream fos = new FileOutputStream(ofs); // TODO
+                    InputStream fin = helper.receiveFile(
+                            "tracks/" + curr.getTrackArtist() + "/" + curr.getTrackName() + "/" + curr.getTrackAlbum()
+                    );
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = fin.read(buffer)) != -1) {
+                        fos.write(buffer, 0, bytesRead);
+                    }
+                    ts.saveTrack(new File(ofs));
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         ExitPacket ep = new ExitPacket();
         ep.write(os);

@@ -1,18 +1,23 @@
 package com.dismu.music.player;
 
 import com.dismu.logging.Loggers;
+import com.dismu.utils.events.Event;
+import com.dismu.utils.events.EventListener;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.AudioDevice;
 import javazoom.jl.player.FactoryRegistry;
 
+import java.awt.event.ActionListener;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.util.ArrayList;
 
 import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.BitstreamException;
 import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.SampleBuffer;
+import javazoom.jl.player.advanced.AdvancedPlayer;
 
 class MyPlayer {
     private Bitstream bitstream;
@@ -142,10 +147,13 @@ public class PausablePlayer {
     public final static int PLAYING = 1;
     public final static int PAUSED = 2;
     public final static int FINISHED = 3;
+    public final static int FULL_STOP = 4;
 
-    private final MyPlayer player;
+    private MyPlayer player;
     private final Object playerLock = new Object();
     private int playerStatus = NOT_STARTED;
+
+    private ArrayList<EventListener> listeners = new ArrayList<>();
 
     public PausablePlayer(final InputStream inputStream) throws JavaLayerException {
         this.player = new MyPlayer(inputStream);
@@ -167,17 +175,40 @@ public class PausablePlayer {
         t.start();
     }
 
+    public PausablePlayer() {
+        final Thread t = new Thread() {
+            public void run() {
+                playInternal();
+            }
+        };
+        t.start();
+    }
+
+    public void setInputStream(InputStream inputStream) throws JavaLayerException {
+        this.player = new MyPlayer(inputStream);
+    }
+
+    private void notify(int eventType) {
+        Event event = new PlayerEvent(eventType);
+        for (EventListener listener : listeners) {
+            listener.dispatchEvent(event);
+        }
+    }
+
+    public void addEventListener(EventListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeEventListener(EventListener listener) {
+        listeners.remove(listener);
+    }
+
     public void play() throws JavaLayerException {
         Loggers.playerLogger.debug("play status={}", playerStatus);
         synchronized (playerLock) {
-            switch (playerStatus) {
-                case PAUSED:
-                    resume();
-                    break;
-                default:
-                    playerStatus = PLAYING;
-                    break;
-            }
+            playerStatus = PLAYING;
+            playerLock.notifyAll();
+            notify(PlayerEvent.PLAYING);
         }
     }
 
@@ -197,20 +228,10 @@ public class PausablePlayer {
 
     public boolean pause() {
         synchronized (playerLock) {
-            if (playerStatus == PLAYING) {
-                playerStatus = PAUSED;
-            }
+            playerStatus = PAUSED;
+            playerLock.notifyAll();
+            notify(PlayerEvent.PAUSED);
             return playerStatus == PAUSED;
-        }
-    }
-
-    public boolean resume() {
-        synchronized (playerLock) {
-            if (playerStatus == PAUSED) {
-                playerStatus = PLAYING;
-                playerLock.notifyAll();
-            }
-            return playerStatus == PLAYING;
         }
     }
 
@@ -218,18 +239,21 @@ public class PausablePlayer {
         synchronized (playerLock) {
             playerStatus = FINISHED;
             playerLock.notifyAll();
+            notify(PlayerEvent.STOPPED);
         }
     }
 
     private void playInternal() {
-        while (playerStatus != FINISHED) {
+        while (playerStatus != FULL_STOP) {
             try {
                 if (playerStatus == PLAYING) {
                     if (!player.play(1)) {
                         playerStatus = FINISHED;
+                        notify(PlayerEvent.STOPPED);
                     }
                 }
             } catch (final JavaLayerException e) {
+                Loggers.playerLogger.error("JLayer error", e);
                 break;
             }
             synchronized (playerLock) {
@@ -242,12 +266,13 @@ public class PausablePlayer {
                 }
             }
         }
+        Loggers.playerLogger.debug("finished player");
         close();
     }
 
     public void close() {
         synchronized (playerLock) {
-            playerStatus = FINISHED;
+            playerStatus = FULL_STOP;
         }
         try {
             player.close();

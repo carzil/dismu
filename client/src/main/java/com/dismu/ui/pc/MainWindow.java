@@ -1,21 +1,17 @@
 package com.dismu.ui.pc;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.player.Track;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.*;
 
 public class MainWindow {
     private JPanel mainPanel;
-    private JTabbedPane tabbedPane1;
-    private JPanel a1;
-    private JPanel a2;
-    private JCheckBox checkBox1;
-    private JRadioButton radioButton1;
+    private JProgressBar progressBar1;
+    private JButton playButton;
+    private JButton pauseButton;
     private JFrame dismuFrame;
 
     public JFrame getFrame() {
@@ -37,9 +33,38 @@ public class MainWindow {
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
             menuBar.add(helpMenu);
+            playButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Dismu.getInstance().play();
+                }
+            });
+            pauseButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Dismu.getInstance().pause();
+                }
+            });
+            progressBar1.addMouseMotionListener(new MouseMotionListener() {
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    Loggers.uiLogger.debug("{}", e.getX());
+                }
+
+                @Override
+                public void mouseMoved(MouseEvent e) {
+
+                }
+            });
             dismuFrame.setJMenuBar(menuBar);
             dismuFrame.setIconImage(Dismu.getTrayIcon());
         }
         return dismuFrame;
+    }
+
+    public void updateTracks() {
+        for (Track track : Dismu.trackStorage.getTracks()) {
+
+        }
     }
 }

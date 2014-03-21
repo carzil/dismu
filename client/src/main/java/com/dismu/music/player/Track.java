@@ -98,6 +98,10 @@ public class Track {
         return this.trackID;
     }
 
+    public boolean equals(Object o) {
+        return o instanceof Track && ((Track) o).getID() == getID();
+    }
+
     private void readFromID3v1Tag(ID3v1 tag) {
         setTrackNumber(Integer.parseInt(tag.getTrack()));
         setTrackName(tag.getTitle());

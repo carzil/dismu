@@ -43,6 +43,7 @@ public class MainWindow {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     Dismu.getInstance().pause();
+                    Loggers.uiLogger.info("paused");
                 }
             });
             progressBar1.addMouseMotionListener(new MouseMotionListener() {

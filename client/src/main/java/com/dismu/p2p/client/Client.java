@@ -1,8 +1,7 @@
 package com.dismu.p2p.client;
 
-import com.dismu.music.player.PCTrackStorage;
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.player.Track;
-import com.dismu.music.player.TrackStorage;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.utils.TransactionHelper;
 import com.dismu.utils.MediaUtils;
@@ -42,7 +41,7 @@ public class Client {
 
         Track[] tracks = MediaUtils.ByteArrayToTrackList(tracks_bytes);
 
-        TrackStorage ts = new PCTrackStorage();
+        TrackStorage ts = TrackStorage.getInstance();
 
         for (Track curr : tracks) {
             try {

@@ -1,8 +1,7 @@
 package com.dismu.p2p.scenarios;
 
-import com.dismu.music.storages.PCTrackStorage;
-import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.music.player.Track;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.TransactionIdPool;
@@ -56,7 +55,7 @@ public class RespondFileScenario extends Scenario {
             AcceptTransactionPacket response = new AcceptTransactionPacket();
             response.transactionId = this.transactionId;
 
-            TrackStorage ts = new PCTrackStorage();
+            TrackStorage ts = TrackStorage.getInstance();
             Track[] tracks = ts.getTracks();
 
             if (packet.filename.equals("tracklist")) {

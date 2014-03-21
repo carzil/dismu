@@ -47,7 +47,19 @@ public class Utils {
      * @return true, if Windows, otherwise false
      */
     public static boolean isWindows() {
-        return System.getProperty("os.name").contains("Windows");
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    public static boolean isLinux() {
+        return System.getProperty("os.name").toLowerCase().contains("nix");
+    }
+
+    public static boolean isMac() {
+        return System.getProperty("os.name").toLowerCase().contains("mac");
+    }
+
+    public static boolean isPC() {
+        return Utils.isLinux() || Utils.isWindows() || Utils.isMac();
     }
 
     /**

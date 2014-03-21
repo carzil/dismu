@@ -16,9 +16,9 @@ public class Player {
     }
 
     public Player() {
-        trackStorage = new PCTrackStorage();
-        playerBackend = new PCPlayerBackend(this.trackStorage);
-        playlistStorage = new PCPlaylistStorage();
+        trackStorage = TrackStorage.getInstance();
+        playerBackend = PlayerBackend.getInstance();
+        playlistStorage = PlaylistStorage.getInstance();
     }
 
     public void run() {

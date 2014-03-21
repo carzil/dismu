@@ -4,6 +4,7 @@ import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.*;
 import com.dismu.music.storages.*;
+import com.dismu.music.storages.events.TrackStorageEvent;
 import com.dismu.utils.events.*;
 import com.dismu.utils.events.Event;
 
@@ -13,13 +14,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
 
 public class Dismu {
     private MainWindow mainWindow = new MainWindow();
 
-    public static TrackStorage trackStorage = new PCTrackStorage();
-    public static PlayerBackend playerBackend = new PCPlayerBackend(trackStorage);
-    public static PlaylistStorage playlistStorage = new PCPlaylistStorage();
+    public static TrackStorage trackStorage = TrackStorage.getInstance();
+    public static PlayerBackend playerBackend = PlayerBackend.getInstance();
+    public static PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
 //    public static Server server = new Server(1337);
 
     TrayIcon trayIcon;
@@ -62,12 +64,31 @@ public class Dismu {
                 }
             }
         });
+        trackStorage.addEventListener(new EventListener() {
+            @Override
+            public void dispatchEvent(Event e) {
+                if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
+                    trackAdded(((TrackStorageEvent) e).getTrack());
+                }
+            }
+        });
+        trackStorage.saveTrack(new File("ra-rtf.mp3"));
+        try {
+            Thread.sleep(1000);
+        } catch (Exception e) {
+
+        }
         Track[] tracks = trackStorage.getTracks();
         try {
             playerBackend.setTrack(tracks[0]);
         } catch (TrackNotFoundException e) {
             Loggers.uiLogger.error("", e);
         }
+    }
+
+    private void trackAdded(Track track) {
+        String label = track.getTrackName() + " - " + track.getTrackArtist();
+        trayIcon.displayMessage("New track in media library", label, TrayIcon.MessageType.INFO);
     }
 
     private void updateNowPlaying(Track track) {

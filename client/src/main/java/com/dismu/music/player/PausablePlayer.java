@@ -18,6 +18,7 @@ import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.SampleBuffer;
 import javazoom.jl.player.advanced.AdvancedPlayer;
+import javax.sound.sampled.Clip;
 
 class MyPlayer {
     private Bitstream bitstream;
@@ -101,6 +102,7 @@ class MyPlayer {
             }
 
             SampleBuffer output = (SampleBuffer)decoder.decodeFrame(header, bitstream);
+            // frames per second = output.getBufferLength() / output.getChannelCount()
             isInited = true;
 
             synchronized (this) {
@@ -237,6 +239,7 @@ public class PausablePlayer {
 
     public void stop() {
         synchronized (playerLock) {
+            player.close();
             playerStatus = FINISHED;
             playerLock.notifyAll();
             notify(PlayerEvent.STOPPED);
@@ -252,10 +255,11 @@ public class PausablePlayer {
                         notify(PlayerEvent.STOPPED);
                     }
                 }
-            } catch (final JavaLayerException e) {
+            } catch (JavaLayerException e) {
                 Loggers.playerLogger.error("JLayer error", e);
                 break;
             }
+
             synchronized (playerLock) {
                 while (playerStatus == PAUSED) {
                     try {

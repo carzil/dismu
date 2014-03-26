@@ -73,6 +73,7 @@ public class Dismu {
             }
         });
         trackStorage.saveTrack(new File("ra-rtf.mp3"));
+        trackStorage.saveTrack(new File("ra-potr.mp3"));
         try {
             Thread.sleep(1000);
         } catch (Exception e) {
@@ -113,6 +114,12 @@ public class Dismu {
         playerBackend.play();
     }
 
+    public void play(Track track) throws TrackNotFoundException {
+        playerBackend.stop();
+        playerBackend.setTrack(track);
+        playerBackend.play();
+    }
+
     public void pause() {
         playerBackend.pause();
     }
@@ -136,13 +143,13 @@ public class Dismu {
         SystemTray systemTray = SystemTray.getSystemTray();
         MenuItem exitItem = new MenuItem("Exit");
         MenuItem sDismu = new MenuItem("Show Dismu");
-        MenuItem playItem = new MenuItem("Play/Pause");
+        MenuItem togglePlayItem = new MenuItem("Play/Pause");
         MenuItem stopItem = new MenuItem("Stop");
         nowPlaying.setEnabled(false);
         popupMenu.add(nowPlaying);
         popupMenu.add(sDismu);
         popupMenu.addSeparator();
-        popupMenu.add(playItem);
+        popupMenu.add(togglePlayItem);
         popupMenu.add(stopItem);
         popupMenu.addSeparator();
         popupMenu.add(exitItem);
@@ -158,8 +165,7 @@ public class Dismu {
                 Dismu.fullExit(0);
             }
         });
-        trayIcon = new TrayIcon(Dismu.getTrayIcon(), "Dismu", popupMenu);
-        playItem.addActionListener(new ActionListener() {
+        togglePlayItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!isPlaying) {
@@ -176,6 +182,7 @@ public class Dismu {
                 playerBackend.stop();
             }
         });
+        trayIcon = new TrayIcon(Dismu.getTrayIcon(), "Dismu", popupMenu);
         trayIcon.setImageAutoSize(true);
         trayIcon.addMouseListener(new MouseListener() {
             @Override
@@ -209,9 +216,7 @@ public class Dismu {
             systemTray.add(trayIcon);
         } catch (AWTException e) {
             Loggers.uiLogger.error("couldn't initialize tray icon", e);
-            return;
         }
-//        trayIcon.displayMessage("Dismu", "Let your music go with you!", TrayIcon.MessageType.NONE);
 
     }
 

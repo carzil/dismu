@@ -81,6 +81,7 @@ public class TrackStorage {
     }
 
     public void writeToStream(DataOutputStream stream) throws IOException {
+        // TODO: synchronize stream
         synchronized (stream) {
             stream.writeInt(tracks.size());
             for (Map.Entry<Track, File> entry : tracks.entrySet()) {

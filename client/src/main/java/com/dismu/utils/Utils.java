@@ -4,6 +4,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import java.awt.*;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -12,6 +13,8 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
 public class Utils {
+    public static final Color LIGHT_GRAY = new Color(245, 245, 245);
+
     public static JSONObject sendJSONRequest(String address, String s) {
         try {
             String type = "application/json";

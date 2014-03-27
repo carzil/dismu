@@ -238,11 +238,13 @@ public class PausablePlayer {
     }
 
     public void stop() {
-        synchronized (playerLock) {
-            player.close();
-            playerStatus = FINISHED;
-            playerLock.notifyAll();
-            notify(PlayerEvent.STOPPED);
+        if (player != null) {
+            synchronized (playerLock) {
+                player.close();
+                playerStatus = FINISHED;
+                playerLock.notifyAll();
+                notify(PlayerEvent.STOPPED);
+            }
         }
     }
 

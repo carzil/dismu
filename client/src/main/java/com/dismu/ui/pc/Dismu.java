@@ -5,6 +5,8 @@ import com.dismu.logging.Loggers;
 import com.dismu.music.player.*;
 import com.dismu.music.storages.*;
 import com.dismu.music.storages.events.TrackStorageEvent;
+import com.dismu.p2p.client.Client;
+import com.dismu.p2p.server.Server;
 import com.dismu.utils.events.*;
 import com.dismu.utils.events.Event;
 
@@ -15,19 +17,25 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class Dismu {
+    private static Dismu instance;
+
     private MainWindow mainWindow = new MainWindow();
-
-    public static TrackStorage trackStorage = TrackStorage.getInstance();
-    public static PlayerBackend playerBackend = PlayerBackend.getInstance();
-    public static PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
-//    public static Server server = new Server(1337);
-
     TrayIcon trayIcon;
     MenuItem nowPlaying = new MenuItem("Not playing");
 
-    private static Dismu instance;
+    public TrackStorage trackStorage = TrackStorage.getInstance();
+    public PlayerBackend playerBackend = PlayerBackend.getInstance();
+    public PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
+
+    private Server server;
+    private Client client;
+    private Thread serverThread;
+    private Thread clientThread;
 
     private boolean isVisible = false;
     private boolean isRunning = false;
@@ -45,45 +53,40 @@ public class Dismu {
         return Dismu.instance;
     }
 
-    public Dismu() {
+    private Dismu() {
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
-            return;
-        }
-        isRunning = true;
-        setupSystemTray();
-        playerBackend.addEventListener(new EventListener() {
-            @Override
-            public void dispatchEvent(Event e) {
-                if (e.getType() == PlayerEvent.PLAYING) {
-                    updateNowPlaying(playerBackend.getCurrentTrack());
-                } else if (e.getType() == PlayerEvent.PAUSED) {
-                    updatePaused(playerBackend.getCurrentTrack());
-                } else if (e.getType() == PlayerEvent.STOPPED) {
-                    updateStopped();
+        } else {
+            isRunning = true;
+            playerBackend.addEventListener(new EventListener() {
+                @Override
+                public void dispatchEvent(Event e) {
+                    if (e.getType() == PlayerEvent.PLAYING) {
+                        updateNowPlaying(playerBackend.getCurrentTrack());
+                    } else if (e.getType() == PlayerEvent.PAUSED) {
+                        updatePaused(playerBackend.getCurrentTrack());
+                    } else if (e.getType() == PlayerEvent.STOPPED) {
+                        updateStopped();
+                    }
                 }
-            }
-        });
-        trackStorage.addEventListener(new EventListener() {
-            @Override
-            public void dispatchEvent(Event e) {
-                if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
-                    trackAdded(((TrackStorageEvent) e).getTrack());
+            });
+            trackStorage.addEventListener(new EventListener() {
+                @Override
+                public void dispatchEvent(Event e) {
+                    if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
+                        trackAdded(((TrackStorageEvent) e).getTrack());
+                    }
                 }
-            }
-        });
-        trackStorage.saveTrack(new File("ra-rtf.mp3"));
-        trackStorage.saveTrack(new File("ra-potr.mp3"));
-        try {
-            Thread.sleep(1000);
-        } catch (Exception e) {
-
-        }
-        Track[] tracks = trackStorage.getTracks();
-        try {
-            playerBackend.setTrack(tracks[0]);
-        } catch (TrackNotFoundException e) {
-            Loggers.uiLogger.error("", e);
+            });
+            setupSystemTray();
+            // === TEMP CODE ===
+//            Track[] tracks = trackStorage.getTracks();
+//            try {
+//                playerBackend.setTrack(tracks[0]);
+//            } catch (TrackNotFoundException e) {
+//                Loggers.uiLogger.error("", e);
+//            }
+            // === TEMP CODE ===
         }
     }
 
@@ -107,10 +110,11 @@ public class Dismu {
     }
 
     public void run() {
-        while (isRunning) {}
+//        while (isRunning) {}
     }
 
     public void play() {
+        isPlaying = true;
         playerBackend.play();
     }
 
@@ -121,7 +125,17 @@ public class Dismu {
     }
 
     public void pause() {
+        isPlaying = false;
         playerBackend.pause();
+    }
+
+    public void togglePlay() {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            play();
+        } else {
+            pause();
+        }
     }
 
     private void toggleDismu() {
@@ -135,7 +149,37 @@ public class Dismu {
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
         }
+        // Dismu.getInstance().client.stop();
+//        Dismu.getInstance().server.stop();
         System.exit(exitCode);
+    }
+
+    private void startP2P() {
+        server = new Server(1337);
+        try {
+            client = new Client(InetAddress.getLocalHost(), 1775);
+        } catch (UnknownHostException e) {
+            Loggers.clientLogger.error("oops, cannot resolve localhost", e);
+            return;
+        }
+        serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                server.start();
+            }
+        });
+        clientThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    client.start();
+                } catch (IOException e) {
+                    Loggers.clientLogger.error("error in client", e);
+                }
+            }
+        });
+        serverThread.start();
+        clientThread.start();
     }
 
     private void setupSystemTray() {
@@ -218,6 +262,14 @@ public class Dismu {
             Loggers.uiLogger.error("couldn't initialize tray icon", e);
         }
 
+    }
+
+    public void showInfoMessage(String header, String message) {
+        trayIcon.displayMessage(header, message, TrayIcon.MessageType.INFO);
+    }
+
+    public void showAlert(String message) {
+        JOptionPane.showMessageDialog(null, message);
     }
 
     public static Image getTrayIcon() {

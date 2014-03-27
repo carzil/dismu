@@ -10,8 +10,12 @@ import com.dismu.utils.Utils;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 
 public class MainWindow {
     private JPanel mainPanel;
@@ -20,6 +24,7 @@ public class MainWindow {
     private JButton pauseButton;
     private JTable table1;
     private JFrame dismuFrame;
+    private JFileChooser fileChooser = new JFileChooser();
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -27,36 +32,34 @@ public class MainWindow {
             dismuFrame.setContentPane(mainPanel);
             dismuFrame.pack();
             dismuFrame.setSize(new Dimension(800, 600));
-            dismuFrame.addKeyListener(new KeyListener() {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
                 @Override
-                public void keyTyped(KeyEvent e) {
-                    Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
-                    if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        Dismu.getInstance().pause();
-                        Loggers.uiLogger.debug("pause issued by space");
+                public boolean dispatchKeyEvent(KeyEvent e) {
+                    if (e.getID() == KeyEvent.KEY_PRESSED) {
+                        Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
+                        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                            Dismu.getInstance().togglePlay();
+                            Loggers.uiLogger.debug("pause issued by space");
+                        } else if (e.getKeyCode() == KeyEvent.VK_O && ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0)) {
+                            addTracks();
+                        }
                     }
-                }
-
-                @Override
-                public void keyPressed(KeyEvent e) {
-
-                }
-
-                @Override
-                public void keyReleased(KeyEvent e) {
-
+                    return false;
                 }
             });
             JMenuBar menuBar = new JMenuBar();
             JMenu fileMenu = new JMenu("File");
             JMenu helpMenu = new JMenu("Help");
             JMenuItem exitItem = new JMenuItem("Exit");
+            JMenuItem addTrackItem = new JMenuItem("Add track...");
             exitItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     Dismu.fullExit(0);
                 }
             });
+            fileMenu.add(addTrackItem);
+            fileMenu.addSeparator();
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
             menuBar.add(helpMenu);
@@ -77,11 +80,14 @@ public class MainWindow {
             table1.setBorder(BorderFactory.createEmptyBorder());
             table1.removeColumn(table1.getColumn("Track"));
             table1.getColumn("#").setMaxWidth(20);
-            int n = 1;
-            for (Track track : TrackStorage.getInstance().getTracks()) {
-                model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
-                n++;
-            }
+            table1.setAutoCreateRowSorter(true);
+            updateTracks();
+            addTrackItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    addTracks();
+                }
+            });
             table1.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
                 @Override
@@ -149,8 +155,23 @@ public class MainWindow {
     }
 
     public void updateTracks() {
-        for (Track track : Dismu.trackStorage.getTracks()) {
+        DefaultTableModel model = ((DefaultTableModel) table1.getModel());
+        model.setRowCount(0);
+        int n = 1;
+        for (Track track : TrackStorage.getInstance().getTracks()) {
+            model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
+            n++;
+        }
+    }
 
+    private void addTracks() {
+        int result = fileChooser.showOpenDialog(mainPanel);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
+            // TODO: check for mp3
+            // TODO: multiple file selection
+            Track track = Dismu.getInstance().trackStorage.saveTrack(file);
+            updateTracks();
         }
     }
 }

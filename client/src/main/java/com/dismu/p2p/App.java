@@ -1,5 +1,6 @@
 package com.dismu.p2p;
 
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
@@ -17,8 +18,8 @@ public class App {
                 Server server = new Server(Integer.valueOf(args[1]));
                 try {
                     server.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    Loggers.serverLogger.error("", e);
                 } finally {
                     api.unregister(args[0]);
                 }

@@ -119,6 +119,13 @@ public class TrackStorage {
         return tracks.keySet().toArray(new Track[0]);
     }
 
+    public synchronized boolean isInStorage(File sourceFile) throws IOException {
+        Loggers.playerLogger.debug("got file to check, path='{}'", sourceFile.getAbsolutePath());
+        long fileHash = Utils.getAdler32FileHash(sourceFile);
+        Loggers.playerLogger.debug("file hash = {}", fileHash);
+        return trackHashes.containsKey(fileHash);
+    }
+
     /**
      * Adds track to track index and copies track file to local storage.
      * @param trackFile track file to add
@@ -127,13 +134,12 @@ public class TrackStorage {
     public synchronized Track saveTrack(File trackFile) {
         Loggers.playerLogger.info("got track '{}' for saving", trackFile.getAbsolutePath());
         try {
-            Track track = Track.fromMp3File(trackFile);
             long fileHash = Utils.getAdler32FileHash(trackFile);
-            Loggers.playerLogger.debug("track hash = {}", fileHash);
-            if (trackHashes.containsKey(fileHash)) {
+            if (isInStorage(trackFile)) {
                 Loggers.playerLogger.info("track already registered in index");
                 return trackHashes.get(fileHash);
             } else {
+                Track track = Track.fromMp3File(trackFile);
                 maxTrackID++;
                 track.setID(maxTrackID);
                 File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());

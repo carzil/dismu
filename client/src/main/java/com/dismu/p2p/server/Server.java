@@ -24,20 +24,28 @@ public class Server {
         this.port = port;
     }
 
-    public void configureSocket() throws IOException {
-        this.serverSocket = new ServerSocket(this.port);
+    public void configureSocket() {
+        try {
+            this.serverSocket = new ServerSocket(this.port);
+        } catch (IOException e) {
+            Loggers.serverLogger.error("problem creating ServerSocket instance", e);
+        }
     }
 
-    public void start() throws IOException {
+    public void start() {
         configureSocket();
-        Loggers.serverLogger.info("server started");
-        while (!isStopped()) {
-            try {
-                Socket socket = this.serverSocket.accept();
-                Loggers.serverLogger.info("new client accepted");
-                new Thread(new ServerWorker(socket)).start();
-            } catch (Exception e) {
-                Loggers.serverLogger.error("unhandled exception occurred, while accepting client", e);
+        if (serverSocket == null) {
+            Loggers.serverLogger.info("failed to start sever");
+        } else {
+            Loggers.serverLogger.info("server started");
+            while (!isStopped()) {
+                try {
+                    Socket socket = this.serverSocket.accept();
+                    Loggers.serverLogger.info("new client accepted");
+                    new Thread(new ServerWorker(socket)).start();
+                } catch (Exception e) {
+                    Loggers.serverLogger.error("unhandled exception occurred, while accepting client", e);
+                }
             }
         }
     }

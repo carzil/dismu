@@ -19,10 +19,13 @@ import java.io.IOException;
 
 public class MainWindow {
     private JPanel mainPanel;
-    private JProgressBar progressBar1;
     private JButton playButton;
     private JButton pauseButton;
     private JTable table1;
+    private JPanel statusPanel;
+    private JLabel statusLabel;
+    private JPanel playerPanel;
+    private JScrollPane tableScrollPane;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
 
@@ -47,11 +50,13 @@ public class MainWindow {
                     return false;
                 }
             });
+            fileChooser.setMultiSelectionEnabled(true);
+            statusPanel.setBorder(BorderFactory.createLoweredBevelBorder());
             JMenuBar menuBar = new JMenuBar();
             JMenu fileMenu = new JMenu("File");
             JMenu helpMenu = new JMenu("Help");
             JMenuItem exitItem = new JMenuItem("Exit");
-            JMenuItem addTrackItem = new JMenuItem("Add track...");
+            JMenuItem addTrackItem = new JMenuItem("Add tracks...");
             exitItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -164,13 +169,18 @@ public class MainWindow {
         }
     }
 
+    public void setStatus(String message) {
+        statusLabel.setText(message);
+    }
+
     private void addTracks() {
         int result = fileChooser.showOpenDialog(mainPanel);
         if (result == JFileChooser.APPROVE_OPTION) {
-            File file = fileChooser.getSelectedFile();
-            // TODO: check for mp3
-            // TODO: multiple file selection
-            Track track = Dismu.getInstance().trackStorage.saveTrack(file);
+            for (File file : fileChooser.getSelectedFiles()) {
+                // TODO: check for mp3
+                Track track = Dismu.getInstance().trackStorage.saveTrack(file);
+                Dismu.getInstance().setStatus("Track '" + track.getTrackArtist() + " - " + track.getTrackName() + "' added to media library");
+            }
             updateTracks();
         }
     }

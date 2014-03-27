@@ -91,18 +91,18 @@ public class Dismu {
     }
 
     private void trackAdded(Track track) {
-        String label = track.getTrackName() + " - " + track.getTrackArtist();
+        String label = track.getPrettifiedName();
         trayIcon.displayMessage("New track in media library", label, TrayIcon.MessageType.INFO);
     }
 
     private void updateNowPlaying(Track track) {
-        String label = track.getTrackName() + " - " + track.getTrackArtist();
-        nowPlaying.setLabel(label);
-        trayIcon.displayMessage("Now playing", label, TrayIcon.MessageType.INFO);
+        nowPlaying.setLabel(track.getPrettifiedName());
+        trayIcon.displayMessage("Now playing", track.getPrettifiedName(), TrayIcon.MessageType.INFO);
+        setStatus("Playing '" + track.getPrettifiedName() + "'");
     }
 
     private void updatePaused(Track track) {
-        nowPlaying.setLabel(track.getTrackName() + " - " + track.getTrackArtist() + " (PAUSED)");
+        nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
     }
 
     private void updateStopped() {
@@ -119,6 +119,7 @@ public class Dismu {
     }
 
     public void play(Track track) throws TrackNotFoundException {
+        isPlaying = true;
         playerBackend.stop();
         playerBackend.setTrack(track);
         playerBackend.play();
@@ -270,6 +271,10 @@ public class Dismu {
 
     public void showAlert(String message) {
         JOptionPane.showMessageDialog(null, message);
+    }
+
+    public void setStatus(String message) {
+        mainWindow.setStatus(message);
     }
 
     public static Image getTrayIcon() {

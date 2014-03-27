@@ -127,6 +127,10 @@ public class Track {
         return filename;
     }
 
+    public String getPrettifiedName() {
+        return getTrackArtist() + " - " + getTrackName();
+    }
+
     public static Track fromMp3File(File trackFile) {
         Track track = new Track();
         track.setTrackFormat(FORMAT_MP3);

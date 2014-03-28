@@ -156,6 +156,7 @@ public class Dismu {
     private void trackAdded(Track track) {
         String label = track.getPrettifiedName();
         trayIcon.displayMessage("New track in media library", label, TrayIcon.MessageType.INFO);
+        mainWindow.updateTracks();
     }
 
     private void updateNowPlaying(Track track) {

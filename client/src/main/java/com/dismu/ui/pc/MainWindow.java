@@ -178,7 +178,7 @@ public class MainWindow {
         if (result == JFileChooser.APPROVE_OPTION) {
             for (File file : fileChooser.getSelectedFiles()) {
                 // TODO: check for mp3
-                Track track = Dismu.getInstance().trackStorage.saveTrack(file);
+                Track track = TrackStorage.getInstance().saveTrack(file);
                 Dismu.getInstance().setStatus("Track '" + track.getTrackArtist() + " - " + track.getTrackName() + "' added to media library");
             }
             updateTracks();

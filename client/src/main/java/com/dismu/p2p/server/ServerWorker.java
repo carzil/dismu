@@ -1,13 +1,15 @@
 package com.dismu.p2p.server;
 
+import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
+import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;
 import com.dismu.p2p.packets.transaction.StartTransactionPacket;
+import com.dismu.p2p.scenarios.NewTrackAvailableDownloadScenario;
 import com.dismu.p2p.scenarios.RespondFileScenario;
 import com.dismu.p2p.scenarios.Scenario;
 import com.dismu.p2p.scenarios.SendSeedListScenario;
-import com.dismu.logging.Loggers;
 import com.dismu.p2p.utils.PacketSerialize;
 
 import java.io.IOException;
@@ -31,8 +33,7 @@ public class ServerWorker implements Runnable {
             OutputStream outputStream = clientSocket.getOutputStream();
             InputStream inputStream = clientSocket.getInputStream();
 
-            LinkedList<Scenario> activeScenarios
-                    = new LinkedList<Scenario>();
+            LinkedList<Scenario> activeScenarios = new LinkedList<>();
 
             while (true) {
                 try {
@@ -61,6 +62,8 @@ public class ServerWorker implements Runnable {
                         sc = new RespondFileScenario();
                         activeScenarios.add(sc);
                         activated = true;
+                    } else if (packet instanceof NewTrackAvailablePacket) {
+                        sc = new NewTrackAvailableDownloadScenario();
                     }
                     if (activated) {
                         Loggers.serverLogger.info("activated {}", sc.getClass().getSimpleName());

@@ -2,13 +2,19 @@ package com.dismu.ui.pc;
 
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
-import com.dismu.music.player.*;
-import com.dismu.music.storages.*;
+import com.dismu.music.player.PlayerEvent;
+import com.dismu.music.player.Track;
+import com.dismu.music.storages.PlayerBackend;
+import com.dismu.music.storages.PlaylistStorage;
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.storages.events.TrackStorageEvent;
 import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.Server;
-import com.dismu.utils.events.*;
+import com.dismu.p2p.apiclient.API;
+import com.dismu.p2p.apiclient.APIImpl;
+import com.dismu.p2p.apiclient.Seed;
 import com.dismu.utils.events.Event;
+import com.dismu.utils.events.EventListener;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,30 +22,31 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.prefs.Preferences;
 
 public class Dismu {
-    private static Dismu instance;
+    public static ArrayList<Client> clients = new ArrayList<>();
 
     private MainWindow mainWindow = new MainWindow();
     TrayIcon trayIcon;
     MenuItem nowPlaying = new MenuItem("Not playing");
 
-    public TrackStorage trackStorage = TrackStorage.getInstance();
-    public PlayerBackend playerBackend = PlayerBackend.getInstance();
-    public PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
+    private TrackStorage trackStorage = TrackStorage.getInstance();
+    private PlayerBackend playerBackend = PlayerBackend.getInstance();
+    private PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
 
-    private Server server;
-    private Client client;
-    private Thread serverThread;
-    private Thread clientThread;
+    private static Server server;
+    private static Client client;
+    private static Thread serverThread;
+    private static Thread clientThread;
 
     private boolean isVisible = false;
     private boolean isRunning = false;
     private boolean isPlaying = false;
+
+    private static Dismu instance;
 
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
@@ -79,14 +86,70 @@ public class Dismu {
                 }
             });
             setupSystemTray();
-            // === TEMP CODE ===
-//            Track[] tracks = trackStorage.getTracks();
-//            try {
-//                playerBackend.setTrack(tracks[0]);
-//            } catch (TrackNotFoundException e) {
-//                Loggers.uiLogger.error("", e);
-//            }
-            // === TEMP CODE ===
+            playerBackend.addEventListener(new EventListener() {
+                @Override
+                public void dispatchEvent(Event e) {
+                    if (e instanceof TrackStorageEvent) {
+                        TrackStorageEvent tse = (TrackStorageEvent) e;
+                        int type = tse.getType();
+                        if (type == TrackStorageEvent.TRACK_ADDED) {
+                            Track t = tse.getTrack();
+                            for (Client cl : clients) {
+                                try {
+                                    cl.emitNewTrackEvent(t);
+                                } catch (IOException e1) {
+                                    e1.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            startP2P();
+        }
+    }
+
+    private void startP2P() {
+        final Preferences prefs = Preferences.userNodeForPackage(Dismu.class);
+        final API api = new APIImpl();
+        final String userId = prefs.get("user.userId", "b");
+        final String groupId = prefs.get("user.groupId", "alpha");
+        final int serverPort = prefs.getInt("server.port", 1337);
+
+        Thread serverThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                server = new Server(serverPort);
+                try {
+                    server.start();
+                } finally {
+                    api.unregister(userId);
+                }
+            }
+        });
+        serverThread.start();
+        api.register(userId, groupId, serverPort);
+        Seed[] seeds = api.getNeighbours(userId);
+        for (final Seed s : seeds) {
+            // TODO: need updating seed list every 5 mins
+            if (s.userId.equals(userId)) {
+                continue;
+            }
+
+            Thread clientThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Client client = new Client(s.localIP, s.port, userId);
+                    try {
+                        client.start();
+                        clients.add(client);
+                        client.synchronize();
+                    } catch (IOException e) {
+                        Loggers.uiLogger.error("error in client", e);
+                    }
+                }
+            });
+            clientThread.start();
         }
     }
 
@@ -150,37 +213,20 @@ public class Dismu {
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
         }
-        // Dismu.getInstance().client.stop();
-//        Dismu.getInstance().server.stop();
-        System.exit(exitCode);
-    }
+        Preferences prefs = Preferences.userNodeForPackage(Dismu.class);
+        API api = new APIImpl();
+        String userId = prefs.get("user.userId", "b");
+        api.unregister(userId);
 
-    private void startP2P() {
-        server = new Server(1337);
-        try {
-            client = new Client(InetAddress.getLocalHost(), 1775);
-        } catch (UnknownHostException e) {
-            Loggers.clientLogger.error("oops, cannot resolve localhost", e);
-            return;
+        for (Client client : clients) {
+            try {
+                client.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        serverThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                server.start();
-            }
-        });
-        clientThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    client.start();
-                } catch (IOException e) {
-                    Loggers.clientLogger.error("error in client", e);
-                }
-            }
-        });
-        serverThread.start();
-        clientThread.start();
+        server.stop();
+        System.exit(exitCode);
     }
 
     private void setupSystemTray() {

@@ -37,7 +37,7 @@ public class App {
             Thread clientThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Client client = new Client(s.localIP, s.port);
+                    Client client = new Client(s.localIP, s.port, args[0]);
                     try {
                         client.start();
                     } catch (IOException e) {

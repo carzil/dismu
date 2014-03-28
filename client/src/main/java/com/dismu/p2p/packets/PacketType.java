@@ -9,4 +9,5 @@ public class PacketType {
     public static final int PT_REQUEST_CHUNK = 5;
     public static final int PT_RESPONSE_CHUNK = 6;
     public static final int PT_END_TRANSACTION = 7;
+    public static final int PT_NEW_TRACK_AVAILABLE = 8;
 }

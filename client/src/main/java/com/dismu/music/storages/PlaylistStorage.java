@@ -46,7 +46,7 @@ public class PlaylistStorage {
         notify(new PlaylistStorageEvent(PlaylistStorageEvent.PLAYLIST_REMOVED, playlist));
     }
 
-    public Playlist[] getAllPlaylist() {
+    public Playlist[] getPlaylists() {
         return playlists.toArray(new Playlist[0]);
     }
 

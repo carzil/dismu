@@ -1,8 +1,10 @@
 package com.dismu.ui.pc;
 
+import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.PlayerEvent;
+import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
@@ -13,6 +15,7 @@ import com.dismu.p2p.server.Server;
 import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
+import com.dismu.utils.SettingsManager;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
@@ -24,12 +27,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.prefs.Preferences;
 
 public class Dismu {
     public static ArrayList<Client> clients = new ArrayList<>();
 
     private MainWindow mainWindow = new MainWindow();
+//    private PlaylistWindow playlistWindow = new PlaylistWindow();
     TrayIcon trayIcon;
     MenuItem nowPlaying = new MenuItem("Not playing");
 
@@ -46,7 +49,13 @@ public class Dismu {
     private boolean isRunning = false;
     private boolean isPlaying = false;
 
+
+    private Playlist currentPlaylist;
+
     private static Dismu instance;
+
+    public static SettingsManager accountSettingsManager = new SettingsManager("account");
+    public static SettingsManager networkSettingsManager = new SettingsManager("network");
 
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
@@ -105,16 +114,37 @@ public class Dismu {
                     }
                 }
             });
+//            Playlist playlist = new Playlist();
+//            playlist.setName("Favorite");
+//            playlist.addTrack(trackStorage.getTracks()[0]);
+//            playlist.addTrack(trackStorage.getTracks()[1]);
+//            PlaylistStorage.getInstance().addPlaylist(playlist);
+            Playlist playlist = PlaylistStorage.getInstance().getPlaylists()[0];
+//            showPlaylist(playlist);
+            playerBackend.addEventListener(new EventListener() {
+                @Override
+                public void dispatchEvent(Event e) {
+                    if (e.getType() == PlayerEvent.FINISHED) {
+                        try {
+                            Playlist playlist = getCurrentPlaylist();
+                            if (!playlist.isEnded()) {
+                                playlist.next();
+                            }
+                            Dismu.getInstance().play();
+                        } catch (EmptyPlaylistException ex) {
+                        }
+                    }
+                }
+            });
             startP2P();
         }
     }
 
     private void startP2P() {
-        final Preferences prefs = Preferences.userNodeForPackage(Dismu.class);
         final API api = new APIImpl();
-        final String userId = prefs.get("user.userId", "b");
-        final String groupId = prefs.get("user.groupId", "alpha");
-        final int serverPort = prefs.getInt("server.port", 1337);
+        final String userId = accountSettingsManager.getString("user.userId", "b");
+        final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
+        final int serverPort = networkSettingsManager.getInt("server.port", 1337);
 
         Thread serverThread = new Thread(new Runnable() {
             @Override
@@ -179,7 +209,21 @@ public class Dismu {
 
     public void play() {
         isPlaying = true;
-        playerBackend.play();
+        if (playerBackend.isPlaying()) {
+            playerBackend.stop();
+        }
+        try {
+            Track currentTrack = currentPlaylist.getCurrentTrack();
+            try {
+                playerBackend.setTrack(currentTrack);
+            } catch (TrackNotFoundException ex) {
+                // TODO: what we have to do here?
+                return;
+            }
+            playerBackend.play();
+        } catch (EmptyPlaylistException e) {
+            showAlert("Current playlist is empty!");
+        }
     }
 
     public void play(Track track) throws TrackNotFoundException {
@@ -214,9 +258,8 @@ public class Dismu {
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
         }
-        Preferences prefs = Preferences.userNodeForPackage(Dismu.class);
         API api = new APIImpl();
-        String userId = prefs.get("user.userId", "b");
+        String userId = accountSettingsManager.getString("user.userId", "b");
         api.unregister(userId);
 
         for (Client client : clients) {
@@ -227,6 +270,11 @@ public class Dismu {
             }
         }
         server.stop();
+        TrackStorage.getInstance().close();
+        PlaylistStorage.getInstance().close();
+        PlayerBackend.getInstance().close();
+        accountSettingsManager.save();
+        networkSettingsManager.save();
         System.exit(exitCode);
     }
 
@@ -320,8 +368,24 @@ public class Dismu {
         JOptionPane.showMessageDialog(null, message);
     }
 
+    public void showPlaylist(Playlist playlist) {
+        PlaylistWindow playlistWindow = new PlaylistWindow();
+        playlistWindow.getFrame().setVisible(true);
+        playlistWindow.setPlaylist(playlist);
+    }
+
     public void setStatus(String message) {
         mainWindow.setStatus(message);
+    }
+
+    public Playlist getCurrentPlaylist() {
+        return currentPlaylist;
+    }
+
+    public void setCurrentPlaylist(Playlist currentPlaylist) {
+        this.currentPlaylist = currentPlaylist;
+        mainWindow.update();
+        Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
     }
 
     public static Image getTrayIcon() {

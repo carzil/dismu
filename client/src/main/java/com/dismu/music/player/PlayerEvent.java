@@ -6,6 +6,7 @@ public class PlayerEvent implements Event {
     public static final int PLAYING = 0;
     public static final int STOPPED = 1;
     public static final int PAUSED = 2;
+    public static final int FINISHED = 3;
 
     private int eventType;
 

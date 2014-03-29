@@ -10,4 +10,5 @@ public class Loggers {
     public static final Logger playerLogger = LoggerFactory.getLogger("player");
     public static final Logger uiLogger = LoggerFactory.getLogger("ui");
     public static final Logger fsLogger = LoggerFactory.getLogger("fs");
+    public static final Logger miscLogger = LoggerFactory.getLogger("misc");
 }

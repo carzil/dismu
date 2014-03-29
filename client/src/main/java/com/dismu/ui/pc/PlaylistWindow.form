@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<form xmlns="http://www.intellij.com/uidesigner/form/" version="1" bind-to-class="com.dismu.ui.pc.PlaylistWindow">
+  <grid id="27dc6" binding="playlistPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+    <constraints>
+      <xy x="20" y="20" width="500" height="400"/>
+    </constraints>
+    <properties/>
+    <border type="none"/>
+    <children>
+      <grid id="e8c6f" binding="topPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="North"/>
+        <properties/>
+        <border type="none" title-position="4">
+          <title-color color="-16777216"/>
+        </border>
+        <children>
+          <component id="b02cf" class="javax.swing.JTextArea" binding="playlistNameTextArea">
+            <constraints border-constraint="Center"/>
+            <properties>
+              <font name="Arial" size="16"/>
+              <text value="default"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="d1d8" binding="botPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="South"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <component id="f943d" class="javax.swing.JButton" binding="saveButton">
+            <constraints border-constraint="Center"/>
+            <properties>
+              <text value="Save"/>
+            </properties>
+          </component>
+        </children>
+      </grid>
+      <grid id="8bf88" binding="midPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
+        <constraints border-constraint="Center"/>
+        <properties/>
+        <border type="none"/>
+        <children>
+          <scrollpane id="66c15">
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="f6649" class="javax.swing.JTable" binding="table1" default-binding="true">
+                <constraints/>
+                <properties/>
+              </component>
+            </children>
+          </scrollpane>
+        </children>
+      </grid>
+    </children>
+  </grid>
+</form>

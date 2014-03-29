@@ -254,7 +254,7 @@ public class PausablePlayer {
                 if (playerStatus == PLAYING) {
                     if (!player.play(1)) {
                         playerStatus = FINISHED;
-                        notify(PlayerEvent.STOPPED);
+                        notify(PlayerEvent.FINISHED);
                     }
                 }
             } catch (JavaLayerException e) {

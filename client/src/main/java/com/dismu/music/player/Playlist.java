@@ -10,9 +10,9 @@ import com.dismu.exceptions.EmptyPlaylistException;
 
 public class Playlist {
     private ArrayList<Track> tracks;
-    private int currentTrackIndex = -1;
-    private boolean isCycled;
-    private String name;
+    private int currentTrackIndex = 0;
+    private boolean isCycled = false;
+    private String name = "Untitled";
 
     public Playlist() {
         this.tracks = new ArrayList<Track>();
@@ -22,8 +22,6 @@ public class Playlist {
         if (this.currentTrackIndex >= this.tracks.size()) {
             if (isCycled()) {
                 this.currentTrackIndex %= this.tracks.size();
-            } else {
-                this.currentTrackIndex = -1;
             }
         }
     }
@@ -42,16 +40,28 @@ public class Playlist {
         return this.tracks.size() == 0;
     }
 
+    public boolean isEnded() {
+        return tracks.size() <= currentTrackIndex;
+    }
+
     public void setCycled(boolean isCycled) {
         this.isCycled = isCycled;
     }
 
     public String getName() {
-        return this.name;
+        return name;
     }
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ArrayList<Track> getTracks() {
+        return tracks;
+    }
+
+    public int getTrackCount() {
+        return tracks.size();
     }
 
     public void addTrack(Track track) {

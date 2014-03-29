@@ -1,5 +1,6 @@
 package com.dismu.p2p.scenarios;
 
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
@@ -21,6 +22,9 @@ public class NewTrackAvailableDownloadScenario extends Scenario {
     @Override
     public Packet[] handle(Packet p) throws IOException {
         final NewTrackAvailablePacket packet = (NewTrackAvailablePacket) p;
+        if (TrackStorage.getInstance().getTrackFile(packet.track) != null) {
+            return new Packet[0];
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {

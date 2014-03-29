@@ -86,7 +86,7 @@ public class Dismu {
                 }
             });
             setupSystemTray();
-            playerBackend.addEventListener(new EventListener() {
+            trackStorage.addEventListener(new EventListener() {
                 @Override
                 public void dispatchEvent(Event e) {
                     if (e instanceof TrackStorageEvent) {

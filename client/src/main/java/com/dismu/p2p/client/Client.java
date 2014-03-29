@@ -64,5 +64,6 @@ public class Client {
         packet.userId = this.userId;
         packet.track = track;
         packet.write(os);
+        os.flush();
     }
 }

@@ -45,7 +45,7 @@ public class NewTrackAvailableDownloadScenario extends Scenario {
                 }
 
             }
-        });
+        }).start();
         return new Packet[0];
     }
 

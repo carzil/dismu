@@ -86,8 +86,12 @@ public class PlayerBackend {
         }
     }
 
-    public synchronized boolean isPlaying() {
+    public boolean isPlaying() {
         return player.getState() == PausablePlayer.PLAYING;
+    }
+
+    public boolean isPaused() {
+        return player.getState() == PausablePlayer.PAUSED;
     }
 
     public Track getCurrentTrack() {

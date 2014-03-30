@@ -1,6 +1,5 @@
 package com.dismu.ui.pc;
 
-import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
@@ -137,10 +136,12 @@ public class MainWindow {
             table2.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
+                    int rowNumber = table2.rowAtPoint(e.getPoint());
+                    Playlist playlist = (Playlist) table2.getModel().getValueAt(rowNumber, 3);
                     if (SwingUtilities.isLeftMouseButton(e)) {
-                        int rowNumber = table2.rowAtPoint(e.getPoint());
-                        Playlist playlist = (Playlist) table2.getModel().getValueAt(rowNumber, 3);
                         Dismu.getInstance().setCurrentPlaylist(playlist);
+                    } else if (SwingUtilities.isRightMouseButton(e)) {
+                        Dismu.getInstance().showPlaylist(playlist);
                     }
                 }
 
@@ -191,7 +192,7 @@ public class MainWindow {
                 }
             });
             dismuFrame.setJMenuBar(menuBar);
-            dismuFrame.setIconImage(Dismu.getTrayIcon());
+            dismuFrame.setIconImage(Dismu.getIcon());
         }
         return dismuFrame;
     }

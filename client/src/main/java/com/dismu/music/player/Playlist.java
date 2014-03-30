@@ -85,6 +85,11 @@ public class Playlist {
         this.fixCurrentTrackIndex();
     }
 
+    public void reset() throws EmptyPlaylistException {
+        this.checkIsEmpty();
+        currentTrackIndex = 0;
+    }
+
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeUTF(this.getName());
         stream.writeBoolean(this.isCycled());

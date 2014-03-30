@@ -114,13 +114,6 @@ public class Dismu {
                     }
                 }
             });
-//            Playlist playlist = new Playlist();
-//            playlist.setName("Favorite");
-//            playlist.addTrack(trackStorage.getTracks()[0]);
-//            playlist.addTrack(trackStorage.getTracks()[1]);
-//            PlaylistStorage.getInstance().addPlaylist(playlist);
-            Playlist playlist = PlaylistStorage.getInstance().getPlaylists()[0];
-//            showPlaylist(playlist);
             playerBackend.addEventListener(new EventListener() {
                 @Override
                 public void dispatchEvent(Event e) {
@@ -129,8 +122,10 @@ public class Dismu {
                             Playlist playlist = getCurrentPlaylist();
                             if (!playlist.isEnded()) {
                                 playlist.next();
+                                Dismu.getInstance().play();
+                            } else {
+                                showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
                             }
-                            Dismu.getInstance().play();
                         } catch (EmptyPlaylistException ex) {
                         }
                     }
@@ -160,6 +155,7 @@ public class Dismu {
         serverThread.start();
         api.register(userId, groupId, serverPort);
         Seed[] seeds = api.getNeighbours(userId);
+        Loggers.clientLogger.info("found {} seed(s)", seeds.length);
         for (final Seed s : seeds) {
             // TODO: need updating seed list every 5 mins
             if (s.userId.equals(userId)) {
@@ -186,7 +182,7 @@ public class Dismu {
     private void trackAdded(Track track) {
         String label = track.getPrettifiedName();
         trayIcon.displayMessage("New track in media library", label, TrayIcon.MessageType.INFO);
-        mainWindow.updateTracks();
+        mainWindow.update();
     }
 
     private void updateNowPlaying(Track track) {
@@ -210,19 +206,26 @@ public class Dismu {
     public void play() {
         isPlaying = true;
         if (playerBackend.isPlaying()) {
+            // TODO: pause here
             playerBackend.stop();
-        }
-        try {
-            Track currentTrack = currentPlaylist.getCurrentTrack();
-            try {
-                playerBackend.setTrack(currentTrack);
-            } catch (TrackNotFoundException ex) {
-                // TODO: what we have to do here?
-                return;
-            }
+        } else if (playerBackend.isPaused()) {
             playerBackend.play();
-        } catch (EmptyPlaylistException e) {
-            showAlert("Current playlist is empty!");
+        } else {
+            try {
+                if (currentPlaylist.isEnded()) {
+                    currentPlaylist.reset();
+                }
+                Track currentTrack = currentPlaylist.getCurrentTrack();
+                try {
+                    playerBackend.setTrack(currentTrack);
+                } catch (TrackNotFoundException ex) {
+                    // TODO: what we have to do here?
+                    return;
+                }
+                playerBackend.play();
+            } catch (EmptyPlaylistException e) {
+                showAlert("Current playlist is empty!");
+            }
         }
     }
 
@@ -322,7 +325,7 @@ public class Dismu {
                 playerBackend.stop();
             }
         });
-        trayIcon = new TrayIcon(Dismu.getTrayIcon(), "Dismu", popupMenu);
+        trayIcon = new TrayIcon(Dismu.getIcon(), "Dismu", popupMenu);
         trayIcon.setImageAutoSize(true);
         trayIcon.addMouseListener(new MouseListener() {
             @Override
@@ -386,9 +389,18 @@ public class Dismu {
         this.currentPlaylist = currentPlaylist;
         mainWindow.update();
         Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
+//        showPlaylist(currentPlaylist);
+        play();
     }
 
-    public static Image getTrayIcon() {
+    public Track[] addTracksInPlaylist() {
+        AddTracksDialog addTracksDialog = new AddTracksDialog();
+        addTracksDialog.pack();
+        addTracksDialog.setVisible(true);
+        return addTracksDialog.getTracks();
+    }
+
+    public static Image getIcon() {
         // TODO: make it in resources
         String trayIcon = "icon.png";
         if (trayIcon == null) {

@@ -41,17 +41,36 @@
         <properties/>
         <border type="none"/>
         <children>
-          <scrollpane id="66c15">
-            <constraints border-constraint="Center"/>
+          <scrollpane id="275a8">
+            <constraints border-constraint="West"/>
             <properties/>
             <border type="none"/>
             <children>
-              <component id="f6649" class="javax.swing.JTable" binding="table1" default-binding="true">
+              <component id="ceb56" class="javax.swing.JTable" binding="table1" default-binding="true">
                 <constraints/>
                 <properties/>
               </component>
             </children>
           </scrollpane>
+          <grid id="333c3" layout-manager="BorderLayout" hgap="0" vgap="0">
+            <constraints border-constraint="East"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="d442b" class="javax.swing.JButton" binding="addTracksButton" default-binding="true">
+                <constraints border-constraint="North"/>
+                <properties>
+                  <text value="Add tracks"/>
+                </properties>
+              </component>
+              <grid id="d7db5" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints border-constraint="Center"/>
+                <properties/>
+                <border type="none"/>
+                <children/>
+              </grid>
+            </children>
+          </grid>
         </children>
       </grid>
     </children>

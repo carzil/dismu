@@ -11,6 +11,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
@@ -22,6 +24,7 @@ public class PlaylistWindow {
     private JPanel botPanel;
     private JPanel midPanel;
     private JTextArea playlistNameTextArea;
+    private JButton addTracksButton;
 
     private Playlist playlist;
     private JFrame frame;
@@ -46,7 +49,7 @@ public class PlaylistWindow {
         if (frame == null) {
             frame = new JFrame();
             frame.setContentPane(playlistPanel);
-            frame.setIconImage(Dismu.getTrayIcon());
+            frame.setIconImage(Dismu.getIcon());
             frame.pack();
             frame.setSize(new Dimension(800, 600));
             topPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -115,6 +118,19 @@ public class PlaylistWindow {
                 @Override
                 public void mouseExited(MouseEvent e) {
 
+                }
+            });
+            addTracksButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Track[] tracks = Dismu.getInstance().addTracksInPlaylist();
+                    if (tracks != null) {
+                        for (Track track : tracks) {
+                            playlist.addTrack(track);
+                        }
+                    } else {
+                        Dismu.getInstance().showAlert("You didn't selected any track");
+                    }
                 }
             });
         }

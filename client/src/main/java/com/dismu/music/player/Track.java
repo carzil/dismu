@@ -2,6 +2,7 @@ package com.dismu.music.player;
 
 
 import com.dismu.logging.Loggers;
+import com.dismu.utils.FileNameEscaper;
 import com.mpatric.mp3agic.*;
 
 import java.io.DataInputStream;
@@ -103,14 +104,25 @@ public class Track {
     }
 
     private void readFromID3v1Tag(ID3v1 tag) {
-        setTrackNumber(Integer.parseInt(tag.getTrack()));
+        try {
+            setTrackNumber(Integer.parseInt(tag.getTrack()));
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            setTrackNumber(0);
+        }
         setTrackName(tag.getTitle());
         setTrackArtist(tag.getArtist());
         setTrackAlbum(tag.getAlbum());
+
     }
 
     private void readFromID3v2Tag(ID3v2 tag) {
-        setTrackNumber(Integer.parseInt(tag.getTrack()));
+        try {
+            setTrackNumber(Integer.parseInt(tag.getTrack()));
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            setTrackNumber(0);
+        }
         setTrackName(tag.getTitle());
         setTrackArtist(tag.getArtist());
         setTrackAlbum(tag.getAlbum());
@@ -121,6 +133,7 @@ public class Track {
         filename += trackArtist.toLowerCase().replaceAll("\\s+", "_");
         filename += "-";
         filename += trackName.toLowerCase().replaceAll("\\s+", "_");
+        filename = FileNameEscaper.escape(filename);
         if (trackFormat == Track.FORMAT_MP3) {
             filename += ".mp3";
         }

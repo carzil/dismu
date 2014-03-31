@@ -27,6 +27,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class Dismu {
     public static ArrayList<Client> clients = new ArrayList<>();
@@ -105,6 +106,7 @@ public class Dismu {
                     int type = tse.getType();
                     if (type == TrackStorageEvent.TRACK_ADDED) {
                         Track t = tse.getTrack();
+                        initClients();
                         for (Client cl : clients) {
                             try {
                                 cl.emitNewTrackEvent(t);
@@ -139,7 +141,7 @@ public class Dismu {
 
     private void startP2P() {
         final API api = new APIImpl();
-        final String userId = accountSettingsManager.getString("user.userId", "b");
+        final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
         final int serverPort = networkSettingsManager.getInt("server.port", 1337);
 
@@ -156,11 +158,29 @@ public class Dismu {
         });
         serverThread.start();
         api.register(userId, groupId, serverPort);
+        initClients();
+    }
+
+    private void initClients() {
+        final String userId = getUserID();
+        final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
         Loggers.clientLogger.info("found {} seed(s)", seeds.length);
         for (final Seed s : seeds) {
             // TODO: need updating seed list every 5 mins
             if (s.userId.equals(userId)) {
+                continue;
+            }
+
+            boolean foundClient = false;
+            for (Client c : clients) {
+                if (c.getAddress().equals(s.localIP) && c.getPort() == s.port) {
+                    foundClient = true;
+                    break;
+                }
+            }
+
+            if (foundClient) {
                 continue;
             }
 
@@ -179,6 +199,15 @@ public class Dismu {
             });
             clientThread.start();
         }
+    }
+
+    private String getUserID() {
+        String random = UUID.randomUUID().toString();
+        String res = accountSettingsManager.getString("user.userId", random);
+        if (res.equals(random)) {
+            accountSettingsManager.setString("user.userId", res);
+        }
+        return res;
     }
 
     private void trackAdded(Track track) {
@@ -275,13 +304,7 @@ public class Dismu {
         String userId = accountSettingsManager.getString("user.userId", "b");
         api.unregister(userId);
 
-        for (Client client : clients) {
-            try {
-                client.stop();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        stopClients();
         server.stop();
         TrackStorage.getInstance().close();
         PlaylistStorage.getInstance().close();
@@ -289,6 +312,16 @@ public class Dismu {
         accountSettingsManager.save();
         networkSettingsManager.save();
         System.exit(exitCode);
+    }
+
+    private static void stopClients() {
+        for (Client client : clients) {
+            try {
+                client.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private void setupSystemTray() {

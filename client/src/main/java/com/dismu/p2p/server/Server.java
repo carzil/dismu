@@ -1,11 +1,11 @@
 package com.dismu.p2p.server;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.SocketException;
-
 import com.dismu.logging.Loggers;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 
 public class Server {
     private ServerSocket serverSocket;
@@ -28,6 +28,7 @@ public class Server {
     public void configureSocket() {
         try {
             this.serverSocket = new ServerSocket(this.port);
+            isRunning = true;
         } catch (IOException e) {
             Loggers.serverLogger.error("problem creating ServerSocket instance", e);
         }

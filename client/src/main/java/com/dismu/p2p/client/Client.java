@@ -66,4 +66,12 @@ public class Client {
         packet.write(os);
         os.flush();
     }
+
+    public InetAddress getAddress() {
+        return address;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }

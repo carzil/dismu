@@ -1,7 +1,6 @@
 package com.dismu.ui.pc;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.utils.Utils;
@@ -81,6 +80,34 @@ public class AddTracksDialog extends JDialog {
                     c.setBackground(row % 2 == 0 ? Color.WHITE : Utils.LIGHT_GRAY);
                 }
                 return c;
+            }
+        });
+        table1.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() >= 2) {
+                    onOK();
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
             }
         });
         updateTracks();

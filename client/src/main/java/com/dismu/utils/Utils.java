@@ -97,7 +97,7 @@ public class Utils {
     }
 
     public static String getMasterServerAPIUrl() {
-        return "http://dismu.tk/api/";
+        return "http://dismu.herokuapp.com/api/";
     }
 
     /**

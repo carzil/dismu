@@ -1,5 +1,7 @@
 package com.dismu.ui.pc;
 
+import com.dismu.exceptions.EmptyPlaylistException;
+import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
@@ -18,7 +20,7 @@ public class MainWindow {
     private JPanel mainPanel;
     private JButton playButton;
     private JButton pauseButton;
-    private JTable table1;
+    private JTable currentPlaylistTable;
     private JPanel statusPanel;
     private JLabel statusLabel;
     private JPanel innerPanel;
@@ -26,7 +28,7 @@ public class MainWindow {
     private JTabbedPane tabbedPane1;
     private JPanel currentPlaylistPanel;
     private JPanel allPlaylistsPanel;
-    private JTable table2;
+    private JTable allPlaylistsTable;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
 
@@ -72,25 +74,25 @@ public class MainWindow {
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
             menuBar.add(helpMenu);
-            DefaultTableModel model = new DefaultTableModel() {
+            DefaultTableModel currentPlaylistModel = new DefaultTableModel() {
                 @Override
                 public boolean isCellEditable(int row, int column) {
                     return false;
                 }
             };
-            table1.setModel(model);
-            table1.setIntercellSpacing(new Dimension(0, 0));
-            model.addColumn("#");
-            model.addColumn("Artist");
-            model.addColumn("Album");
-            model.addColumn("Title");
-            model.addColumn("Track");
-            table1.setShowGrid(false);
-            table1.setBorder(BorderFactory.createEmptyBorder());
-            table1.removeColumn(table1.getColumn("Track"));
-            table1.getColumn("#").setMaxWidth(25);
-            table1.setAutoCreateRowSorter(true);
-            table1.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            currentPlaylistTable.setModel(currentPlaylistModel);
+            currentPlaylistTable.setIntercellSpacing(new Dimension(0, 0));
+            currentPlaylistModel.addColumn("#");
+            currentPlaylistModel.addColumn("Artist");
+            currentPlaylistModel.addColumn("Album");
+            currentPlaylistModel.addColumn("Title");
+            currentPlaylistModel.addColumn("Track");
+            currentPlaylistTable.setShowGrid(false);
+            currentPlaylistTable.setBorder(BorderFactory.createEmptyBorder());
+            currentPlaylistTable.removeColumn(currentPlaylistTable.getColumn("Track"));
+            currentPlaylistTable.getColumn("#").setMaxWidth(25);
+            currentPlaylistTable.setAutoCreateRowSorter(true);
+            currentPlaylistTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
                 @Override
                 public Component getTableCellRendererComponent(JTable table,
@@ -103,45 +105,95 @@ public class MainWindow {
                     return c;
                 }
             });
-            DefaultTableModel model2 = new DefaultTableModel() {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
-            table2.setModel(model2);
-            table2.setIntercellSpacing(new Dimension(0, 0));
-            model2.addColumn("#");
-            model2.addColumn("Name");
-            model2.addColumn("Track count");
-            model2.addColumn("Playlist");
-            table2.setShowGrid(false);
-            table2.setBorder(BorderFactory.createEmptyBorder());
-            table2.removeColumn(table2.getColumn("Playlist"));
-            table2.getColumn("#").setMaxWidth(25);
-            table2.setAutoCreateRowSorter(true);
-            table2.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
-                @Override
-                public Component getTableCellRendererComponent(JTable table,
-                                                               Object value, boolean isSelected, boolean hasFocus,
-                                                               int row, int column) {
-                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        c.setBackground(row % 2 == 0 ? Color.WHITE : Utils.LIGHT_GRAY);
-                    }
-                    return c;
-                }
-            });
-            table2.addMouseListener(new MouseListener() {
+            currentPlaylistTable.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    int rowNumber = table2.rowAtPoint(e.getPoint());
-                    Playlist playlist = (Playlist) table2.getModel().getValueAt(rowNumber, 3);
+                    if (SwingUtilities.isLeftMouseButton(e)) {
+                        if (e.getClickCount() >= 2) {
+                            int rowNumber = currentPlaylistTable.rowAtPoint(e.getPoint());
+                            Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 4);
+                            try {
+                                // TODO: set track as current in playlist
+                                Dismu.getInstance().play(track);
+                            } catch (TrackNotFoundException ex) {
+                                // TODO: exception handling in ui
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+
+                }
+            });
+
+            DefaultTableModel allPlaylistsModel = new DefaultTableModel() {
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return false;
+                }
+            };
+            allPlaylistsTable.setModel(allPlaylistsModel);
+            allPlaylistsTable.setIntercellSpacing(new Dimension(0, 0));
+            allPlaylistsModel.addColumn("#");
+            allPlaylistsModel.addColumn("Name");
+            allPlaylistsModel.addColumn("Track count");
+            allPlaylistsModel.addColumn("Playlist");
+            allPlaylistsTable.setShowGrid(false);
+            allPlaylistsTable.setBorder(BorderFactory.createEmptyBorder());
+            allPlaylistsTable.removeColumn(allPlaylistsTable.getColumn("Playlist"));
+            allPlaylistsTable.getColumn("#").setMaxWidth(25);
+            allPlaylistsTable.setAutoCreateRowSorter(true);
+            allPlaylistsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+
+                @Override
+                public Component getTableCellRendererComponent(JTable table,
+                                                               Object value, boolean isSelected, boolean hasFocus,
+                                                               int row, int column) {
+                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                    if (!isSelected) {
+                        c.setBackground(row % 2 == 0 ? Color.WHITE : Utils.LIGHT_GRAY);
+                    }
+                    return c;
+                }
+            });
+
+            allPlaylistsTable.addMouseListener(new MouseListener() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    int rowNumber = allPlaylistsTable.rowAtPoint(e.getPoint());
+                    Playlist playlist = (Playlist) allPlaylistsTable.getModel().getValueAt(rowNumber, 3);
                     if (SwingUtilities.isLeftMouseButton(e)) {
                         Dismu.getInstance().setCurrentPlaylist(playlist);
                     } else if (SwingUtilities.isRightMouseButton(e)) {
                         Dismu.getInstance().showPlaylist(playlist);
+                    }
+                    if (e.getClickCount() >= 2) {
+                        if (Dismu.getInstance().getCurrentTrack() != null) {
+                            Dismu.getInstance().pause();
+                        }
+                        try {
+                            Dismu.getInstance().play(playlist.getCurrentTrack());
+                        } catch (TrackNotFoundException | EmptyPlaylistException e1) {
+                            e1.printStackTrace();
+                        }
                     }
                 }
 
@@ -198,7 +250,7 @@ public class MainWindow {
     }
 
     public void updateTracks() {
-        DefaultTableModel model = (DefaultTableModel) table1.getModel();
+        DefaultTableModel model = (DefaultTableModel) currentPlaylistTable.getModel();
         model.setRowCount(0);
         int n = 1;
         Playlist currentPlaylist = Dismu.getInstance().getCurrentPlaylist();
@@ -211,7 +263,7 @@ public class MainWindow {
     }
 
     public void updatePlaylists() {
-        DefaultTableModel model = (DefaultTableModel) table2.getModel();
+        DefaultTableModel model = (DefaultTableModel) allPlaylistsTable.getModel();
         model.setRowCount(0);
         int n = 1;
         for (Playlist playlist : PlaylistStorage.getInstance().getPlaylists()) {

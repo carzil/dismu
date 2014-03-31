@@ -10,11 +10,11 @@ import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.storages.events.TrackStorageEvent;
-import com.dismu.p2p.client.Client;
-import com.dismu.p2p.server.Server;
 import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
+import com.dismu.p2p.client.Client;
+import com.dismu.p2p.server.Server;
 import com.dismu.utils.SettingsManager;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
@@ -30,8 +30,9 @@ import java.util.ArrayList;
 
 public class Dismu {
     public static ArrayList<Client> clients = new ArrayList<>();
+    public static Server server;
 
-    private MainWindow mainWindow = new MainWindow();
+    private MainWindow mainWindow;
 //    private PlaylistWindow playlistWindow = new PlaylistWindow();
     TrayIcon trayIcon;
     MenuItem nowPlaying = new MenuItem("Not playing");
@@ -40,15 +41,9 @@ public class Dismu {
     private PlayerBackend playerBackend = PlayerBackend.getInstance();
     private PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
 
-    private static Server server;
-    private static Client client;
-    private static Thread serverThread;
-    private static Thread clientThread;
-
     private boolean isVisible = false;
     private boolean isRunning = false;
     private boolean isPlaying = false;
-
 
     private Playlist currentPlaylist;
 
@@ -72,67 +67,74 @@ public class Dismu {
     private Dismu() {
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
-        } else {
-            isRunning = true;
-            playerBackend.addEventListener(new EventListener() {
-                @Override
-                public void dispatchEvent(Event e) {
-                    if (e.getType() == PlayerEvent.PLAYING) {
-                        updateNowPlaying(playerBackend.getCurrentTrack());
-                    } else if (e.getType() == PlayerEvent.PAUSED) {
-                        updatePaused(playerBackend.getCurrentTrack());
-                    } else if (e.getType() == PlayerEvent.STOPPED) {
-                        updateStopped();
-                    }
-                }
-            });
-            trackStorage.addEventListener(new EventListener() {
-                @Override
-                public void dispatchEvent(Event e) {
-                    if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
-                        trackAdded(((TrackStorageEvent) e).getTrack());
-                    }
-                }
-            });
-            setupSystemTray();
-            trackStorage.addEventListener(new EventListener() {
-                @Override
-                public void dispatchEvent(Event e) {
-                    if (e instanceof TrackStorageEvent) {
-                        TrackStorageEvent tse = (TrackStorageEvent) e;
-                        int type = tse.getType();
-                        if (type == TrackStorageEvent.TRACK_ADDED) {
-                            Track t = tse.getTrack();
-                            for (Client cl : clients) {
-                                try {
-                                    cl.emitNewTrackEvent(t);
-                                } catch (IOException e1) {
-                                    e1.printStackTrace();
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-            playerBackend.addEventListener(new EventListener() {
-                @Override
-                public void dispatchEvent(Event e) {
-                    if (e.getType() == PlayerEvent.FINISHED) {
-                        try {
-                            Playlist playlist = getCurrentPlaylist();
-                            if (!playlist.isEnded()) {
-                                playlist.next();
-                                Dismu.getInstance().play();
-                            } else {
-                                showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
-                            }
-                        } catch (EmptyPlaylistException ex) {
-                        }
-                    }
-                }
-            });
-            startP2P();
+            return;
         }
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+        startP2P();
+        mainWindow = new MainWindow();
+        playerBackend.addEventListener(new EventListener() {
+            @Override
+            public void dispatchEvent(Event e) {
+                if (e.getType() == PlayerEvent.PLAYING) {
+                    updateNowPlaying(playerBackend.getCurrentTrack());
+                } else if (e.getType() == PlayerEvent.PAUSED) {
+                    updatePaused(playerBackend.getCurrentTrack());
+                } else if (e.getType() == PlayerEvent.STOPPED) {
+                    updateStopped();
+                }
+            }
+        });
+        trackStorage.addEventListener(new EventListener() {
+            @Override
+            public void dispatchEvent(Event e) {
+                if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
+                    trackAdded(((TrackStorageEvent) e).getTrack());
+                }
+            }
+        });
+        setupSystemTray();
+        trackStorage.addEventListener(new EventListener() {
+            @Override
+            public void dispatchEvent(Event e) {
+                if (e instanceof TrackStorageEvent) {
+                    TrackStorageEvent tse = (TrackStorageEvent) e;
+                    int type = tse.getType();
+                    if (type == TrackStorageEvent.TRACK_ADDED) {
+                        Track t = tse.getTrack();
+                        for (Client cl : clients) {
+                            try {
+                                cl.emitNewTrackEvent(t);
+                            } catch (IOException e1) {
+                                e1.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        playerBackend.addEventListener(new EventListener() {
+            @Override
+            public void dispatchEvent(Event e) {
+                if (e.getType() == PlayerEvent.FINISHED) {
+                    try {
+                        Playlist playlist = getCurrentPlaylist();
+                        if (!playlist.isEnded()) {
+                            playlist.next();
+                            Dismu.getInstance().play();
+                        } else {
+                            showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
+                        }
+                    } catch (EmptyPlaylistException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+        });
+        isRunning = true;
     }
 
     private void startP2P() {
@@ -192,7 +194,11 @@ public class Dismu {
     }
 
     private void updatePaused(Track track) {
-        nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
+        if (track == null) {
+            nowPlaying.setName("Not playing");
+        } else {
+            nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
+        }
     }
 
     private void updateStopped() {
@@ -223,7 +229,7 @@ public class Dismu {
                     return;
                 }
                 playerBackend.play();
-            } catch (EmptyPlaylistException e) {
+            } catch (EmptyPlaylistException | NullPointerException e) {
                 showAlert("Current playlist is empty!");
             }
         }
@@ -236,6 +242,10 @@ public class Dismu {
         playerBackend.play();
     }
 
+    public Track getCurrentTrack() {
+        return playerBackend.getCurrentTrack();
+    }
+
     public void pause() {
         isPlaying = false;
         playerBackend.pause();
@@ -243,7 +253,7 @@ public class Dismu {
 
     public void togglePlay() {
         isPlaying = !isPlaying;
-        if (isPlaying) {
+        if (isPlaying()) {
             play();
         } else {
             pause();
@@ -311,12 +321,12 @@ public class Dismu {
         togglePlayItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!isPlaying) {
+                if (!isPlaying()) {
                     playerBackend.play();
                 } else {
                     playerBackend.pause();
                 }
-                isPlaying = !isPlaying;
+                isPlaying = !isPlaying();
             }
         });
         stopItem.addActionListener(new ActionListener() {
@@ -368,7 +378,7 @@ public class Dismu {
     }
 
     public void showAlert(String message) {
-        JOptionPane.showMessageDialog(null, message);
+        JOptionPane.showMessageDialog(this.mainWindow.getFrame(), message);
     }
 
     public void showPlaylist(Playlist playlist) {
@@ -390,7 +400,7 @@ public class Dismu {
         mainWindow.update();
         Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
 //        showPlaylist(currentPlaylist);
-        play();
+//        play();
     }
 
     public Track[] addTracksInPlaylist() {
@@ -409,5 +419,17 @@ public class Dismu {
         } else {
             return new ImageIcon(trayIcon).getImage();
         }
+    }
+
+    public void updatePlaylists() {
+        mainWindow.updatePlaylists();
+    }
+
+    public void updateTracks() {
+        mainWindow.updateTracks();
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
     }
 }

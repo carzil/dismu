@@ -73,7 +73,7 @@
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="e8f17" class="javax.swing.JTable" binding="table1" default-binding="true">
+                      <component id="e8f17" class="javax.swing.JTable" binding="currentPlaylistTable" default-binding="true">
                         <constraints/>
                         <properties/>
                       </component>
@@ -93,7 +93,7 @@
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="dec44" class="javax.swing.JTable" binding="table2" default-binding="true">
+                      <component id="dec44" class="javax.swing.JTable" binding="allPlaylistsTable" default-binding="true">
                         <constraints/>
                         <properties/>
                       </component>

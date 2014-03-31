@@ -1,7 +1,6 @@
 package com.dismu.ui.pc;
 
 import com.dismu.exceptions.TrackNotFoundException;
-import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 import com.dismu.utils.Utils;
@@ -36,6 +35,11 @@ public class PlaylistWindow {
     public void setPlaylist(Playlist playlist) {
         playlistNameTextArea.setText(playlist.getName());
         getFrame().setTitle(playlist.getName() + " - Dismu");
+        refreshPlaylist(playlist);
+        this.playlist = playlist;
+    }
+
+    private void refreshPlaylist(Playlist playlist) {
         DefaultTableModel model = (DefaultTableModel)table1.getModel();
         model.setRowCount(0);
         int n = 1;
@@ -86,17 +90,24 @@ public class PlaylistWindow {
             table1.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        int rowNumber = table1.rowAtPoint(e.getPoint());
-                        Track track = (Track)table1.getModel().getValueAt(rowNumber, 4);
-                        try {
-                            Dismu.getInstance().setCurrentPlaylist(playlist);
-                            // TODO: set track as current in playlist
-                            Dismu.getInstance().play(track);
-                        } catch (TrackNotFoundException ex) {
-                            // TODO: exception handling in ui
-                        }
+                    if (e.getClickCount() >= 2) {
+                        if (SwingUtilities.isLeftMouseButton(e)) {
+                            int rowNumber = table1.rowAtPoint(e.getPoint());
+                            Track track = (Track)table1.getModel().getValueAt(rowNumber, 4);
+                            try {
+                                Dismu dismu = Dismu.getInstance();
+                                dismu.setCurrentPlaylist(playlist);
+                                // TODO: set track as current in playlist
+                                if (!dismu.isPlaying() || !dismu.getCurrentTrack().equals(track)) {
+                                    dismu.play(track);
+                                } else if (dismu.isPlaying() && dismu.getCurrentTrack().equals(track)) {
+                                    dismu.pause();
+                                }
 
+                            } catch (TrackNotFoundException ex) {
+                                // TODO: exception handling in ui
+                            }
+                        }
                     }
                 }
 
@@ -128,8 +139,22 @@ public class PlaylistWindow {
                         for (Track track : tracks) {
                             playlist.addTrack(track);
                         }
+                        refreshPlaylist(playlist);
                     } else {
                         Dismu.getInstance().showAlert("You didn't selected any track");
+                    }
+                }
+            });
+            saveButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    playlist.setName(playlistNameTextArea.getText());
+                    setPlaylist(playlist);
+                    Dismu dismu = Dismu.getInstance();
+                    dismu.updatePlaylists();
+                    Playlist currentPlaylist = dismu.getCurrentPlaylist();
+                    if (currentPlaylist != null) {
+                        dismu.setCurrentPlaylist(currentPlaylist);
                     }
                 }
             });

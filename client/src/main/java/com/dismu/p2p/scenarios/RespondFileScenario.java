@@ -1,10 +1,11 @@
 package com.dismu.p2p.scenarios;
 
-import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.player.Track;
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.TransactionIdPool;
+import com.dismu.utils.FileNameEscaper;
 import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
@@ -79,13 +80,13 @@ public class RespondFileScenario extends Scenario {
 
                 Track track = null;
                 for (Track curr : tracks) {
-                    if (!curr.getTrackArtist().equals(exploded[0])) {
+                    if (!FileNameEscaper.escape(curr.getTrackArtist()).equals(exploded[0])) {
                         continue;
                     }
-                    if (!curr.getTrackName().equals(exploded[1])) {
+                    if (!FileNameEscaper.escape(curr.getTrackName()).equals(exploded[1])) {
                         continue;
                     }
-                    if (!curr.getTrackAlbum().equals(exploded[2])) {
+                    if (!FileNameEscaper.escape(curr.getTrackAlbum()).equals(exploded[2])) {
                         continue;
                     }
                     track = curr;

@@ -2,6 +2,7 @@ package com.dismu.p2p.utils;
 
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.utils.FileNameEscaper;
 import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
@@ -14,7 +15,10 @@ public class SyncManager {
         String ofs = curr.getPrettifiedFileName();
         OutputStream fos = new FileOutputStream(ofs); // TODO
         InputStream fin = helper.receiveFile(
-                "tracks/" + curr.getTrackArtist() + "/" + curr.getTrackName() + "/" + curr.getTrackAlbum()
+                "tracks/" +
+                        FileNameEscaper.escape(curr.getTrackArtist()) + "/" +
+                        FileNameEscaper.escape(curr.getTrackName()) + "/" +
+                        FileNameEscaper.escape(curr.getTrackAlbum())
         );
         byte[] buffer = new byte[4096];
         int bytesRead;

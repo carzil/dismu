@@ -20,9 +20,7 @@ public class Playlist {
 
     private void fixCurrentTrackIndex() {
         if (this.currentTrackIndex >= this.tracks.size()) {
-            if (isCycled()) {
-                this.currentTrackIndex %= this.tracks.size();
-            }
+            this.currentTrackIndex %= this.tracks.size();
         }
     }
 

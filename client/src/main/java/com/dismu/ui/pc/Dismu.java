@@ -237,7 +237,7 @@ public class Dismu {
     public void run() {
 //        while (isRunning) {}
         toggleDismu();
-//        startP2P();
+        startP2P();
     }
 
     public void play() {
@@ -245,7 +245,9 @@ public class Dismu {
         if (playerBackend.isPlaying()) {
             // TODO: pause here
             playerBackend.stop();
+            mainWindow.updateControl(false);
         } else if (playerBackend.isPaused()) {
+            mainWindow.updateControl(true);
             playerBackend.play();
         } else {
             try {
@@ -260,6 +262,7 @@ public class Dismu {
                     return;
                 }
                 playerBackend.play();
+                mainWindow.updateControl(true);
             } catch (EmptyPlaylistException | NullPointerException e) {
                 showAlert("Current playlist is empty!");
             }
@@ -271,6 +274,12 @@ public class Dismu {
         playerBackend.stop();
         playerBackend.setTrack(track);
         playerBackend.play();
+        mainWindow.updateControl(true);
+    }
+
+    public void stop() {
+        playerBackend.stop();
+        mainWindow.updateControl(false);
     }
 
     public Track getCurrentTrack() {
@@ -280,6 +289,7 @@ public class Dismu {
     public void pause() {
         isPlaying = false;
         playerBackend.pause();
+        mainWindow.updateControl(false);
     }
 
     public void togglePlay() {
@@ -294,19 +304,11 @@ public class Dismu {
     private void toggleDismu() {
         JFrame frame = mainWindow.getFrame();
         isVisible = !isVisible;
-//        if (isVisible) {
-//            frame.toFront();
-//        } else {
-//            frame.dispose();
-//        }
         frame.setVisible(isVisible);
     }
 
     public static void fullExit(int exitCode) {
-        SystemTray systemTray = SystemTray.getSystemTray();
-        for (TrayIcon icon : systemTray.getTrayIcons()) {
-            systemTray.remove(icon);
-        }
+        PlayerBackend.getInstance().close();
         API api = new APIImpl();
         String userId = accountSettingsManager.getString("user.userId", "b");
         api.unregister(userId);
@@ -315,10 +317,13 @@ public class Dismu {
         server.stop();
         TrackStorage.getInstance().close();
         PlaylistStorage.getInstance().close();
-        PlayerBackend.getInstance().close();
         accountSettingsManager.save();
         networkSettingsManager.save();
         System.exit(exitCode);
+        SystemTray systemTray = SystemTray.getSystemTray();
+        for (TrayIcon icon : systemTray.getTrayIcons()) {
+            systemTray.remove(icon);
+        }
     }
 
     private static void stopClients() {
@@ -372,7 +377,7 @@ public class Dismu {
         stopItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                playerBackend.stop();
+                stop();
             }
         });
         trayIcon = new TrayIcon(Dismu.getIcon(), "Dismu", popupMenu);
@@ -481,3 +486,5 @@ public class Dismu {
 //5. Next/prev button
 //6. PlaylistListTable
 //7. Indicates current track
+//8. Infinite playlist fix
+//9. selection listener (idk)

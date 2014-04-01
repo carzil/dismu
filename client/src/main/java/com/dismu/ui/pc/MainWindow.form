@@ -35,23 +35,56 @@
             <properties/>
             <border type="none"/>
             <children>
-              <component id="75e6" class="javax.swing.JButton" binding="playButton">
+              <component id="803f1" class="javax.swing.JButton" binding="prevButton">
                 <constraints border-constraint="West"/>
                 <properties>
-                  <text value="Play"/>
+                  <text value="&lt;&lt;"/>
                 </properties>
               </component>
-              <grid id="6f82f" layout-manager="BorderLayout" hgap="0" vgap="0">
+              <grid id="a2ff5" layout-manager="BorderLayout" hgap="0" vgap="0">
                 <constraints border-constraint="Center"/>
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <component id="8abd3" class="javax.swing.JButton" binding="pauseButton">
+                  <grid id="8f488" layout-manager="BorderLayout" hgap="0" vgap="0">
                     <constraints border-constraint="West"/>
-                    <properties>
-                      <text value="Pause"/>
-                    </properties>
-                  </component>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="378dc" class="javax.swing.JButton" binding="playButton" default-binding="true">
+                        <constraints border-constraint="West"/>
+                        <properties>
+                          <text value="Play"/>
+                        </properties>
+                      </component>
+                    </children>
+                  </grid>
+                  <grid id="d703a" layout-manager="BorderLayout" hgap="0" vgap="0">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="5d073" class="javax.swing.JButton" binding="stopButton" default-binding="true">
+                        <constraints border-constraint="West"/>
+                        <properties>
+                          <text value="Stop"/>
+                        </properties>
+                      </component>
+                      <grid id="96e93" layout-manager="BorderLayout" hgap="0" vgap="0">
+                        <constraints border-constraint="Center"/>
+                        <properties/>
+                        <border type="none"/>
+                        <children>
+                          <component id="915de" class="javax.swing.JButton" binding="nextButton">
+                            <constraints border-constraint="West"/>
+                            <properties>
+                              <text value="&gt;&gt;"/>
+                            </properties>
+                          </component>
+                        </children>
+                      </grid>
+                    </children>
+                  </grid>
                 </children>
               </grid>
             </children>
@@ -61,26 +94,6 @@
             <properties/>
             <border type="none"/>
             <children>
-              <grid id="86502" layout-manager="BorderLayout" hgap="0" vgap="0">
-                <constraints>
-                  <tabbedpane title="All tracks"/>
-                </constraints>
-                <properties/>
-                <border type="none"/>
-                <children>
-                  <scrollpane id="a906c">
-                    <constraints border-constraint="Center"/>
-                    <properties/>
-                    <border type="none"/>
-                    <children>
-                      <component id="bb676" class="com.dismu.ui.pc.TrackListTable" binding="allTracksTable">
-                        <constraints/>
-                        <properties/>
-                      </component>
-                    </children>
-                  </scrollpane>
-                </children>
-              </grid>
               <grid id="7b1d" binding="currentPlaylistPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                 <constraints>
                   <tabbedpane title="Current playlist"/>
@@ -114,6 +127,26 @@
                     <border type="none"/>
                     <children>
                       <component id="dec44" class="javax.swing.JTable" binding="allPlaylistsTable" default-binding="true">
+                        <constraints/>
+                        <properties/>
+                      </component>
+                    </children>
+                  </scrollpane>
+                </children>
+              </grid>
+              <grid id="86502" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <tabbedpane title="All tracks"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <scrollpane id="a906c">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="bb676" class="com.dismu.ui.pc.TrackListTable" binding="allTracksTable">
                         <constraints/>
                         <properties/>
                       </component>

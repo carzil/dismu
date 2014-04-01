@@ -13,6 +13,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 
 public class MainWindow {
@@ -29,8 +30,12 @@ public class MainWindow {
     private JTable allPlaylistsTable;
     private TrackListTable currentPlaylistTable;
     private TrackListTable allTracksTable;
+    private JButton prevButton;
+    private JButton stopButton;
+    private JButton nextButton;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
+    private boolean isPlaying;
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -210,13 +215,18 @@ public class MainWindow {
             playButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    Dismu.getInstance().play();
+                    if (isPlaying) {
+                        Dismu.getInstance().pause();
+                    } else {
+                        Dismu.getInstance().play();
+
+                    }
                 }
             });
-            pauseButton.addActionListener(new ActionListener() {
+            stopButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    Dismu.getInstance().pause();
+                    Dismu.getInstance().stop();
                 }
             });
             dismuFrame.setJMenuBar(menuBar);
@@ -268,5 +278,14 @@ public class MainWindow {
     public void update() {
         updateTracks();
         updatePlaylists();
+    }
+
+    public void updateControl(boolean isPlaying) {
+        this.isPlaying = isPlaying;
+        if (isPlaying) {
+            playButton.setText("Pause");
+        } else {
+            playButton.setText("Play");
+        }
     }
 }

@@ -238,6 +238,7 @@ public class Dismu {
 
     public void run() {
 //        while (isRunning) {}
+        toggleDismu();
     }
 
     public void play() {

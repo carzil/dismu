@@ -40,7 +40,8 @@ public class SyncManager {
         TrackStorage ts = TrackStorage.getInstance();
         for (Track curr : tracks) {
             try {
-                if (ts.getTrackFile(curr) == null) {
+                File file = ts.getTrackFile(curr);
+                if (file == null) {
                     receiveTrack(curr, is, os);
                 }
             } catch (IOException e) {

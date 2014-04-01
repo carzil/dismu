@@ -96,7 +96,7 @@ public class Track {
     }
 
     public int hashCode() {
-        return this.trackID;
+        return this.trackNumber^this.trackAlbum.hashCode()^this.trackName.hashCode()^this.trackArtist.hashCode()^this.trackFormat;
     }
 
     public boolean equals(Object o) {

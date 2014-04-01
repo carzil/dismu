@@ -65,7 +65,7 @@
             <properties/>
             <border type="none"/>
             <children>
-              <component id="2eff4" class="com.dismu.ui.pc.TrackListTable" binding="table1">
+              <component id="499b0" class="com.dismu.ui.pc.TrackListTable" binding="table1">
                 <constraints/>
                 <properties/>
               </component>

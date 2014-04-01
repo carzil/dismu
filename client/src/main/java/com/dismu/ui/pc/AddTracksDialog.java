@@ -15,7 +15,7 @@ public class AddTracksDialog extends JDialog {
     private JPanel contentPane;
     private JButton buttonOK;
     private JButton buttonCancel;
-    private JTable table1;
+    private TrackListTable table1;
     private Track[] tracks;
 
     public AddTracksDialog() {
@@ -51,37 +51,6 @@ public class AddTracksDialog extends JDialog {
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
 
-        DefaultTableModel model = new DefaultTableModel() {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        table1.setModel(model);
-        table1.setIntercellSpacing(new Dimension(0, 0));
-        model.addColumn("#");
-        model.addColumn("Artist");
-        model.addColumn("Album");
-        model.addColumn("Title");
-        model.addColumn("Track");
-        table1.setShowGrid(false);
-        table1.setBorder(BorderFactory.createEmptyBorder());
-        table1.removeColumn(table1.getColumn("Track"));
-        table1.getColumn("#").setMaxWidth(25);
-        table1.setAutoCreateRowSorter(true);
-        table1.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-
-            @Override
-            public Component getTableCellRendererComponent(JTable table,
-                                                           Object value, boolean isSelected, boolean hasFocus,
-                                                           int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (!isSelected) {
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
-                }
-                return c;
-            }
-        });
         table1.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -114,13 +83,7 @@ public class AddTracksDialog extends JDialog {
     }
 
     public void updateTracks() {
-        DefaultTableModel model = (DefaultTableModel) table1.getModel();
-        model.setRowCount(0);
-        int n = 1;
-        for (Track track : TrackStorage.getInstance().getTracks()) {
-            model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
-            n++;
-        }
+        table1.updateTracks(TrackStorage.getInstance().getTracks());
     }
 
     private void onOK() {
@@ -129,7 +92,6 @@ public class AddTracksDialog extends JDialog {
         DefaultTableModel model = (DefaultTableModel) table1.getModel();
         for (int rowIndex : table1.getSelectedRows()) {
             tracks[i] = (Track) model.getValueAt(rowIndex, 4);
-            Loggers.uiLogger.debug("{}", tracks[i]);
             i++;
         }
         dispose();

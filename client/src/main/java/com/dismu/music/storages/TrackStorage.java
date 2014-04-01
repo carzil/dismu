@@ -146,7 +146,9 @@ public class TrackStorage {
                 Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
                 tracks.put(track, finalTrackFile);
                 trackHashes.put(fileHash, track);
-                Utils.copyFile(trackFile, finalTrackFile);
+                if (!trackFile.getAbsolutePath().equals(finalTrackFile.getAbsolutePath())) {
+                    Utils.copyFile(trackFile, finalTrackFile);
+                }
                 Loggers.playerLogger.info("track registered in index");
                 saveIndex();
                 notify(new TrackStorageEvent(TrackStorageEvent.TRACK_ADDED, track));

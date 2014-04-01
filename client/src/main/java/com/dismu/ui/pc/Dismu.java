@@ -237,7 +237,7 @@ public class Dismu {
     public void run() {
 //        while (isRunning) {}
         toggleDismu();
-        startP2P();
+//        startP2P();
     }
 
     public void play() {
@@ -473,3 +473,11 @@ public class Dismu {
         return isPlaying;
     }
 }
+
+
+//2. Playlist remove
+//3. Seekbar (reverse seeking too)
+//4. Play/pause button in one button with image
+//5. Next/prev button
+//6. PlaylistListTable
+//7. Indicates current track

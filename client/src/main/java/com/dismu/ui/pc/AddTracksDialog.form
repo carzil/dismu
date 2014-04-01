@@ -64,7 +64,7 @@
             <properties/>
             <border type="none"/>
             <children>
-              <component id="5d1b9" class="javax.swing.JTable" binding="table1" default-binding="true">
+              <component id="8f5fe" class="com.dismu.ui.pc.TrackListTable" binding="table1">
                 <constraints/>
                 <properties/>
               </component>

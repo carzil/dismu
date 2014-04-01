@@ -61,6 +61,26 @@
             <properties/>
             <border type="none"/>
             <children>
+              <grid id="86502" layout-manager="BorderLayout" hgap="0" vgap="0">
+                <constraints>
+                  <tabbedpane title="All tracks"/>
+                </constraints>
+                <properties/>
+                <border type="none"/>
+                <children>
+                  <scrollpane id="a906c">
+                    <constraints border-constraint="Center"/>
+                    <properties/>
+                    <border type="none"/>
+                    <children>
+                      <component id="bb676" class="com.dismu.ui.pc.TrackListTable" binding="allTracksTable">
+                        <constraints/>
+                        <properties/>
+                      </component>
+                    </children>
+                  </scrollpane>
+                </children>
+              </grid>
               <grid id="7b1d" binding="currentPlaylistPanel" layout-manager="BorderLayout" hgap="0" vgap="0">
                 <constraints>
                   <tabbedpane title="Current playlist"/>

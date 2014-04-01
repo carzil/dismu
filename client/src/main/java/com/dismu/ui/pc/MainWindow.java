@@ -28,6 +28,7 @@ public class MainWindow {
     private JPanel allPlaylistsPanel;
     private JTable allPlaylistsTable;
     private TrackListTable currentPlaylistTable;
+    private TrackListTable allTracksTable;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
 
@@ -42,7 +43,7 @@ public class MainWindow {
                 @Override
                 public boolean dispatchKeyEvent(KeyEvent e) {
                     if (e.getID() == KeyEvent.KEY_PRESSED) {
-                        Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
+//                        Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
                         // TODO: it's not working: when prompting it's pauses too
                         /*if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                             Dismu.getInstance().togglePlay();
@@ -229,6 +230,7 @@ public class MainWindow {
         if (currentPlaylist != null) {
             currentPlaylistTable.updateTracks(currentPlaylist.getTracks().toArray(new Track[0]));
         }
+        allTracksTable.updateTracks(TrackStorage.getInstance().getTracks());
     }
 
     public void updatePlaylists() {

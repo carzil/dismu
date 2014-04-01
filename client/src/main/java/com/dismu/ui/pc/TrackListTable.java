@@ -1,13 +1,16 @@
 package com.dismu.ui.pc;
 
 import com.dismu.exceptions.TrackNotFoundException;
+import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.util.Comparator;
 
 public class TrackListTable extends JTable {
     public TrackListTable() {
@@ -16,6 +19,16 @@ public class TrackListTable extends JTable {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
+            }
+
+            @Override
+            public Class getColumnClass(int column) {
+                switch (column) {
+                    case 0:
+                        return Integer.class;
+                    default:
+                        return String.class;
+                }
             }
         };
         setModel(model);

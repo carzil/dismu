@@ -202,6 +202,7 @@ public class Dismu {
     }
 
     private String getUserID() {
+        // XXX: i think we need generate UUID on our server
         String random = UUID.randomUUID().toString();
         String res = accountSettingsManager.getString("user.userId", random);
         if (res.equals(random)) {

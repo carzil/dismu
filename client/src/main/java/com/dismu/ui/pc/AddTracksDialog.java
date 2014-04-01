@@ -77,7 +77,7 @@ public class AddTracksDialog extends JDialog {
                                                            int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (!isSelected) {
-                    c.setBackground(row % 2 == 0 ? Color.WHITE : Utils.LIGHT_GRAY);
+                    c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
                 }
                 return c;
             }

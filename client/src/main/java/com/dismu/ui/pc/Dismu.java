@@ -75,7 +75,6 @@ public class Dismu {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             e.printStackTrace();
         }
-        startP2P();
         mainWindow = new MainWindow();
         playerBackend.addEventListener(new EventListener() {
             @Override
@@ -137,6 +136,7 @@ public class Dismu {
             }
         });
         isRunning = true;
+        startP2P();
     }
 
     private void startP2P() {

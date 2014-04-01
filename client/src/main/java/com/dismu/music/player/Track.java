@@ -17,10 +17,10 @@ public class Track {
     private int trackID = -1;
     private int trackFormat = -1;
 
-    private String trackName = "null";
+    private String trackName;
 
-    private String trackArtist = "null";
-    private String trackAlbum = "null";
+    private String trackArtist = "";
+    private String trackAlbum = "";
     private int trackNumber = -1;
     public Track() {}
 
@@ -153,6 +153,8 @@ public class Track {
                 track.readFromID3v1Tag(mp3File.getId3v1Tag());
             } else if (mp3File.hasId3v2Tag()) {
                 track.readFromID3v2Tag(mp3File.getId3v2Tag());
+            } else {
+                track.setTrackName(trackFile.getName());
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("io error, while reading id3 tag");

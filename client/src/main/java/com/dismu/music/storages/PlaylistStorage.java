@@ -34,6 +34,16 @@ public class PlaylistStorage {
         return localInstance;
     }
 
+    public synchronized boolean containsPlaylist(Playlist playlist) {
+        for (Playlist p : playlists) {
+            if (p.equals(playlist)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     public synchronized void addPlaylist(Playlist playlist) {
         playlists.add(playlist);
         save();
@@ -58,7 +68,7 @@ public class PlaylistStorage {
         return new File(Utils.getAppFolderPath(), "playlists.index");
     }
 
-    private synchronized void save() {
+    public synchronized void save() {
         Loggers.playerLogger.info("saving playlist index");
         File indexFile = getIndexFile();
         DataOutputStream index = null;
@@ -82,7 +92,7 @@ public class PlaylistStorage {
             index.writeInt(this.playlists.size());
             for (Playlist playlist : this.playlists) {
                 playlist.writeToStream(index);
-                Loggers.playerLogger.info("saved playlist, name='{}'", playlist.getName());
+                Loggers.playerLogger.info("saved playlist, name='{}', track count={}", playlist.getName(), playlist.getTrackCount());
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot write to playlist index file", e);
@@ -105,7 +115,7 @@ public class PlaylistStorage {
             for (int i = 0; i < playlistCount; i++) {
                 Playlist playlist = Playlist.readFromStream(index);
                 this.playlists.add(playlist);
-                Loggers.playerLogger.info("read playlist '{}'", playlist.getName());
+                Loggers.playerLogger.info("read playlist, name='{}', track count={}", playlist.getName(), playlist.getTrackCount());
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot read from playlist index", e);

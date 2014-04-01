@@ -68,12 +68,12 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <scrollpane id="bd430">
+                  <scrollpane id="d543a">
                     <constraints border-constraint="Center"/>
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="e8f17" class="javax.swing.JTable" binding="currentPlaylistTable" default-binding="true">
+                      <component id="32a16" class="com.dismu.ui.pc.TrackListTable" binding="currentPlaylistTable">
                         <constraints/>
                         <properties/>
                       </component>

@@ -96,7 +96,6 @@ public class Dismu {
                 }
             }
         });
-        setupSystemTray();
         trackStorage.addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
@@ -136,6 +135,8 @@ public class Dismu {
             }
         });
         isRunning = true;
+        setupSystemTray();
+//        toggleDismu();
         startP2P();
     }
 
@@ -293,6 +294,11 @@ public class Dismu {
     private void toggleDismu() {
         JFrame frame = mainWindow.getFrame();
         isVisible = !isVisible;
+//        if (isVisible) {
+//            frame.toFront();
+//        } else {
+//            frame.dispose();
+//        }
         frame.setVisible(isVisible);
     }
 
@@ -415,7 +421,7 @@ public class Dismu {
         JOptionPane.showMessageDialog(this.mainWindow.getFrame(), message);
     }
 
-    public void showPlaylist(Playlist playlist) {
+    public void editPlaylist(Playlist playlist) {
         PlaylistWindow playlistWindow = new PlaylistWindow();
         playlistWindow.getFrame().setVisible(true);
         playlistWindow.setPlaylist(playlist);
@@ -433,7 +439,7 @@ public class Dismu {
         this.currentPlaylist = currentPlaylist;
         mainWindow.update();
         Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
-//        showPlaylist(currentPlaylist);
+//        editPlaylist(currentPlaylist);
 //        play();
     }
 

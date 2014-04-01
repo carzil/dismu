@@ -3,12 +3,10 @@ package com.dismu.ui.pc;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
-import com.dismu.utils.Utils;
+import com.dismu.music.storages.PlaylistStorage;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -18,7 +16,7 @@ import java.awt.event.MouseListener;
 public class PlaylistWindow {
     private JPanel playlistPanel;
     private JButton saveButton;
-    private JTable table1;
+    private TrackListTable table1;
     private JPanel topPanel;
     private JPanel botPanel;
     private JPanel midPanel;
@@ -40,13 +38,7 @@ public class PlaylistWindow {
     }
 
     private void refreshPlaylist(Playlist playlist) {
-        DefaultTableModel model = (DefaultTableModel)table1.getModel();
-        model.setRowCount(0);
-        int n = 1;
-        for (Track track : playlist.getTracks()) {
-            model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
-            n++;
-        }
+        table1.updateTracks(playlist.getTracks().toArray(new Track[0]));
     }
 
     public JFrame getFrame() {
@@ -55,38 +47,9 @@ public class PlaylistWindow {
             frame.setContentPane(playlistPanel);
             frame.setIconImage(Dismu.getIcon());
             frame.pack();
-            frame.setSize(new Dimension(800, 600));
+            frame.setSize(new Dimension(400, 500));
+            frame.setLocationRelativeTo(null);
             topPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-            DefaultTableModel model = new DefaultTableModel() {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
-            table1.setModel(model);
-            model.addColumn("#");
-            model.addColumn("Artist");
-            model.addColumn("Album");
-            model.addColumn("Title");
-            model.addColumn("Track");
-            table1.removeColumn(table1.getColumn("Track"));
-            table1.getColumn("#").setMaxWidth(20);
-            table1.setAutoCreateRowSorter(true);
-            table1.setIntercellSpacing(new Dimension(0, 0));
-            table1.setShowGrid(false);
-            table1.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-
-                @Override
-                public Component getTableCellRendererComponent(JTable table,
-                                                               Object value, boolean isSelected, boolean hasFocus,
-                                                               int row, int column) {
-                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
-                    }
-                    return c;
-                }
-            });
             table1.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -152,13 +115,20 @@ public class PlaylistWindow {
                     setPlaylist(playlist);
                     Dismu dismu = Dismu.getInstance();
                     dismu.updatePlaylists();
-                    Playlist currentPlaylist = dismu.getCurrentPlaylist();
-                    if (currentPlaylist != null) {
-                        dismu.setCurrentPlaylist(currentPlaylist);
+                    PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
+                    if (!playlistStorage.containsPlaylist(playlist)) {
+                        playlistStorage.addPlaylist(playlist);
+                    } else {
+                        PlaylistStorage.getInstance().save();
                     }
+                    Playlist currentPlaylist = dismu.getCurrentPlaylist();
+                    if (dismu.getCurrentPlaylist() != null) {
+                        dismu.setCurrentPlaylist(currentPlaylist); // WTF?
+                    }
+                    frame.dispose();
                 }
             });
         }
         return frame;
     }
- }
+}

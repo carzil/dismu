@@ -7,7 +7,6 @@ import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.utils.Utils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -20,7 +19,6 @@ public class MainWindow {
     private JPanel mainPanel;
     private JButton playButton;
     private JButton pauseButton;
-    private JTable currentPlaylistTable;
     private JPanel statusPanel;
     private JLabel statusLabel;
     private JPanel innerPanel;
@@ -29,6 +27,7 @@ public class MainWindow {
     private JPanel currentPlaylistPanel;
     private JPanel allPlaylistsPanel;
     private JTable allPlaylistsTable;
+    private TrackListTable currentPlaylistTable;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
 
@@ -44,11 +43,17 @@ public class MainWindow {
                 public boolean dispatchKeyEvent(KeyEvent e) {
                     if (e.getID() == KeyEvent.KEY_PRESSED) {
                         Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
-                        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                        // TODO: it's not working: when prompting it's pauses too
+                        /*if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                             Dismu.getInstance().togglePlay();
                             Loggers.uiLogger.debug("pause issued by space");
-                        } else if (e.getKeyCode() == KeyEvent.VK_O && ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0)) {
-                            addTracks();
+                        } else*/
+                        if (e.isControlDown()) {
+                            if (e.getKeyCode() == KeyEvent.VK_O) {
+                                addTracks();
+                            } else if (e.getKeyCode() == KeyEvent.VK_N) {
+                                createPlaylist();
+                            }
                         }
                     }
                     return false;
@@ -56,6 +61,7 @@ public class MainWindow {
             });
             fileChooser.setMultiSelectionEnabled(true);
             statusPanel.setBorder(BorderFactory.createLoweredBevelBorder());
+            // ==== Menu bar ====
             JMenuBar menuBar = new JMenuBar();
             JMenu fileMenu = new JMenu("File");
             JMenu helpMenu = new JMenu("Help");
@@ -74,38 +80,7 @@ public class MainWindow {
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
             menuBar.add(helpMenu);
-            DefaultTableModel currentPlaylistModel = new DefaultTableModel() {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
-            currentPlaylistTable.setModel(currentPlaylistModel);
-            currentPlaylistTable.setIntercellSpacing(new Dimension(0, 0));
-            currentPlaylistModel.addColumn("#");
-            currentPlaylistModel.addColumn("Artist");
-            currentPlaylistModel.addColumn("Album");
-            currentPlaylistModel.addColumn("Title");
-            currentPlaylistModel.addColumn("Track");
-            currentPlaylistTable.setShowGrid(false);
-            currentPlaylistTable.setBorder(BorderFactory.createEmptyBorder());
-            currentPlaylistTable.removeColumn(currentPlaylistTable.getColumn("Track"));
-            currentPlaylistTable.getColumn("#").setMaxWidth(25);
-            currentPlaylistTable.setAutoCreateRowSorter(true);
-            currentPlaylistTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-
-                @Override
-                public Component getTableCellRendererComponent(JTable table,
-                                                               Object value, boolean isSelected, boolean hasFocus,
-                                                               int row, int column) {
-                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
-                    }
-                    return c;
-                }
-            });
-
+            // ==== Menu bar ====
             currentPlaylistTable.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
@@ -183,7 +158,7 @@ public class MainWindow {
                     if (SwingUtilities.isLeftMouseButton(e)) {
                         Dismu.getInstance().setCurrentPlaylist(playlist);
                     } else if (SwingUtilities.isRightMouseButton(e)) {
-                        Dismu.getInstance().showPlaylist(playlist);
+                        Dismu.getInstance().editPlaylist(playlist);
                     }
                     if (e.getClickCount() >= 2) {
                         if (Dismu.getInstance().getCurrentTrack() != null) {
@@ -250,15 +225,9 @@ public class MainWindow {
     }
 
     public void updateTracks() {
-        DefaultTableModel model = (DefaultTableModel) currentPlaylistTable.getModel();
-        model.setRowCount(0);
-        int n = 1;
         Playlist currentPlaylist = Dismu.getInstance().getCurrentPlaylist();
         if (currentPlaylist != null) {
-            for (Track track : currentPlaylist.getTracks()) {
-                model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
-                n++;
-            }
+            currentPlaylistTable.updateTracks(currentPlaylist.getTracks().toArray(new Track[0]));
         }
     }
 
@@ -288,11 +257,10 @@ public class MainWindow {
     }
 
     private void createPlaylist() {
-        String name = (String)JOptionPane.showInputDialog(null, "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
+        String name = (String)JOptionPane.showInputDialog(getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
         Playlist newPlaylist = new Playlist();
         newPlaylist.setName(name);
-        Dismu.getInstance().showPlaylist(newPlaylist);
-        PlaylistStorage.getInstance().addPlaylist(newPlaylist);
+        Dismu.getInstance().editPlaylist(newPlaylist);
     }
 
     public void update() {

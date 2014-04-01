@@ -41,17 +41,6 @@
         <properties/>
         <border type="none"/>
         <children>
-          <scrollpane id="275a8">
-            <constraints border-constraint="West"/>
-            <properties/>
-            <border type="none"/>
-            <children>
-              <component id="ceb56" class="javax.swing.JTable" binding="table1" default-binding="true">
-                <constraints/>
-                <properties/>
-              </component>
-            </children>
-          </scrollpane>
           <grid id="333c3" layout-manager="BorderLayout" hgap="0" vgap="0">
             <constraints border-constraint="East"/>
             <properties/>
@@ -71,6 +60,17 @@
               </grid>
             </children>
           </grid>
+          <scrollpane id="3062d">
+            <constraints border-constraint="Center"/>
+            <properties/>
+            <border type="none"/>
+            <children>
+              <component id="2eff4" class="com.dismu.ui.pc.TrackListTable" binding="table1">
+                <constraints/>
+                <properties/>
+              </component>
+            </children>
+          </scrollpane>
         </children>
       </grid>
     </children>

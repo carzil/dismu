@@ -136,8 +136,6 @@ public class Dismu {
         });
         isRunning = true;
         setupSystemTray();
-//        toggleDismu();
-        startP2P();
     }
 
     private void startP2P() {
@@ -239,6 +237,7 @@ public class Dismu {
     public void run() {
 //        while (isRunning) {}
         toggleDismu();
+        startP2P();
     }
 
     public void play() {

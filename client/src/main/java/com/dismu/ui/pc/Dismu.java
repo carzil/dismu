@@ -26,6 +26,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -34,7 +35,6 @@ public class Dismu {
     public static Server server;
 
     private MainWindow mainWindow;
-//    private PlaylistWindow playlistWindow = new PlaylistWindow();
     TrayIcon trayIcon;
     MenuItem nowPlaying = new MenuItem("Not playing");
 
@@ -50,8 +50,9 @@ public class Dismu {
 
     private static Dismu instance;
 
-    public static SettingsManager accountSettingsManager = new SettingsManager("account");
-    public static SettingsManager networkSettingsManager = new SettingsManager("network");
+    public static SettingsManager accountSettingsManager = SettingsManager.getSection("account");
+    public static SettingsManager networkSettingsManager = SettingsManager.getSection("network");
+    public static SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
 
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
@@ -212,13 +213,13 @@ public class Dismu {
 
     private void trackAdded(Track track) {
         String label = track.getPrettifiedName();
-        trayIcon.displayMessage("New track in media library", label, TrayIcon.MessageType.INFO);
+        showInfoMessage("New track in media library", label);
         mainWindow.update();
     }
 
     private void updateNowPlaying(Track track) {
         nowPlaying.setLabel(track.getPrettifiedName());
-        trayIcon.displayMessage("Now playing", track.getPrettifiedName(), TrayIcon.MessageType.INFO);
+        showInfoMessage("Now playing", track.getPrettifiedName());
         setStatus("Playing '" + track.getPrettifiedName() + "'");
     }
 
@@ -235,24 +236,22 @@ public class Dismu {
     }
 
     public void run() {
-//        while (isRunning) {}
         toggleDismu();
         startP2P();
     }
 
     public void play() {
         isPlaying = true;
-        if (playerBackend.isPlaying()) {
-            // TODO: pause here
-            playerBackend.stop();
-            mainWindow.updateControl(false);
-        } else if (playerBackend.isPaused()) {
+        if (playerBackend.isPaused()) {
             mainWindow.updateControl(true);
             playerBackend.play();
         } else {
             try {
-                if (currentPlaylist.isEnded()) {
+                if (currentPlaylist.isEnded() && currentPlaylist.isCycled()) {
                     currentPlaylist.reset();
+                } else if (currentPlaylist.isEnded()) {
+                    showInfoMessage("Playlist", "'" + currentPlaylist.getName() + "' was reached end");
+                    return;
                 }
                 Track currentTrack = currentPlaylist.getCurrentTrack();
                 try {
@@ -280,6 +279,22 @@ public class Dismu {
     public void stop() {
         playerBackend.stop();
         mainWindow.updateControl(false);
+    }
+
+    public void goNearly(boolean next) {
+        if (playerBackend.isPlaying()) {
+            playerBackend.stop();
+        }
+        try {
+            if (next) {
+                currentPlaylist.next();
+            } else {
+                currentPlaylist.prev();
+            }
+            play();
+        } catch (EmptyPlaylistException e) {
+            showAlert("Current playlist is empty!");
+        }
     }
 
     public Track getCurrentTrack() {
@@ -317,13 +332,12 @@ public class Dismu {
         server.stop();
         TrackStorage.getInstance().close();
         PlaylistStorage.getInstance().close();
-        accountSettingsManager.save();
-        networkSettingsManager.save();
-        System.exit(exitCode);
+        SettingsManager.save();
         SystemTray systemTray = SystemTray.getSystemTray();
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
         }
+        System.exit(exitCode);
     }
 
     private static void stopClients() {
@@ -331,7 +345,7 @@ public class Dismu {
             try {
                 client.stop();
             } catch (IOException e) {
-                e.printStackTrace();
+                Loggers.uiLogger.error("error while stopping client", e);
             }
         }
     }
@@ -366,12 +380,7 @@ public class Dismu {
         togglePlayItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!isPlaying()) {
-                    playerBackend.play();
-                } else {
-                    playerBackend.pause();
-                }
-                isPlaying = !isPlaying();
+                togglePlay();
             }
         });
         stopItem.addActionListener(new ActionListener() {
@@ -419,7 +428,9 @@ public class Dismu {
     }
 
     public void showInfoMessage(String header, String message) {
-        trayIcon.displayMessage(header, message, TrayIcon.MessageType.INFO);
+        if (!uiSettingsManager.getBoolean("quiet", false)) {
+            trayIcon.displayMessage(header, message, TrayIcon.MessageType.INFO);
+        }
     }
 
     public void showAlert(String message) {
@@ -456,8 +467,7 @@ public class Dismu {
     }
 
     public static Image getIcon() {
-        // TODO: make it in resources
-        String trayIcon = "icon.png";
+        URL trayIcon = ClassLoader.getSystemResource("icon.png");
         if (trayIcon == null) {
             Loggers.uiLogger.error("no tray icon found");
             return null;
@@ -483,7 +493,6 @@ public class Dismu {
 //2. Playlist remove
 //3. Seekbar (reverse seeking too)
 //4. Play/pause button in one button with image
-//5. Next/prev button
 //6. PlaylistListTable
 //7. Indicates current track
 //8. Infinite playlist fix

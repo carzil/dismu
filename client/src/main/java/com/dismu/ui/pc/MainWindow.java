@@ -94,11 +94,12 @@ public class MainWindow {
                         if (e.getClickCount() >= 2) {
                             int rowNumber = currentPlaylistTable.rowAtPoint(e.getPoint());
                             Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 4);
+                            Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
                             try {
-                                // TODO: set track as current in playlist
-                                Dismu.getInstance().play(track);
+                                playlist.setCurrentTrack(track);
+                                Dismu.getInstance().play();
                             } catch (TrackNotFoundException ex) {
-                                // TODO: exception handling in ui
+                                Loggers.uiLogger.error("TrackNotFound exception", e);
                             }
                         }
                     }
@@ -170,11 +171,7 @@ public class MainWindow {
                         if (Dismu.getInstance().getCurrentTrack() != null) {
                             Dismu.getInstance().pause();
                         }
-                        try {
-                            Dismu.getInstance().play(playlist.getCurrentTrack());
-                        } catch (TrackNotFoundException | EmptyPlaylistException e1) {
-                            e1.printStackTrace();
-                        }
+                        Dismu.getInstance().play();
                     }
                 }
 
@@ -227,6 +224,18 @@ public class MainWindow {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     Dismu.getInstance().stop();
+                }
+            });
+            nextButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Dismu.getInstance().goNearly(true);
+                }
+            });
+            prevButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Dismu.getInstance().goNearly(false);
                 }
             });
             dismuFrame.setJMenuBar(menuBar);

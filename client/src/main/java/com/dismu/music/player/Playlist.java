@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import com.dismu.exceptions.EmptyPlaylistException;
+import com.dismu.exceptions.TrackNotFoundException;
 
 public class Playlist {
     private ArrayList<Track> tracks;
@@ -86,6 +87,16 @@ public class Playlist {
     public void reset() throws EmptyPlaylistException {
         this.checkIsEmpty();
         currentTrackIndex = 0;
+    }
+
+    public void setCurrentTrack(Track track) throws TrackNotFoundException {
+        for (int i = 0; i < tracks.size(); i++) {
+            if (tracks.get(i).equals(track)) {
+                currentTrackIndex = i;
+                return;
+            }
+        }
+        throw new TrackNotFoundException();
     }
 
     public void writeToStream(DataOutputStream stream) throws IOException {

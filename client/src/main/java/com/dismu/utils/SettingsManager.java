@@ -6,14 +6,22 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.logging.Logger;
 
 public class SettingsManager {
     private JSONObject jsonObject;
     private String section;
+    private static ArrayList<SettingsManager> settingsManagers = new ArrayList<>();
 
-    public SettingsManager(String section) {
+    public static SettingsManager getSection(String section) {
+        SettingsManager settingsManager = new SettingsManager(section);
+        settingsManagers.add(settingsManager);
+        return settingsManager;
+    }
+
+    private SettingsManager(String section) {
         JSONParser jsonParser = new JSONParser();
         this.section = section;
         File currentSettingsFile = getSettingsFile();
@@ -79,7 +87,13 @@ public class SettingsManager {
         return (double)getValue(key, def);
     }
 
-    public void save() {
+    public static void save() {
+        for (SettingsManager settingsManager : settingsManagers) {
+            settingsManager.saveSection();
+        }
+    }
+
+    private void saveSection() {
         File settingsFile = getSettingsFile();
         try {
             Loggers.miscLogger.info("saving settings, section='{}', file='{}'", section, settingsFile.getAbsolutePath());

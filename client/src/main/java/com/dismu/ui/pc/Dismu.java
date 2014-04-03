@@ -72,6 +72,7 @@ public class Dismu {
             return;
         }
         try {
+            // TODO: set normal system look & feel
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             e.printStackTrace();
@@ -202,7 +203,7 @@ public class Dismu {
     }
 
     private String getUserID() {
-        // XXX: i think we need generate UUID on our server
+        // XXX: i think we should generate UUID on our server
         String random = UUID.randomUUID().toString();
         String res = accountSettingsManager.getString("user.userId", random);
         if (res.equals(random)) {
@@ -240,6 +241,10 @@ public class Dismu {
         startP2P();
     }
 
+    /**
+     * Gets current track in playlist and trying to play it.
+     * If player is paused, trying to resume playback.
+     */
     public void play() {
         isPlaying = true;
         if (playerBackend.isPaused()) {
@@ -247,23 +252,24 @@ public class Dismu {
             playerBackend.play();
         } else {
             try {
-                if (currentPlaylist.isEnded() && currentPlaylist.isCycled()) {
+                if (currentPlaylist.isEnded()) {
+                    Loggers.uiLogger.debug("reset playlist");
                     currentPlaylist.reset();
-                } else if (currentPlaylist.isEnded()) {
-                    showInfoMessage("Playlist", "'" + currentPlaylist.getName() + "' was reached end");
-                    return;
+//                } else if (currentPlaylist.isEnded()) {
+//                    showInfoMessage("Playlist ended", "Playlist '" + currentPlaylist.getName() + "' ended");
+                } else {
+                    Track currentTrack = currentPlaylist.getCurrentTrack();
+                    try {
+                        playerBackend.setTrack(currentTrack);
+                        playerBackend.play();
+                        mainWindow.updateControl(true);
+                    } catch (TrackNotFoundException ex) {
+                        // TODO: what we have to do here?
+                    }
                 }
-                Track currentTrack = currentPlaylist.getCurrentTrack();
-                try {
-                    playerBackend.setTrack(currentTrack);
-                } catch (TrackNotFoundException ex) {
-                    // TODO: what we have to do here?
-                    return;
-                }
-                playerBackend.play();
-                mainWindow.updateControl(true);
             } catch (EmptyPlaylistException | NullPointerException e) {
                 showAlert("Current playlist is empty!");
+                Loggers.uiLogger.error("", e);
             }
         }
     }
@@ -435,6 +441,14 @@ public class Dismu {
 
     public void showAlert(String message) {
         JOptionPane.showMessageDialog(this.mainWindow.getFrame(), message);
+    }
+
+    public void showSettings() {
+        SettingsDialog settingsDialog = new SettingsDialog();
+        settingsDialog.pack();
+        settingsDialog.setSize(new Dimension(400, 300));
+        settingsDialog.setLocationRelativeTo(mainWindow.getFrame());
+        settingsDialog.setVisible(true);
     }
 
     public void editPlaylist(Playlist playlist) {

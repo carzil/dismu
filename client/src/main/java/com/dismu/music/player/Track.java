@@ -96,18 +96,18 @@ public class Track {
     }
 
     public int hashCode() {
-        return this.trackNumber^this.trackAlbum.hashCode()^this.trackName.hashCode()^this.trackArtist.hashCode();
+        return trackNumber ^ trackAlbum.hashCode() ^ trackName.hashCode() ^ trackArtist.hashCode();
     }
 
     public boolean equals(Object o) {
-        return o instanceof Track && ((Track) o).getID() == getID();
+        return o instanceof Track && o.hashCode() == hashCode();
     }
 
     private void readFromID3v1Tag(ID3v1 tag) {
         try {
             setTrackNumber(Integer.parseInt(tag.getTrack()));
         } catch (NumberFormatException e) {
-            e.printStackTrace();
+            Loggers.playerLogger.error("no track number provided");
             setTrackNumber(0);
         }
         setTrackName(tag.getTitle());
@@ -120,7 +120,7 @@ public class Track {
         try {
             setTrackNumber(Integer.parseInt(tag.getTrack()));
         } catch (NumberFormatException e) {
-            e.printStackTrace();
+            Loggers.playerLogger.error("no track number provided");
             setTrackNumber(0);
         }
         setTrackName(tag.getTitle());
@@ -129,15 +129,20 @@ public class Track {
     }
 
     public String getPrettifiedFileName() {
-        String filename = new String();
-        filename += trackArtist.toLowerCase().replaceAll("\\s+", "_");
-        filename += "-";
-        filename += trackName.toLowerCase().replaceAll("\\s+", "_");
-        filename = FileNameEscaper.escape(filename);
+        String filename;
+        String prettifiedArtist = trackArtist.toLowerCase().replaceAll("\\s+", "_");
+        String prettifiedName = trackName.toLowerCase().replaceAll("\\s+", "_");
+        String filenameExtension = "";
         if (trackFormat == Track.FORMAT_MP3) {
-            filename += ".mp3";
+            filenameExtension += ".mp3";
         }
-        return filename;
+        if (!prettifiedArtist.equals("")) {
+            filename = prettifiedArtist + "-" + prettifiedName;
+        } else {
+            filename = prettifiedName;
+        }
+        filename = FileNameEscaper.escape(filename);
+        return filename + filenameExtension;
     }
 
     public String getPrettifiedName() {
@@ -154,10 +159,11 @@ public class Track {
             } else if (mp3File.hasId3v2Tag()) {
                 track.readFromID3v2Tag(mp3File.getId3v2Tag());
             } else {
-                track.setTrackName(trackFile.getName());
+                String[] tmp = trackFile.getName().split("\\.(?=[^\\.]+$)");
+                track.setTrackName(tmp[0]);
             }
         } catch (IOException e) {
-            Loggers.playerLogger.error("io error, while reading id3 tag");
+            Loggers.playerLogger.error("io error while reading id3 tag");
         } catch (UnsupportedTagException | InvalidDataException e) {
             Loggers.playerLogger.error("id3 tag reading failed", e);
         }

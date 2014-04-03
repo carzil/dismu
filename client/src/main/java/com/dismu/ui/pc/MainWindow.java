@@ -74,6 +74,7 @@ public class MainWindow {
             JMenuItem exitItem = new JMenuItem("Exit");
             JMenuItem addTrackItem = new JMenuItem("Add tracks...");
             JMenuItem createPlaylist = new JMenuItem("Create playlist...");
+            JMenuItem settingsItem = new JMenuItem("Settings...");
             exitItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -82,6 +83,7 @@ public class MainWindow {
             });
             fileMenu.add(addTrackItem);
             fileMenu.add(createPlaylist);
+            fileMenu.add(settingsItem);
             fileMenu.addSeparator();
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
@@ -125,7 +127,6 @@ public class MainWindow {
 
                 }
             });
-
             DefaultTableModel allPlaylistsModel = new DefaultTableModel() {
                 @Override
                 public boolean isCellEditable(int row, int column) {
@@ -161,17 +162,19 @@ public class MainWindow {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     int rowNumber = allPlaylistsTable.rowAtPoint(e.getPoint());
+                    Dismu dismu = Dismu.getInstance();
                     Playlist playlist = (Playlist) allPlaylistsTable.getModel().getValueAt(rowNumber, 3);
                     if (SwingUtilities.isLeftMouseButton(e)) {
-                        Dismu.getInstance().setCurrentPlaylist(playlist);
+                        dismu.setCurrentPlaylist(playlist);
                     } else if (SwingUtilities.isRightMouseButton(e)) {
-                        Dismu.getInstance().editPlaylist(playlist);
+                        dismu.editPlaylist(playlist);
                     }
                     if (e.getClickCount() >= 2) {
-                        if (Dismu.getInstance().getCurrentTrack() != null) {
-                            Dismu.getInstance().pause();
+                        if (dismu.isPlaying()) {
+                            dismu.stop();
                         }
-                        Dismu.getInstance().play();
+                        dismu.play();
+
                     }
                 }
 
@@ -218,6 +221,12 @@ public class MainWindow {
                         Dismu.getInstance().play();
 
                     }
+                }
+            });
+            settingsItem.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Dismu.getInstance().showSettings();
                 }
             });
             stopButton.addActionListener(new ActionListener() {

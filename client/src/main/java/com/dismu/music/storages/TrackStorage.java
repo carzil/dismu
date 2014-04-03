@@ -1,11 +1,6 @@
 package com.dismu.music.storages;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +20,7 @@ public class TrackStorage {
     private final Object storageLock = new Object();
     private ArrayList<EventListener> listeners = new ArrayList<>();
     private static volatile TrackStorage instance;
+    private long checkHash;
 
     private void notify(Event event) {
         for (EventListener listener : listeners) {
@@ -60,7 +56,9 @@ public class TrackStorage {
 
     public void readFromStream(DataInputStream stream) throws IOException {
         int tracksCount = stream.readInt();
-        Loggers.playerLogger.info("index tracksCount = {}", tracksCount);
+        checkHash = stream.readLong();
+        Loggers.playerLogger.info("index tracksCount={}", tracksCount);
+        Loggers.playerLogger.info("track index checkHash={}", checkHash);
         synchronized (storageLock) {
             trackHashes.clear();
             tracks.clear();
@@ -84,6 +82,7 @@ public class TrackStorage {
         // TODO: synchronize stream
         synchronized (stream) {
             stream.writeInt(tracks.size());
+            stream.writeLong(computeCheckHash());
             for (Map.Entry<Track, File> entry : tracks.entrySet()) {
                 Track track = entry.getKey();
                 String trackName = entry.getValue().getName();
@@ -96,6 +95,14 @@ public class TrackStorage {
         }
     }
 
+    private long computeCheckHash() {
+        long hash = 0;
+        for (Map.Entry<Track, File> entry : tracks.entrySet()) {
+            hash ^= entry.getKey().hashCode() ^ entry.getValue().getName().hashCode();
+        }
+        return hash;
+    }
+
     public synchronized void parseIndex() throws IOException {
         if (!trackIndex.exists()) {
             Loggers.playerLogger.info("index doesn't exists");
@@ -104,11 +111,46 @@ public class TrackStorage {
             new DataOutputStream(new FileOutputStream(trackIndex)).writeInt(0);
         }
         Loggers.playerLogger.info("index exists");
-        readFromStream(new DataInputStream(new FileInputStream(trackIndex)));
+        try {
+            readFromStream(new DataInputStream(new FileInputStream(trackIndex)));
+        } catch (EOFException | UTFDataFormatException e) {
+            Loggers.playerLogger.info("corrupted track index, re-indexing");
+            reindex();
+        }
+        if (isCorrupted()) {
+            Loggers.playerLogger.info("got corrupted track index, re-indexing");
+            reindex();
+        }
     }
 
     public synchronized void saveIndex() throws IOException {
         writeToStream(new DataOutputStream(new FileOutputStream(trackIndex)));
+    }
+
+    public synchronized boolean isCorrupted() {
+        long hash = computeCheckHash();
+        if (hash != checkHash) {
+            Loggers.playerLogger.info("checkHash index mismatch: {} != {}", hash, checkHash);
+        }
+        return hash != checkHash;
+    }
+
+    public synchronized void clear() {
+        trackHashes.clear();
+        tracks.clear();
+        maxTrackID = -1;
+    }
+
+    public synchronized void reindex() {
+        clear();
+        for (File file : getTrackFolder().listFiles()) {
+            saveTrack(file, false);
+        }
+        try {
+            saveIndex();
+        } catch (IOException e) {
+            Loggers.playerLogger.error("error while reindexing", e);
+        }
     }
 
     /**
@@ -129,9 +171,10 @@ public class TrackStorage {
     /**
      * Adds track to track index and copies track file to local storage.
      * @param trackFile track file to add
+     * @param commit is true, saves index after adding track
      * @return track added to storage
      */
-    public synchronized Track saveTrack(File trackFile) {
+    public synchronized Track saveTrack(File trackFile, boolean commit) {
         Loggers.playerLogger.info("got track '{}' for saving", trackFile.getAbsolutePath());
         try {
             long fileHash = Utils.getAdler32FileHash(trackFile);
@@ -150,7 +193,9 @@ public class TrackStorage {
                     Utils.copyFile(trackFile, finalTrackFile);
                 }
                 Loggers.playerLogger.info("track registered in index");
-                saveIndex();
+                if (commit) {
+                    saveIndex();
+                }
                 notify(new TrackStorageEvent(TrackStorageEvent.TRACK_ADDED, track));
                 return track;
             }
@@ -158,6 +203,10 @@ public class TrackStorage {
             Loggers.playerLogger.error("cannot save track file", e);
             return null;
         }
+    }
+
+    public Track saveTrack(File file) {
+        return saveTrack(file, true);
     }
 
     public Track saveTrack(byte[] bytes) {

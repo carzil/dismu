@@ -1,5 +1,7 @@
 package com.dismu.p2p.scenarios;
 
+import android.annotation.TargetApi;
+import android.os.Build;
 import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.AcceptTransactionPacket;
@@ -50,6 +52,7 @@ public class RequestFileScenario extends Scenario {
         return result;
     }
 
+    @TargetApi(Build.VERSION_CODES.GINGERBREAD)
     @Override
     public Packet[] handle(Packet p) throws IOException {
         if (p instanceof AcceptTransactionPacket) {

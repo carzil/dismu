@@ -82,27 +82,6 @@ public class AddTracksDialog extends JDialog {
 
             }
         });
-        table1.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                DefaultTableModel model = (DefaultTableModel) table1.getModel();
-                ListSelectionModel lsm = (ListSelectionModel) e.getSource();
-
-                int firstIndex = e.getFirstIndex();
-                int lastIndex = e.getLastIndex();
-                boolean isAdjusting = e.getValueIsAdjusting();
-
-                if (!lsm.isSelectionEmpty()) {
-                    int minIndex = lsm.getMinSelectionIndex();
-                    int maxIndex = lsm.getMaxSelectionIndex();
-                    for (int i = minIndex; i <= maxIndex; i++) {
-                        if (lsm.isSelectedIndex(i)) {
-                            Loggers.uiLogger.debug("{}", model.getValueAt(i, 0));
-                        }
-                    }
-                }
-            }
-        });
         updateTracks();
     }
 
@@ -128,4 +107,5 @@ public class AddTracksDialog extends JDialog {
     public Track[] getTracks() {
         return tracks;
     }
+
 }

@@ -1,20 +1,46 @@
 package com.dismu.ui.pc;
 
-import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
+import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
-import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.util.logging.Logger;
+
+class PlaylistPopup extends JPopupMenu {
+    private Playlist playlist;
+
+    public PlaylistPopup(Playlist p) {
+        this.playlist = p;
+        JMenuItem editItem = new JMenuItem("Edit playlist...");
+        JMenuItem removeItem = new JMenuItem("Remove playlist...");
+        add(editItem);
+        add(removeItem);
+        editItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Dismu.getInstance().editPlaylist(playlist);
+            }
+        });
+        removeItem.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Dismu.getInstance().removePlaylist(playlist);
+            }
+        });
+    }
+}
 
 public class MainWindow {
     private JPanel mainPanel;
@@ -33,9 +59,12 @@ public class MainWindow {
     private JButton prevButton;
     private JButton stopButton;
     private JButton nextButton;
+    private SeekBar seekBar;
+    private JTable table1;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
     private boolean isPlaying;
+    private JPopupMenu playlistsTablePopupMenu;
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -165,16 +194,19 @@ public class MainWindow {
                     Dismu dismu = Dismu.getInstance();
                     Playlist playlist = (Playlist) allPlaylistsTable.getModel().getValueAt(rowNumber, 3);
                     if (SwingUtilities.isLeftMouseButton(e)) {
-                        dismu.setCurrentPlaylist(playlist);
-                    } else if (SwingUtilities.isRightMouseButton(e)) {
-                        dismu.editPlaylist(playlist);
-                    }
-                    if (e.getClickCount() >= 2) {
-                        if (dismu.isPlaying()) {
-                            dismu.stop();
-                        }
-                        dismu.play();
+                        if (e.getClickCount() >= 2) {
+                            if (dismu.isPlaying()) {
+                                dismu.stop();
+                            }
+                            dismu.play();
 
+                        } else {
+                            dismu.setCurrentPlaylist(playlist);
+                        }
+                    } else if (SwingUtilities.isRightMouseButton(e)) {
+                        PlaylistPopup popup = new PlaylistPopup(playlist);
+                        popup.show(e.getComponent(), e.getX(), e.getY());
+                        update();
                     }
                 }
 
@@ -287,15 +319,28 @@ public class MainWindow {
     }
 
     private void createPlaylist() {
-        String name = (String)JOptionPane.showInputDialog(getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
+        String name = (String) JOptionPane.showInputDialog(getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
         Playlist newPlaylist = new Playlist();
         newPlaylist.setName(name);
         Dismu.getInstance().editPlaylist(newPlaylist);
+        update();
     }
 
     public void update() {
         updateTracks();
         updatePlaylists();
+        updateSeekBar();
+    }
+
+    public void updateSeekBar() {
+        try {
+            PlayerBackend playerBackend = PlayerBackend.getInstance();
+            int percent = (int) Math.round(playerBackend.getPosition() / (playerBackend.getCurrentTrack().getTrackDuration() * 10.0));
+            Loggers.uiLogger.debug("percent = {}, position = {}", percent, playerBackend.getPosition());
+            seekBar.setValue(percent);
+        } catch (NullPointerException ignored) {
+        }
+
     }
 
     public void updateControl(boolean isPlaying) {

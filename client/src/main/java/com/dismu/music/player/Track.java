@@ -4,6 +4,12 @@ package com.dismu.music.player;
 import com.dismu.logging.Loggers;
 import com.dismu.utils.FileNameEscaper;
 import com.mpatric.mp3agic.*;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.tag.TagException;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -16,17 +22,25 @@ public class Track {
 
     private int trackID = -1;
     private int trackFormat = -1;
+    private int trackDuration = -1; // in milliseconds
 
     private String trackName;
-
     private String trackArtist = "";
     private String trackAlbum = "";
     private int trackNumber = -1;
+
     public Track() {}
-
-
     public Track(int trackID) {
         this.trackID = trackID;
+    }
+
+
+    public int getTrackDuration() {
+        return trackDuration;
+    }
+
+    public void setTrackDuration(int trackDuration) {
+        this.trackDuration = trackDuration;
     }
 
     public int getTrackFormat() {
@@ -80,6 +94,7 @@ public class Track {
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeInt(trackID);
         stream.writeInt(trackNumber);
+        stream.writeInt(trackDuration);
         stream.writeUTF(trackName);
         stream.writeUTF(trackArtist);
         stream.writeUTF(trackAlbum);
@@ -89,6 +104,7 @@ public class Track {
         Track track = new Track();
         track.setID(stream.readInt());
         track.setTrackNumber(stream.readInt());
+        track.setTrackDuration(stream.readInt());
         track.setTrackName(stream.readUTF());
         track.setTrackArtist(stream.readUTF());
         track.setTrackAlbum(stream.readUTF());
@@ -96,7 +112,7 @@ public class Track {
     }
 
     public int hashCode() {
-        return trackNumber ^ trackAlbum.hashCode() ^ trackName.hashCode() ^ trackArtist.hashCode();
+        return trackNumber ^ trackAlbum.hashCode() ^ trackName.hashCode() ^ trackArtist.hashCode() ^ trackDuration;
     }
 
     public boolean equals(Object o) {
@@ -152,6 +168,13 @@ public class Track {
     public static Track fromMp3File(File trackFile) {
         Track track = new Track();
         track.setTrackFormat(FORMAT_MP3);
+        try {
+            AudioFile audioFile = AudioFileIO.read(trackFile);
+           track.setTrackDuration(audioFile.getAudioHeader().getTrackLength());
+            Loggers.playerLogger.debug("audioFile.getAudioHeader().getTrackLength() = {}", audioFile.getAudioHeader().getTrackLength());
+        } catch (CannotReadException | IOException | TagException | ReadOnlyFileException | InvalidAudioFrameException e) {
+            Loggers.playerLogger.error("cannot read get duration of file '{}'", trackFile.getAbsolutePath(), e);
+        }
         try {
             Mp3File mp3File = new Mp3File(trackFile.getAbsolutePath());
             if (mp3File.hasId3v1Tag()) {

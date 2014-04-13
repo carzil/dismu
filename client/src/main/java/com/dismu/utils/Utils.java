@@ -52,7 +52,7 @@ public class Utils {
     }
 
     public static boolean isLinux() {
-        return System.getProperty("os.name").toLowerCase().contains("nix");
+        return System.getProperty("os.name").toLowerCase().contains("linux");
     }
 
     public static boolean isMac() {

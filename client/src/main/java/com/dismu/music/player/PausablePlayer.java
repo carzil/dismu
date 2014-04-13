@@ -7,9 +7,7 @@ import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.AudioDevice;
 import javazoom.jl.player.FactoryRegistry;
 
-import java.awt.event.ActionListener;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 
 import javazoom.jl.decoder.Bitstream;
@@ -17,8 +15,6 @@ import javazoom.jl.decoder.BitstreamException;
 import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.SampleBuffer;
-import javazoom.jl.player.advanced.AdvancedPlayer;
-import javax.sound.sampled.Clip;
 
 class MyPlayer {
     private Bitstream bitstream;
@@ -28,7 +24,9 @@ class MyPlayer {
     private boolean complete = false;
     private boolean isInited = false;
     private int lastPosition = 0;
-    private int framesConsumed = 0;
+    private int currentFrame = -1;
+    private ArrayList<SampleBuffer> frames = new ArrayList<>();
+
 
     public MyPlayer(InputStream stream) throws JavaLayerException {
         this(stream, null);
@@ -45,25 +43,6 @@ class MyPlayer {
             audio = r.createAudioDevice();
         }
         audio.open(decoder);
-    }
-
-    public boolean play(int frames) throws JavaLayerException {
-        boolean ret = true;
-
-        while (frames-- > 0 && ret) {
-            ret = decodeFrame();
-        }
-
-        if (!ret) {
-            if (audio != null) {
-                audio.flush();
-                synchronized (this) {
-                    complete = !closed;
-                    close();
-                }
-            }
-        }
-        return ret;
     }
 
     public synchronized void close() {
@@ -87,60 +66,66 @@ class MyPlayer {
     public double getPosition() {
         // where we can find sample per frame constant?
 //        Loggers.playerLogger.debug("{}", decoder.getOutputFrequency());
-        return framesConsumed * (1000.0 / decoder.getOutputFrequency()) * 1152.0;
+//        return currentFrame * (1000.0 / decoder.getOutputFrequency()) * 1152.0;
+        return audio.getPosition();
     }
 
-    public boolean decodeFrame() throws JavaLayerException {
+    public boolean playFrame() throws JavaLayerException {
         try {
-            if (audio == null)
+            SampleBuffer buffer = nextFrame();
+            if (buffer == null) {
+                audio.flush();
                 return false;
+            }
+            synchronized (this) {
+                if (audio != null) {
+                    audio.write(buffer.getBuffer(), 0, buffer.getBufferLength());
+                }
+            }
+        } catch (RuntimeException ex) {
+            throw new JavaLayerException("Exception decoding audio frame", ex);
+        }
+        return true;
+    }
+
+    public SampleBuffer nextFrame() throws JavaLayerException {
+        currentFrame++;
+        if (currentFrame + 1 >= frames.size()) {
+            return readFrame();
+        } else {
+            return frames.get(currentFrame);
+        }
+    }
+
+    public SampleBuffer readFrame() throws JavaLayerException {
+        try {
+            if (audio == null) {
+                return null;
+            }
 
             Header header = bitstream.readFrame();
 
             if (header == null) {
-                return false;
+                return null;
             }
 
             SampleBuffer output = (SampleBuffer)decoder.decodeFrame(header, bitstream);
-            // frames per second = output.getBufferLength() / output.getChannelCount()
+            frames.add(output);
             isInited = true;
-
-            synchronized (this) {
-                if (audio != null) {
-                    audio.write(output.getBuffer(), 0, output.getBufferLength());
-                }
-            }
-
             bitstream.closeFrame();
-            framesConsumed++;
+            currentFrame++;
+            return output;
         } catch (RuntimeException ex) {
             throw new JavaLayerException("Exception decoding audio frame", ex);
         }
-        return true;
     }
 
-    public boolean skipFrame() throws JavaLayerException {
-        try {
-            if (audio == null)
-                return false;
-
-            Header header = bitstream.readFrame();
-
-            if (header == null) {
-                return false;
-            }
-
-            if (!isInited) {
-                decoder.decodeFrame(header, bitstream);
-                isInited = true;
-            }
-
-            bitstream.closeFrame();
-            framesConsumed++;
-        } catch (RuntimeException ex) {
-            throw new JavaLayerException("Exception decoding audio frame", ex);
+    public SampleBuffer prevFrame() {
+        if (currentFrame > 0) {
+            currentFrame--;
+            return frames.get(currentFrame);
         }
-        return true;
+        return null;
     }
 }
 
@@ -197,6 +182,10 @@ public class PausablePlayer {
         }
     }
 
+    public double getPosition() {
+        return player.getPosition();
+    }
+
     public void addEventListener(EventListener listener) {
         listeners.add(listener);
     }
@@ -215,14 +204,22 @@ public class PausablePlayer {
     }
 
     public void seek(double st) {
+        st *= 1000.0;
         synchronized (playerLock) {
-            while (Double.isNaN(player.getPosition()) || player.getPosition() <= st * 1000.0) {
-                try {
-                    player.skipFrame();
-                } catch (JavaLayerException e) {
-                    Loggers.playerLogger.error("exception occurred while seeking", e);
-                    return;
+            if (Double.isNaN(player.getPosition()) || player.getPosition() < st) {
+                while (Double.isNaN(player.getPosition()) || player.getPosition() < st) {
+                    try {
+                        player.nextFrame();
+                    } catch (JavaLayerException e) {
+                        Loggers.playerLogger.error("exception occurred while seeking", e);
+                        return;
+                    }
                 }
+            } else {
+                Loggers.playerLogger.info("failed");
+//                while (player.getPosition() > st) {
+//                    player.prevFrame();
+//                }
             }
             playerLock.notifyAll();
         }
@@ -252,10 +249,11 @@ public class PausablePlayer {
         while (playerStatus != FULL_STOP) {
             try {
                 if (playerStatus == PLAYING) {
-                    if (!player.play(1)) {
+                    if (!player.playFrame()) {
                         playerStatus = FINISHED;
                         notify(PlayerEvent.FINISHED);
                     }
+                    notify(PlayerEvent.FRAME_PLAYED);
                 }
             } catch (JavaLayerException e) {
                 Loggers.playerLogger.error("JLayer error", e);

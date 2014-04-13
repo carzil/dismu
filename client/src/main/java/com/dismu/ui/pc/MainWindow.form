@@ -81,6 +81,12 @@
                               <text value="&gt;&gt;"/>
                             </properties>
                           </component>
+                          <component id="542a6" class="com.dismu.ui.pc.SeekBar" binding="seekBar">
+                            <constraints border-constraint="Center"/>
+                            <properties>
+                              <valueIsAdjusting value="true"/>
+                            </properties>
+                          </component>
                         </children>
                       </grid>
                     </children>
@@ -121,12 +127,12 @@
                 <properties/>
                 <border type="none"/>
                 <children>
-                  <scrollpane id="f3033">
+                  <scrollpane id="37fb8">
                     <constraints border-constraint="Center"/>
                     <properties/>
                     <border type="none"/>
                     <children>
-                      <component id="dec44" class="javax.swing.JTable" binding="allPlaylistsTable" default-binding="true">
+                      <component id="507a0" class="javax.swing.JTable" binding="allPlaylistsTable">
                         <constraints/>
                         <properties/>
                       </component>

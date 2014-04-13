@@ -112,9 +112,9 @@ public class TrackStorage {
         }
         Loggers.playerLogger.info("index exists");
         try {
-            readFromStream(new DataInputStream(new FileInputStream(trackIndex)));
+            readFromStream(new DataInputStream(new BufferedInputStream(new FileInputStream(trackIndex))));
         } catch (EOFException | UTFDataFormatException e) {
-            Loggers.playerLogger.info("corrupted track index, re-indexing");
+            Loggers.playerLogger.error("corrupted track index, re-indexing", e);
             reindex();
         }
         if (isCorrupted()) {
@@ -124,7 +124,10 @@ public class TrackStorage {
     }
 
     public synchronized void saveIndex() throws IOException {
-        writeToStream(new DataOutputStream(new FileOutputStream(trackIndex)));
+        DataOutputStream dataOutputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(trackIndex)));
+        writeToStream(dataOutputStream);
+        dataOutputStream.flush();
+        dataOutputStream.close();
     }
 
     public synchronized boolean isCorrupted() {
@@ -227,6 +230,7 @@ public class TrackStorage {
             trackHashes.remove(hash);
             tracks.remove(track);
             notify(new TrackStorageEvent(TrackStorageEvent.TRACK_REMOVED, track));
+            trackFile.delete();
             Loggers.playerLogger.info("removed track id={}, hash={}, filename='{}'", track.getID(), hash, trackFile.getName());
         } catch (IOException e) {
             Loggers.playerLogger.error("exception occurred while removing track", e);

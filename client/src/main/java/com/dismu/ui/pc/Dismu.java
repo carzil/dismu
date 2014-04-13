@@ -16,19 +16,24 @@ import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.Server;
 import com.dismu.utils.SettingsManager;
+import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Dismu {
     public static ArrayList<Client> clients = new ArrayList<>();
@@ -54,6 +59,10 @@ public class Dismu {
     public static SettingsManager networkSettingsManager = SettingsManager.getSection("network");
     public static SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
 
+    {
+        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+    }
+
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
         dismu.run();
@@ -72,10 +81,13 @@ public class Dismu {
             return;
         }
         try {
-            // TODO: set normal system look & feel
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (Utils.isLinux()) {
+                UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+            } else {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
+            Loggers.uiLogger.error("error while setting look & feel", e);
         }
         mainWindow = new MainWindow();
         playerBackend.addEventListener(new EventListener() {
@@ -87,6 +99,20 @@ public class Dismu {
                     updatePaused(playerBackend.getCurrentTrack());
                 } else if (e.getType() == PlayerEvent.STOPPED) {
                     updateStopped();
+                } else if (e.getType() == PlayerEvent.FINISHED) {
+                    try {
+                        Playlist playlist = getCurrentPlaylist();
+                        if (!playlist.isEnded()) {
+                            playlist.next();
+                            Dismu.getInstance().play();
+                        } else {
+                            showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
+                        }
+                    } catch (EmptyPlaylistException ignored) {
+
+                    }
+                } else if (e.getType() == PlayerEvent.FRAME_PLAYED) {
+                    mainWindow.updateSeekBar();
                 }
             }
         });
@@ -118,26 +144,17 @@ public class Dismu {
                 }
             }
         });
-        playerBackend.addEventListener(new EventListener() {
-            @Override
-            public void dispatchEvent(Event e) {
-                if (e.getType() == PlayerEvent.FINISHED) {
-                    try {
-                        Playlist playlist = getCurrentPlaylist();
-                        if (!playlist.isEnded()) {
-                            playlist.next();
-                            Dismu.getInstance().play();
-                        } else {
-                            showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
-                        }
-                    } catch (EmptyPlaylistException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            }
-        });
         isRunning = true;
         setupSystemTray();
+    }
+
+    private SourceDataLine getLine(AudioFormat audioFormat) throws LineUnavailableException
+    {
+        SourceDataLine res = null;
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+        res = (SourceDataLine) AudioSystem.getLine(info);
+        res.open(audioFormat);
+        return res;
     }
 
     private void startP2P() {
@@ -328,6 +345,20 @@ public class Dismu {
         frame.setVisible(isVisible);
     }
 
+    public static void removeSystemTrayIcon() {
+        SystemTray systemTray = SystemTray.getSystemTray();
+        for (TrayIcon icon : systemTray.getTrayIcons()) {
+            systemTray.remove(icon);
+        }
+    }
+
+    public static void closeAllFrames() {
+        Frame[] frames = JFrame.getFrames();
+        for (Frame frame : frames) {
+            frame.dispose();
+        }
+    }
+
     public static void fullExit(int exitCode) {
         PlayerBackend.getInstance().close();
         API api = new APIImpl();
@@ -336,13 +367,11 @@ public class Dismu {
 
         stopClients();
         server.stop();
+        closeAllFrames();
+        removeSystemTrayIcon();
         TrackStorage.getInstance().close();
         PlaylistStorage.getInstance().close();
         SettingsManager.save();
-        SystemTray systemTray = SystemTray.getSystemTray();
-        for (TrayIcon icon : systemTray.getTrayIcons()) {
-            systemTray.remove(icon);
-        }
         System.exit(exitCode);
     }
 
@@ -455,6 +484,7 @@ public class Dismu {
         PlaylistWindow playlistWindow = new PlaylistWindow();
         playlistWindow.getFrame().setVisible(true);
         playlistWindow.setPlaylist(playlist);
+        mainWindow.update();
     }
 
     public void setStatus(String message) {
@@ -480,6 +510,15 @@ public class Dismu {
         return addTracksDialog.getTracks();
     }
 
+    public boolean removePlaylist(Playlist playlist) {
+        if (JOptionPane.showConfirmDialog(mainWindow.getFrame(), String.format("Remove playlist '%s'?", playlist.getName()), "Remove playlist", JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION) {
+            PlaylistStorage.getInstance().removePlaylist(playlist);
+            mainWindow.update();
+            return true;
+        }
+        return false;
+    }
+
     public static Image getIcon() {
         URL trayIcon = ClassLoader.getSystemResource("icon.png");
         if (trayIcon == null) {
@@ -501,6 +540,13 @@ public class Dismu {
     public boolean isPlaying() {
         return isPlaying;
     }
+
+    public void setPlayingPercentage(int value) {
+        if (playerBackend.isPlaying()) {
+            Loggers.uiLogger.debug("{}, {}", playerBackend.getCurrentTrack().getTrackDuration(), value);
+            playerBackend.seek(playerBackend.getCurrentTrack().getTrackDuration() * (1.0 * value / 100.0));
+        }
+    }
 }
 
 
@@ -509,5 +555,3 @@ public class Dismu {
 //4. Play/pause button in one button with image
 //6. PlaylistListTable
 //7. Indicates current track
-//8. Infinite playlist fix
-//9. selection listener (idk)

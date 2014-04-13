@@ -17,7 +17,7 @@ public class PlaylistStorage {
     private static volatile PlaylistStorage instance;
 
     private PlaylistStorage() {
-        playlists = new ArrayList<Playlist>();
+        playlists = new ArrayList<>();
         load();
     }
 

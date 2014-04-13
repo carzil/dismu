@@ -18,6 +18,7 @@ public class SettingsDialog extends JDialog {
     public SettingsDialog() {
         setContentPane(contentPane);
         setModal(true);
+        setTitle("Dismu - Settings");
         setIconImage(Dismu.getIcon());
         getRootPane().setDefaultButton(buttonOK);
 

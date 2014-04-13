@@ -34,6 +34,10 @@ public class PlayerBackend {
         return localInstance;
     }
 
+    public double getPosition() {
+        return player.getPosition();
+    }
+
     public boolean stop() {
         player.stop();
         return true;

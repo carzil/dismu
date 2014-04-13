@@ -56,7 +56,7 @@ public class PlaylistWindow {
                     if (e.getClickCount() >= 2) {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             int rowNumber = table1.rowAtPoint(e.getPoint());
-                            Track track = (Track)table1.getModel().getValueAt(rowNumber, 4);
+                            Track track = (Track) table1.getModel().getValueAt(rowNumber, 4);
                             try {
                                 Dismu dismu = Dismu.getInstance();
                                 dismu.setCurrentPlaylist(playlist);
@@ -114,7 +114,6 @@ public class PlaylistWindow {
                     playlist.setName(playlistNameTextArea.getText());
                     setPlaylist(playlist);
                     Dismu dismu = Dismu.getInstance();
-                    dismu.updatePlaylists();
                     PlaylistStorage playlistStorage = PlaylistStorage.getInstance();
                     if (!playlistStorage.containsPlaylist(playlist)) {
                         playlistStorage.addPlaylist(playlist);
@@ -126,9 +125,12 @@ public class PlaylistWindow {
                         dismu.setCurrentPlaylist(currentPlaylist); // WTF?
                     }
                     frame.dispose();
+                    dismu.updatePlaylists();
+
                 }
             });
         }
         return frame;
     }
+
 }

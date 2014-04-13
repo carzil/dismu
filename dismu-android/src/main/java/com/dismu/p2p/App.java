@@ -10,14 +10,32 @@ import com.dismu.p2p.server.Server;
 import java.io.IOException;
 
 public class App {
+    private static App instance;
+    private boolean hasStarted = false;
+
+    private App() {
+    }
+
+    public static App getInstance() {
+        if (App.instance == null) {
+            App.instance = new App();
+        }
+        return App.instance;
+    }
+
     public static void main(final String[] args) {
         final String userId = args[0];
         final int port = Integer.valueOf(args[1]);
 
-        start(userId, args[2], port);
+        App.getInstance().start(userId, "alpha", args[2], port);
     }
 
-    public static void start(final String userId, String localIP, final int port) {
+    synchronized public void start(final String userId, final String groupId, String localIP, final int port) {
+        if (hasStarted) {
+            return;
+        }
+        hasStarted = true;
+
         final API api = new APIImpl();
         Thread serverThread = new Thread(new Runnable() {
             @Override
@@ -33,7 +51,7 @@ public class App {
             }
         });
         serverThread.start();
-        api.register(userId, "alpha", localIP, port);
+        api.register(userId, groupId, localIP, port);
         Seed[] seeds = api.getNeighbours(userId);
         System.out.print(seeds.length);
         for (final Seed s : seeds) {

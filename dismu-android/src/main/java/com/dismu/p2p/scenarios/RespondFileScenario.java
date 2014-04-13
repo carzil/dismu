@@ -131,6 +131,7 @@ public class RespondFileScenario extends Scenario {
                     this.lastPos = packet.offset;
                 } else if (this.lastPos < packet.offset) {
                     this.stream.skip(packet.offset-this.lastPos);
+                    this.lastPos = packet.offset;
                 }
                 for (int i = packet.offset; i < Math.min(packet.count+packet.offset, this.size); ++i) {
                     int a = this.stream.read();

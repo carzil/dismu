@@ -8,10 +8,17 @@ import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.Server;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class App {
     private static App instance;
     private boolean hasStarted = false;
+    private ArrayList<Client> clients;
+    private Server server;
+    private String userId;
+    private String groupId;
+    private String localIP;
+    private int port;
 
     private App() {
     }
@@ -35,12 +42,18 @@ public class App {
             return;
         }
         hasStarted = true;
+        clients = new ArrayList<Client>();
+
+        this.userId = userId;
+        this.groupId = groupId;
+        this.localIP = localIP;
+        this.port = port;
 
         final API api = new APIImpl();
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                Server server = new Server(port);
+                server = new Server(port);
                 try {
                     server.start();
                 } catch (Exception e) {
@@ -65,6 +78,7 @@ public class App {
                     Client client = new Client(s.localIP, s.port, userId);
                     try {
                         client.start();
+                        clients.add(client);
                         client.synchronize();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -72,6 +86,24 @@ public class App {
                 }
             });
             clientThread.start();
+
         }
+    }
+
+    synchronized public void restart() {
+        for (Client c : clients) {
+            try {
+                c.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        clients.clear();
+        server.stop();
+        final API api = new APIImpl();
+        api.unregister(userId);
+        hasStarted = false;
+
+        start(userId, groupId, localIP, port);
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">dismu-android-barrel</string>
-    <string name="action_settings">Mah bad</string>
+    <string name="app_name">Dismu</string>
+    <string name="action_settings">Refresh seeds</string>
     <style name="LightTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <!-- Any customizations for your app running on pre-3.0 devices here -->
     </style>

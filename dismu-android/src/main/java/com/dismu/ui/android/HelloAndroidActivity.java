@@ -2,14 +2,11 @@ package com.dismu.ui.android;
 
 import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.format.Formatter;
-import android.util.Log;
 import android.view.*;
 import android.widget.*;
 import com.dismu.android1.R;
@@ -18,20 +15,15 @@ import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.storages.events.TrackStorageEvent;
 import com.dismu.p2p.App;
 import com.dismu.ui.android.albumart.AlbumArtDownloader;
+import com.dismu.ui.android.albumart.AlbumArtDownloaderCached;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import org.apache.log4j.Level;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 public class HelloAndroidActivity extends Activity {
@@ -102,20 +94,52 @@ public class HelloAndroidActivity extends Activity {
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        App.getInstance().restart();
+                        runOnUiThread(
+                            new Runnable() {
+                                @Override
+                                public void run() {
+                                  Toast.makeText(getApplicationContext(), "Restarted network", 4000).show();
+                                }
+                            }
+                        );
+                    }
+                }).start();
+
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     public class CustomList extends ArrayAdapter<Track> {
         private final Activity context;
         private final List<Track> items;
+        private final ArtLoader artLoader;
+        private final AlbumArtDownloader aad;
+
         public CustomList(Activity context,
                           List<Track> items) {
             super(context, R.layout.listitem, items);
             this.context = context;
             this.items = new ArrayList<>(items);
+            this.artLoader = new ArtLoader(context);
+            this.aad = new AlbumArtDownloaderCached();
         }
 
         public CustomList(Activity context, Track[] items) {
             super(context, R.layout.listitem, items);
             this.context = context;
             this.items = new ArrayList<>(Arrays.asList(items));
+            this.artLoader = new ArtLoader(context);
+            this.aad = new AlbumArtDownloaderCached();
         }
 
         @Override
@@ -125,9 +149,13 @@ public class HelloAndroidActivity extends Activity {
             TextView txtTitle = (TextView) rowView.findViewById(R.id.line);
             TextView txtSecondTitle = (TextView) rowView.findViewById(R.id.secondLine);
             ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
-            txtTitle.setText(items.get(position).getTrackName());
-            txtSecondTitle.setText(items.get(position).getTrackArtist());
-            imageView.setImageBitmap(getImageBitmap(getAlbumArtURL(items.get(position))));
+
+            Track track = items.get(position);
+
+            txtTitle.setText(track.getTrackName());
+            txtSecondTitle.setText(track.getTrackArtist());
+
+            artLoader.displayImage(track, imageView);
             return rowView;
         }
 
@@ -141,62 +169,6 @@ public class HelloAndroidActivity extends Activity {
             items.add(t);
         }
 
-
-        HashMap<String, Bitmap> imageCache = new HashMap<>();
-        private Bitmap getImageBitmap(final String url) {
-            if (imageCache.containsKey(url)) {
-                return imageCache.get(url);
-            }
-            final Bitmap[] bm = {null};
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        URL aURL = new URL(url);
-                        URLConnection conn = aURL.openConnection();
-                        conn.connect();
-                        InputStream is = conn.getInputStream();
-                        BufferedInputStream bis = new BufferedInputStream(is);
-                        bm[0] = BitmapFactory.decodeStream(bis);
-                        bis.close();
-                        is.close();
-                    } catch (IOException e) {
-                        Log.e("GOP", "Error getting bitmap", e);
-                    }
-                }
-            });
-            t.start();
-            try {
-                t.join(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            imageCache.put(url, bm[0]);
-            return bm[0];
-        }
-
-        HashMap<Track, String> albumArtURLCache = new HashMap<>();
-        private String getAlbumArtURL(final Track track) {
-            if (albumArtURLCache.containsKey(track)) {
-                return albumArtURLCache.get(track);
-            }
-            final String[] result = {null};
-            Thread t = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    result[0] = AlbumArtDownloader.getURL(track);
-                }
-            });
-            t.start();
-            try {
-                t.join(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            albumArtURLCache.put(track, result[0]);
-            return result[0];
-        }
     }
-
 }
 

@@ -61,7 +61,9 @@ public class Server {
     public synchronized void stop() {
         isRunning = false;
         try {
-            this.serverSocket.close();
+            if (this.serverSocket != null) {
+                this.serverSocket.close();
+            }
         } catch (IOException e) {
             Loggers.serverLogger.error("error closing server", e);
         }

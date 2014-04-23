@@ -38,8 +38,8 @@ public class App {
     }
 
     synchronized public void start(final String userId, final String groupId, String localIP, final int port) {
-        if (hasStarted) {
-            return;
+        if (hasStarted && !localIP.equals(this.localIP)) {
+            restart(localIP);
         }
         hasStarted = true;
         clients = new ArrayList<Client>();
@@ -90,7 +90,7 @@ public class App {
         }
     }
 
-    synchronized public void restart() {
+    synchronized public void restart(String localIP) {
         for (Client c : clients) {
             try {
                 c.stop();
@@ -104,6 +104,8 @@ public class App {
         api.unregister(userId);
         hasStarted = false;
 
-        start(userId, groupId, localIP, port);
+        this.localIP = localIP;
+
+        start(userId, groupId, this.localIP, port);
     }
 }

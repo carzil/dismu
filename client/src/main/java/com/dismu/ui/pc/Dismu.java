@@ -140,7 +140,7 @@ public class Dismu {
         setupSystemTray();
     }
 
-    private void startP2P() {
+    private static void startP2P() {
         final API api = new APIImpl();
         final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
@@ -162,7 +162,7 @@ public class Dismu {
         initClients();
     }
 
-    private void initClients() {
+    public static void initClients() {
         final String userId = getUserID();
         final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
@@ -202,7 +202,7 @@ public class Dismu {
         }
     }
 
-    private String getUserID() {
+    private static String getUserID() {
         // XXX: i think we should generate UUID on our server
         String random = UUID.randomUUID().toString();
         String res = accountSettingsManager.getString("user.userId", random);
@@ -330,12 +330,7 @@ public class Dismu {
 
     public static void fullExit(int exitCode) {
         PlayerBackend.getInstance().close();
-        API api = new APIImpl();
-        String userId = accountSettingsManager.getString("user.userId", "b");
-        api.unregister(userId);
-
-        stopClients();
-        server.stop();
+        stopP2P();
         TrackStorage.getInstance().close();
         PlaylistStorage.getInstance().close();
         SettingsManager.save();
@@ -344,6 +339,15 @@ public class Dismu {
             systemTray.remove(icon);
         }
         System.exit(exitCode);
+    }
+
+    private static void stopP2P() {
+        API api = new APIImpl();
+        String userId = accountSettingsManager.getString("user.userId", "b");
+        api.unregister(userId);
+
+        stopClients();
+        server.stop();
     }
 
     private static void stopClients() {
@@ -500,6 +504,22 @@ public class Dismu {
 
     public boolean isPlaying() {
         return isPlaying;
+    }
+
+    public static void restartP2P() {
+        stopP2P();
+        startP2P();
+        Loggers.serverLogger.info("Restarted P2P");
+    }
+
+    public static void startSync() {
+        for (Client client : clients) {
+            try {
+                client.synchronize();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 

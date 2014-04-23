@@ -2,6 +2,7 @@ package com.dismu.ui.android;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import com.dismu.music.player.Track;
 import com.dismu.utils.Utils;
 
@@ -33,7 +34,9 @@ public class FileCache {
 
     public void putFile(Track url, Bitmap bmp) throws IOException {
         OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(getCacheDir(), String.valueOf(url.hashCode()))));
-        bmp.compress(Bitmap.CompressFormat.PNG, 100, os);
+        if (bmp != null) {
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, os);
+        }
         os.flush();
         os.close();
     }

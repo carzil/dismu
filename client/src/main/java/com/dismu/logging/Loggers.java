@@ -9,5 +9,6 @@ public class Loggers {
     public static final Logger clientLogger = LoggerFactory.getLogger("Dismu.client");
     public static final Logger playerLogger = LoggerFactory.getLogger("Dismu.player");
     public static final Logger uiLogger = LoggerFactory.getLogger("Dismu.ui");
+    public static final Logger p2pLogger = LoggerFactory.getLogger("Dismu.p2p");
     public static final Logger miscLogger = LoggerFactory.getLogger("Dismu.misc");
 }

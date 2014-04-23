@@ -1,20 +1,21 @@
 package com.dismu.music.storages;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.*;
 
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.PausablePlayer;
 import com.dismu.music.player.Track;
 import com.dismu.utils.events.EventListener;
-import javazoom.jl.decoder.JavaLayerException;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
 
 public class PlayerBackend {
     private Track currentTrack;
     private File currentTrackFile;
-    private FileInputStream currentFileInputStream;
+    private InputStream currentInputStream;
     private PausablePlayer player = new PausablePlayer();
     private static volatile PlayerBackend instance;
 
@@ -57,7 +58,7 @@ public class PlayerBackend {
     public boolean play() {
         try {
             player.play();
-        } catch (JavaLayerException e) {
+        } catch (Exception e) {
             Loggers.playerLogger.error("exception occurred while playing track id={}", currentTrack.getID(), e);
             return false;
         }
@@ -81,11 +82,11 @@ public class PlayerBackend {
         currentTrack = track;
         currentTrackFile = TrackStorage.getInstance().getTrackFile(track);
         try {
-            currentFileInputStream = new FileInputStream(currentTrackFile);
-            player.setInputStream(currentFileInputStream);
+            currentInputStream = new BufferedInputStream(new FileInputStream(currentTrackFile));
+            player.loadInputStream(currentInputStream);
         } catch (FileNotFoundException e) {
             throw new TrackNotFoundException();
-        } catch (JavaLayerException e) {
+        } catch (Exception e) {
             // TODO: throw exception here
         }
     }

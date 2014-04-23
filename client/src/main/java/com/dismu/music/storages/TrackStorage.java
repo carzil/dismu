@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.dismu.music.player.Track;
-import com.dismu.music.storages.events.TrackStorageEvent;
+import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;
 import com.dismu.utils.events.Event;
@@ -185,22 +185,27 @@ public class TrackStorage {
                 Loggers.playerLogger.info("track already registered in index");
                 return trackHashes.get(fileHash);
             } else {
-                Track track = Track.fromMp3File(trackFile);
-                maxTrackID++;
-                track.setID(maxTrackID);
-                File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());
-                Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
-                tracks.put(track, finalTrackFile);
-                trackHashes.put(fileHash, track);
-                if (!trackFile.getAbsolutePath().equals(finalTrackFile.getAbsolutePath())) {
-                    Utils.copyFile(trackFile, finalTrackFile);
+                Track track = Track.fromFile(trackFile);
+                if (track != null) {
+                    maxTrackID++;
+                    track.setID(maxTrackID);
+                    File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());
+                    Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
+                    tracks.put(track, finalTrackFile);
+                    trackHashes.put(fileHash, track);
+                    if (!trackFile.getAbsolutePath().equals(finalTrackFile.getAbsolutePath())) {
+                        Utils.copyFile(trackFile, finalTrackFile);
+                    }
+                    Loggers.playerLogger.info("track registered in index");
+                    if (commit) {
+                        saveIndex();
+                    }
+                    notify(new TrackStorageEvent(TrackStorageEvent.TRACK_ADDED, track));
+                    return track;
+                } else {
+                    Loggers.playerLogger.debug("cannot read track from file '{}'", trackFile.getAbsolutePath());
+                    return null;
                 }
-                Loggers.playerLogger.info("track registered in index");
-                if (commit) {
-                    saveIndex();
-                }
-                notify(new TrackStorageEvent(TrackStorageEvent.TRACK_ADDED, track));
-                return track;
             }
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot save track file", e);

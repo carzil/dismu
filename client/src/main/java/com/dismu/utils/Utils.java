@@ -9,6 +9,7 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.Callable;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
@@ -147,5 +148,42 @@ public class Utils {
 
         buffer.flush();
         return buffer.toByteArray();
+    }
+
+    public static Thread runThread(Runnable runnable) {
+        Thread thread = new Thread(runnable);
+        thread.start();
+        return thread;
+    }
+
+    private static String[] splitFilename(String filename) {
+        return filename.split("\\.(?=[^\\.]+$)");
+    }
+
+    public static String fileExtension(String filename) {
+        String[] tmp = splitFilename(filename);
+        if (tmp.length == 1) {
+            return null;
+        }
+        return tmp[1];
+    }
+
+    public static String fileBasename(String filename) {
+        return splitFilename(filename)[0];
+    }
+
+    public static String titleCase(String string) {
+        StringBuilder titleCase = new StringBuilder();
+        boolean nextTitleCase = true;
+        for (char c : string.toCharArray()) {
+            if (Character.isSpaceChar(c)) {
+                nextTitleCase = true;
+            } else if (nextTitleCase) {
+                c = Character.toTitleCase(c);
+                nextTitleCase = false;
+            }
+            titleCase.append(c);
+        }
+        return titleCase.toString();
     }
 }

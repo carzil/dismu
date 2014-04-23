@@ -336,7 +336,7 @@ public class MainWindow {
         try {
             PlayerBackend playerBackend = PlayerBackend.getInstance();
             int percent = (int) Math.round(playerBackend.getPosition() / (playerBackend.getCurrentTrack().getTrackDuration() * 10.0));
-            Loggers.uiLogger.debug("percent = {}, position = {}", percent, playerBackend.getPosition());
+//            Loggers.uiLogger.debug("percent = {}, position = {}", percent, playerBackend.getPosition());
             seekBar.setValue(percent);
         } catch (NullPointerException ignored) {
         }

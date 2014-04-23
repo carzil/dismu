@@ -5,8 +5,7 @@ import java.util.ArrayList;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.storages.events.PlaylistStorageEvent;
-import com.dismu.music.storages.events.TrackStorageEvent;
+import com.dismu.music.events.PlaylistStorageEvent;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;

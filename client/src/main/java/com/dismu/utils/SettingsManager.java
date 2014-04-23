@@ -91,6 +91,7 @@ public class SettingsManager {
         for (SettingsManager settingsManager : settingsManagers) {
             settingsManager.saveSection();
         }
+        Loggers.miscLogger.info("all sections was saved");
     }
 
     private void saveSection() {

@@ -43,7 +43,7 @@ public class Server {
             while (isRunning) {
                 try {
                     Socket socket = serverSocket.accept();
-                    Loggers.serverLogger.info("new client accepted");
+                    Loggers.serverLogger.info("new client accepted, ip={}, port={}", socket.getInetAddress(), socket.getPort());
                     new Thread(new ServerWorker(socket)).start();
                 } catch (SocketException e) {
                     Loggers.serverLogger.info("socket exception occurred, all is ok");

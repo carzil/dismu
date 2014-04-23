@@ -31,6 +31,10 @@ public class Playlist {
         }
     }
 
+    public int hashCode() {
+        return name.hashCode() ^ currentTrackIndex ^ getTrackCount() ^ tracks.hashCode();
+    }
+
     public boolean isEmpty() {
         return tracks.size() == 0;
     }
@@ -94,6 +98,7 @@ public class Playlist {
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeUTF(getName());
         stream.writeInt(tracks.size());
+        stream.writeInt(currentTrackIndex);
         for (Track track : tracks) {
             track.writeToStream(stream);
         }
@@ -102,6 +107,7 @@ public class Playlist {
     public static Playlist readFromStream(DataInputStream stream) throws IOException {
         Playlist playlist = new Playlist();
         playlist.setName(stream.readUTF());
+        playlist.currentTrackIndex = stream.readInt();
         int trackCount = stream.readInt();
         for (int i = 0; i < trackCount; i++) {
             Track track = Track.readFromStream(stream);

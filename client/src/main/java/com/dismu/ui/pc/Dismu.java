@@ -3,13 +3,13 @@ package com.dismu.ui.pc;
 import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
-import com.dismu.music.player.PlayerEvent;
+import com.dismu.music.events.PlayerEvent;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.music.storages.events.TrackStorageEvent;
+import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
@@ -20,17 +20,19 @@ import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
-import javax.sound.sampled.*;
+import com.sun.media.sound.JDK13Services;
+
+import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -58,10 +60,13 @@ public class Dismu {
     public static SettingsManager accountSettingsManager = SettingsManager.getSection("account");
     public static SettingsManager networkSettingsManager = SettingsManager.getSection("network");
     public static SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
+    public static SettingsManager globalSettingsManager = SettingsManager.getSection("global");
 
-    {
+    static {
         Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
     }
+
+    private HashMap<Seed, Client> seedsTable;
 
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
@@ -137,7 +142,7 @@ public class Dismu {
                             try {
                                 cl.emitNewTrackEvent(t);
                             } catch (IOException e1) {
-                                e1.printStackTrace();
+                                Loggers.clientLogger.error("error while emitting new package", e);
                             }
                         }
                     }
@@ -146,15 +151,6 @@ public class Dismu {
         });
         isRunning = true;
         setupSystemTray();
-    }
-
-    private SourceDataLine getLine(AudioFormat audioFormat) throws LineUnavailableException
-    {
-        SourceDataLine res = null;
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        res = (SourceDataLine) AudioSystem.getLine(info);
-        res.open(audioFormat);
-        return res;
     }
 
     private void startP2P() {
@@ -179,44 +175,51 @@ public class Dismu {
         initClients();
     }
 
-    private void initClients() {
+    private void updateSeeds() {
         final String userId = getUserID();
         final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
-        Loggers.clientLogger.info("found {} seed(s)", seeds.length);
+        Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
         for (final Seed s : seeds) {
-            // TODO: need updating seed list every 5 mins
-            if (s.userId.equals(userId)) {
-                continue;
-            }
-
-            boolean foundClient = false;
-            for (Client c : clients) {
-                if (c.getAddress().equals(s.localIP) && c.getPort() == s.port) {
-                    foundClient = true;
-                    break;
+            if (!seedsTable.containsKey(s)) {
+                Loggers.p2pLogger.info("got new seed");
+                if (s.userId.equals(userId)) {
+                    continue;
                 }
-            }
 
-            if (foundClient) {
-                continue;
-            }
-
-            Thread clientThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Client client = new Client(s.localIP, s.port, userId);
-                    try {
-                        client.start();
-                        clients.add(client);
-                        client.synchronize();
-                    } catch (IOException e) {
-                        Loggers.uiLogger.error("error in client", e);
+                boolean foundClient = false;
+                for (Client c : clients) {
+                    if (c.getAddress().equals(s.localIP) && c.getPort() == s.port) {
+                        foundClient = true;
+                        break;
                     }
                 }
-            });
-            clientThread.start();
+
+                if (foundClient) {
+                    continue;
+                }
+
+                Thread clientThread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Client client = new Client(s.localIP, s.port, userId);
+                        seedsTable.put(s, client);
+                        try {
+                            client.start();
+                            clients.add(client);
+                            client.synchronize();
+                        } catch (IOException e) {
+                            Loggers.uiLogger.error("error in client", e);
+                        }
+                    }
+                });
+                clientThread.start();
+            }
         }
+    }
+
+    private void initClients() {
+        updateSeeds();
     }
 
     private String getUserID() {
@@ -256,6 +259,9 @@ public class Dismu {
     public void run() {
         toggleDismu();
         startP2P();
+        for (Object o : JDK13Services.getProviders(AudioFileReader.class)) {
+            Loggers.uiLogger.debug("{}", o.getClass());
+        }
     }
 
     /**
@@ -275,9 +281,13 @@ public class Dismu {
 //                } else if (currentPlaylist.isEnded()) {
 //                    showInfoMessage("Playlist ended", "Playlist '" + currentPlaylist.getName() + "' ended");
                 } else {
+                    if (playerBackend.isPlaying()) {
+                        playerBackend.stop();
+                    }
                     Track currentTrack = currentPlaylist.getCurrentTrack();
                     try {
                         playerBackend.setTrack(currentTrack);
+                        Loggers.uiLogger.debug("playerBackend.setTrack done");
                         playerBackend.play();
                         mainWindow.updateControl(true);
                     } catch (TrackNotFoundException ex) {
@@ -339,10 +349,25 @@ public class Dismu {
         }
     }
 
-    private void toggleDismu() {
+    public void showDismu() {
         JFrame frame = mainWindow.getFrame();
+        frame.setVisible(true);
+        frame.toFront();
+    }
+
+    public void hideDismu() {
+        JFrame frame = mainWindow.getFrame();
+        frame.setVisible(false);
+        frame.dispose();
+    }
+
+    public void toggleDismu() {
         isVisible = !isVisible;
-        frame.setVisible(isVisible);
+        if (isVisible) {
+            showDismu();
+        } else {
+            hideDismu();
+        }
     }
 
     public static void removeSystemTrayIcon() {
@@ -350,39 +375,104 @@ public class Dismu {
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
         }
+        Loggers.uiLogger.info("removed tray icons");
     }
 
     public static void closeAllFrames() {
         Frame[] frames = JFrame.getFrames();
+        int cnt = 0;
         for (Frame frame : frames) {
+            Loggers.uiLogger.debug("got frame {}", frame);
+            frame.setVisible(false);
             frame.dispose();
+            cnt++;
         }
+        Loggers.uiLogger.info("closed {} frames", cnt);
     }
 
     public static void fullExit(int exitCode) {
-        PlayerBackend.getInstance().close();
-        API api = new APIImpl();
-        String userId = accountSettingsManager.getString("user.userId", "b");
-        api.unregister(userId);
+        Thread closingStoragesThread = Utils.runThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    PlayerBackend.getInstance().close();
+                    Loggers.uiLogger.info("closed player backend");
+                } catch (Exception e) {
+                    Loggers.uiLogger.error("error while closing player backend", e);
+                }
+                try {
+                    TrackStorage.getInstance().close();
+                    Loggers.uiLogger.info("track storage closed");
+                } catch (Exception e) {
+                    Loggers.uiLogger.error("error while closing track storage", e);
+                }
+                try {
+                    PlaylistStorage.getInstance().close();
+                    Loggers.uiLogger.info("playlist storage closed");
+                } catch (Exception e) {
+                    Loggers.uiLogger.error("error while closing playlist storage", e);
+                }
+                try {
+                    SettingsManager.save();
+                } catch (Exception e) {
+                    Loggers.uiLogger.error("error while saving settings manager", e);
+                }
+            }
+        });
+        Thread apiUnregisteringThread = Utils.runThread(new Runnable() {
+            @Override
+            public void run() {
+                API api = new APIImpl();
+                String userId = accountSettingsManager.getString("user.userId", "b");
+                api.unregister(userId);
+                Loggers.uiLogger.info("unregistered by api");
+            }
+        });
 
-        stopClients();
-        server.stop();
+        Thread p2pStoppingThread = Utils.runThread(new Runnable() {
+            @Override
+            public void run() {
+                stopClients();
+                server.stop();
+                Loggers.uiLogger.info("server stopped");
+            }
+        });
         closeAllFrames();
         removeSystemTrayIcon();
-        TrackStorage.getInstance().close();
-        PlaylistStorage.getInstance().close();
-        SettingsManager.save();
+        try {
+            Loggers.uiLogger.info("joining storages thread");
+            closingStoragesThread.join();
+        } catch (InterruptedException e) {
+            Loggers.uiLogger.error("error while joining", e);
+        }
+        try {
+            Loggers.uiLogger.info("joining api thread");
+            apiUnregisteringThread.join();
+        } catch (InterruptedException e) {
+            Loggers.uiLogger.error("error while joining", e);
+        }
+        try {
+            Loggers.uiLogger.info("joining p2p thread");
+            p2pStoppingThread.join();
+        } catch (InterruptedException e) {
+            Loggers.uiLogger.error("error while joining", e);
+        }
+        Loggers.uiLogger.info("{} active threads", Thread.activeCount());
+        Loggers.uiLogger.info("everything is closed and saved, exiting");
         System.exit(exitCode);
     }
 
     private static void stopClients() {
+        int cnt = 0;
         for (Client client : clients) {
             try {
                 client.stop();
+                cnt++;
             } catch (IOException e) {
                 Loggers.uiLogger.error("error while stopping client", e);
             }
         }
+        Loggers.uiLogger.info("closed {} clients", cnt);
     }
 
     private void setupSystemTray() {
@@ -454,6 +544,7 @@ public class Dismu {
 
             }
         });
+
         try {
             systemTray.add(trayIcon);
         } catch (AWTException e) {
@@ -498,9 +589,8 @@ public class Dismu {
     public void setCurrentPlaylist(Playlist currentPlaylist) {
         this.currentPlaylist = currentPlaylist;
         mainWindow.update();
+        globalSettingsManager.setInt("current.playlist", currentPlaylist.hashCode());
         Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
-//        editPlaylist(currentPlaylist);
-//        play();
     }
 
     public Track[] addTracksInPlaylist() {
@@ -548,10 +638,3 @@ public class Dismu {
         }
     }
 }
-
-
-//2. Playlist remove
-//3. Seekbar (reverse seeking too)
-//4. Play/pause button in one button with image
-//6. PlaylistListTable
-//7. Indicates current track

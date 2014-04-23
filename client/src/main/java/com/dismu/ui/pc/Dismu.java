@@ -504,6 +504,15 @@ public class Dismu {
         server.stop();
     }
 
+    private static void stopP2P() {
+        API api = new APIImpl();
+        String userId = accountSettingsManager.getString("user.userId", "b");
+        api.unregister(userId);
+
+        stopClients();
+        server.stop();
+    }
+
     private static void stopClients() {
         int cnt = 0;
         for (Client client : clients) {

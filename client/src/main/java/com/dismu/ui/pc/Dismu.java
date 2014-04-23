@@ -153,7 +153,7 @@ public class Dismu {
         setupSystemTray();
     }
 
-    private void startP2P() {
+    private static void startP2P() {
         final API api = new APIImpl();
         final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
@@ -222,7 +222,7 @@ public class Dismu {
         updateSeeds();
     }
 
-    private String getUserID() {
+    private static String getUserID() {
         // XXX: i think we should generate UUID on our server
         String random = UUID.randomUUID().toString();
         String res = accountSettingsManager.getString("user.userId", random);
@@ -462,6 +462,15 @@ public class Dismu {
         System.exit(exitCode);
     }
 
+    private static void stopP2P() {
+        API api = new APIImpl();
+        String userId = accountSettingsManager.getString("user.userId", "b");
+        api.unregister(userId);
+
+        stopClients();
+        server.stop();
+    }
+
     private static void stopClients() {
         int cnt = 0;
         for (Client client : clients) {
@@ -629,6 +638,22 @@ public class Dismu {
 
     public boolean isPlaying() {
         return isPlaying;
+    }
+
+    public static void restartP2P() {
+        stopP2P();
+        startP2P();
+        Loggers.serverLogger.info("Restarted P2P");
+    }
+
+    public static void startSync() {
+        for (Client client : clients) {
+            try {
+                client.synchronize();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void setPlayingPercentage(int value) {

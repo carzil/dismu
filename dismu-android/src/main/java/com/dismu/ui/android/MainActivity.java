@@ -2,6 +2,9 @@ package com.dismu.ui.android;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
@@ -14,20 +17,15 @@ import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.storages.events.TrackStorageEvent;
 import com.dismu.p2p.App;
-import com.dismu.ui.android.albumart.AlbumArtDownloader;
-import com.dismu.ui.android.albumart.AlbumArtDownloaderCached;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 import org.apache.log4j.Level;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
 
-public class HelloAndroidActivity extends Activity {
-
+public class MainActivity extends Activity {
     /**
      * Called when the activity is first created.
      * @param savedInstanceState If the activity is being re-initialized after 
@@ -40,11 +38,16 @@ public class HelloAndroidActivity extends Activity {
 
         final LogConfigurator logConfigurator = new LogConfigurator();
 
-        logConfigurator.setFileName(Environment.getExternalStorageDirectory() + File.separator + "myapp.log");
+        logConfigurator.setFileName(Environment.getExternalStorageDirectory() + File.separator + "dismu.log");
         logConfigurator.setRootLevel(Level.DEBUG);
         // Set log level of a specific logger
         logConfigurator.setLevel("org.apache", Level.ERROR);
         logConfigurator.configure();
+
+        WifiManager.WifiLock wifiLock = ((WifiManager) getSystemService(Context.WIFI_SERVICE))
+                .createWifiLock(WifiManager.WIFI_MODE_FULL, "dismu wifi");
+
+        wifiLock.acquire();
 
         WifiManager wifiMgr = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
@@ -61,7 +64,7 @@ public class HelloAndroidActivity extends Activity {
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.main);
 
-        final ListAdapter adapter = new CustomList(this, TrackStorage.getInstance().getTracks());
+        final ListAdapter adapter = new TrackListAdapter(this, TrackStorage.getInstance().getTracks());
         TrackStorage.getInstance().addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
@@ -73,8 +76,8 @@ public class HelloAndroidActivity extends Activity {
                             @Override
                             public void run() {
                                 Track t = tse.getTrack();
-                                ((CustomList)adapter).add(t);
-                                ((CustomList)adapter).notifyDataSetChanged();
+                                ((TrackListAdapter)adapter).add(t);
+                                ((TrackListAdapter)adapter).notifyDataSetChanged();
                             }
                         });
                     }
@@ -85,6 +88,24 @@ public class HelloAndroidActivity extends Activity {
         // Bind to our new adapter.
         ListView lv = (ListView)findViewById(R.id.listView);
         lv.setAdapter(adapter);
+
+
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                Track track = (Track) adapter.getItem(position);
+                File f = TrackStorage.getInstance().getTrackFile(track);
+                try {
+                    Intent intent = new Intent(getApplicationContext(), SongActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                    intent.putExtra("trackHash", String.valueOf(track.hashCode()));
+                    startActivity(intent);
+                } catch (IllegalStateException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
@@ -98,10 +119,15 @@ public class HelloAndroidActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_settings:
+                WifiManager wifiMgr = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+                WifiInfo wifiInfo = wifiMgr.getConnectionInfo();
+                int ip = wifiInfo.getIpAddress();
+                final String localIP = Formatter.formatIpAddress(ip);
+
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        App.getInstance().restart();
+                        App.getInstance().restart(localIP);
                         runOnUiThread(
                             new Runnable() {
                                 @Override
@@ -119,56 +145,5 @@ public class HelloAndroidActivity extends Activity {
         }
     }
 
-    public class CustomList extends ArrayAdapter<Track> {
-        private final Activity context;
-        private final List<Track> items;
-        private final ArtLoader artLoader;
-        private final AlbumArtDownloader aad;
-
-        public CustomList(Activity context,
-                          List<Track> items) {
-            super(context, R.layout.listitem, items);
-            this.context = context;
-            this.items = new ArrayList<>(items);
-            this.artLoader = new ArtLoader(context);
-            this.aad = new AlbumArtDownloaderCached();
-        }
-
-        public CustomList(Activity context, Track[] items) {
-            super(context, R.layout.listitem, items);
-            this.context = context;
-            this.items = new ArrayList<>(Arrays.asList(items));
-            this.artLoader = new ArtLoader(context);
-            this.aad = new AlbumArtDownloaderCached();
-        }
-
-        @Override
-        public View getView(final int position, View view, ViewGroup parent) {
-            LayoutInflater inflater = context.getLayoutInflater();
-            View rowView = inflater.inflate(R.layout.listitem, null, true);
-            TextView txtTitle = (TextView) rowView.findViewById(R.id.line);
-            TextView txtSecondTitle = (TextView) rowView.findViewById(R.id.secondLine);
-            ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
-
-            Track track = items.get(position);
-
-            txtTitle.setText(track.getTrackName());
-            txtSecondTitle.setText(track.getTrackArtist());
-
-            artLoader.displayImage(track, imageView);
-            return rowView;
-        }
-
-        @Override
-        public int getCount() {
-            return items.size();
-        }
-
-        @Override
-        public void add(Track t) {
-            items.add(t);
-        }
-
-    }
 }
 

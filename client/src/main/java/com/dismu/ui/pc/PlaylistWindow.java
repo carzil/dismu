@@ -132,5 +132,4 @@ public class PlaylistWindow {
         }
         return frame;
     }
-
 }

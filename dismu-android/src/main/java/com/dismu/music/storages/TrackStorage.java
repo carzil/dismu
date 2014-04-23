@@ -14,8 +14,9 @@ import java.util.Map;
 
 public class TrackStorage {
     private HashMap<Track, File> tracks = new HashMap<>();
-    private HashMap<Long, Track> trackHashes = new HashMap<>();
-    private HashMap<Track, Long> trackHashesInv = new HashMap<>();
+    private HashMap<Long, Track> trackFileHashes = new HashMap<>();
+    private HashMap<Integer, Track> trackHashes = new HashMap<>();
+    private HashMap<Track, Long> trackFileHashesInv = new HashMap<>();
     private File trackIndex;
     private int maxTrackID = -1;
     private final Object storageLock = new Object();
@@ -58,8 +59,8 @@ public class TrackStorage {
         int tracksCount = stream.readInt();
         Loggers.playerLogger.info("index tracksCount = {}", tracksCount);
         synchronized (storageLock) {
-            trackHashes.clear();
-            trackHashesInv.clear();
+            trackFileHashes.clear();
+            trackFileHashesInv.clear();
             tracks.clear();
         }
         for (int i = 0; i < tracksCount; i++) {
@@ -69,8 +70,9 @@ public class TrackStorage {
             long fileHash = stream.readLong();
             File trackFile = new File(getTrackFolder(), trackFileName);
             synchronized (storageLock) {
-                trackHashes.put(fileHash, track);
-                trackHashesInv.put(track, fileHash);
+                trackHashes.put(track.hashCode(), track);
+                trackFileHashes.put(fileHash, track);
+                trackFileHashesInv.put(track, fileHash);
                 tracks.put(track, trackFile);
             }
             Loggers.playerLogger.info("read track from index, id={}, hash={}, filename='{}'", track.getID(), fileHash, trackFileName);
@@ -87,7 +89,7 @@ public class TrackStorage {
                 String trackName = entry.getValue().getName();
                 track.writeToStream(stream);
                 stream.writeUTF(trackName);
-                stream.writeLong(trackHashesInv.get(track));
+                stream.writeLong(trackFileHashesInv.get(track));
                 Loggers.playerLogger.info("track id={}, name='{}' registered in index", track.getID(), trackName);
             }
             Loggers.playerLogger.info("index successfully saved");
@@ -121,7 +123,7 @@ public class TrackStorage {
         Loggers.playerLogger.debug("got file to check, path='{}'", sourceFile.getAbsolutePath());
         long fileHash = Utils.getAdler32FileHash(sourceFile);
         Loggers.playerLogger.debug("file hash = {}", fileHash);
-        return trackHashes.containsKey(fileHash);
+        return trackFileHashes.containsKey(fileHash);
     }
 
     /**
@@ -135,7 +137,7 @@ public class TrackStorage {
             long fileHash = Utils.getAdler32FileHash(trackFile);
             if (isInStorage(trackFile)) {
                 Loggers.playerLogger.info("track already registered in index");
-                return trackHashes.get(fileHash);
+                return trackFileHashes.get(fileHash);
             } else {
                 Track track = Track.fromMp3File(trackFile);
                 maxTrackID++;
@@ -143,8 +145,9 @@ public class TrackStorage {
                 File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());
                 Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
                 tracks.put(track, finalTrackFile);
-                trackHashes.put(fileHash, track);
-                trackHashesInv.put(track, fileHash);
+                trackHashes.put(track.hashCode(), track);
+                trackFileHashes.put(fileHash, track);
+                trackFileHashesInv.put(track, fileHash);
                 Utils.copyFile(trackFile, finalTrackFile);
                 Loggers.playerLogger.info("track registered in index");
                 saveIndex();
@@ -172,8 +175,9 @@ public class TrackStorage {
         try {
             File trackFile = tracks.get(track);
             long hash = Utils.getAdler32FileHash(trackFile);
-            trackHashes.remove(hash);
-            trackHashesInv.remove(track);
+            trackHashes.remove(track.hashCode());
+            trackFileHashes.remove(hash);
+            trackFileHashesInv.remove(track);
             tracks.remove(track);
             notify(new TrackStorageEvent(TrackStorageEvent.TRACK_REMOVED, track));
             Loggers.playerLogger.info("removed track id={}, hash={}, filename='{}'", track.getID(), hash, trackFile.getName());
@@ -184,6 +188,10 @@ public class TrackStorage {
 
     public synchronized File getTrackFile(Track track) {
         return tracks.get(track);
+    }
+
+    public synchronized Track getTrackByHash(int hashCode) {
+        return trackHashes.get(hashCode);
     }
 
     public void close() {

@@ -18,6 +18,7 @@ import com.dismu.ui.android.albumart.AlbumArtDownloader;
 import com.dismu.ui.android.albumart.AlbumArtDownloaderCached;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
@@ -41,8 +42,8 @@ public class ArtLoader {
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
     private void init() {
-        final int memClass = ((ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE)).getMemoryClass();
-        final int cacheSize = 1024*1024*memClass/8;
+        Runtime rt = Runtime.getRuntime();
+        final int cacheSize = (int)(rt.freeMemory()/8);
         memoryCache = new LruCache(cacheSize);
         stubDrawable = context.getResources().getDrawable(android.R.drawable.progress_horizontal);
     }
@@ -83,10 +84,13 @@ public class ArtLoader {
             e.printStackTrace();
         }
 
-
-        String url = aad.getURL(track);
-        InputStream is = new BufferedInputStream(new URL(url).openStream());
-        ret = BitmapFactory.decodeStream(is);
+        try {
+            String url = aad.getURL(track);
+            InputStream is = new BufferedInputStream(new URL(url).openStream());
+            ret = BitmapFactory.decodeStream(is);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
         try {
             fileCache.putFile(track, ret);
         } catch (IOException e) {
@@ -143,7 +147,7 @@ public class ArtLoader {
                 td = new TransitionDrawable(drawables);
                 td.setCrossFadeEnabled(true);
                 return td;
-            } catch (IOException e) {
+            } catch (IOException | OutOfMemoryError e) {
                 e.printStackTrace();
             }
             return null;

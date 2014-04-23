@@ -107,5 +107,4 @@ public class AddTracksDialog extends JDialog {
     public Track[] getTracks() {
         return tracks;
     }
-
 }

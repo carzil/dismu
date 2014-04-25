@@ -19,7 +19,7 @@ public class PausablePlayer {
     public final static int FULL_STOP = 4;
 
     private volatile int playerStatus;
-    private int bufferSize = 2048;
+    private int bufferSize = 4096;
     private SourceDataLine playerLine;
     private AudioInputStream currentStream;
     private Thread playerThread;
@@ -139,8 +139,10 @@ public class PausablePlayer {
 
     public void stop() {
         synchronized (playerLock) {
-            playerLine.stop();
-            playerLine.close();
+            if (playerLine != null) {
+                playerLine.stop();
+                playerLine.close();
+            }
             playerStatus = FINISHED;
             playerLock.notifyAll();
             notify(PlayerEvent.STOPPED);

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
+import com.dismu.logging.Loggers;
 
 public class Playlist {
     private ArrayList<Track> tracks;
@@ -107,8 +108,9 @@ public class Playlist {
     public static Playlist readFromStream(DataInputStream stream) throws IOException {
         Playlist playlist = new Playlist();
         playlist.setName(stream.readUTF());
-        playlist.currentTrackIndex = stream.readInt();
         int trackCount = stream.readInt();
+        playlist.currentTrackIndex = stream.readInt();
+        Loggers.playerLogger.debug("{}", playlist.currentTrackIndex);
         for (int i = 0; i < trackCount; i++) {
             Track track = Track.readFromStream(stream);
             playlist.addTrack(track);

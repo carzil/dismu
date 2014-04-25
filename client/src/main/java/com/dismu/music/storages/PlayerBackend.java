@@ -8,10 +8,6 @@ import com.dismu.music.player.PausablePlayer;
 import com.dismu.music.player.Track;
 import com.dismu.utils.events.EventListener;
 
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-
 public class PlayerBackend {
     private Track currentTrack;
     private File currentTrackFile;

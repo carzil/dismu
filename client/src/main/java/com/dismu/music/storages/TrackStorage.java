@@ -21,6 +21,7 @@ public class TrackStorage {
     private ArrayList<EventListener> listeners = new ArrayList<>();
     private static volatile TrackStorage instance;
     private long checkHash;
+    private boolean needReindex = false;
 
     private void notify(Event event) {
         for (EventListener listener : listeners) {
@@ -80,19 +81,17 @@ public class TrackStorage {
 
     public void writeToStream(DataOutputStream stream) throws IOException {
         // TODO: synchronize stream
-        synchronized (stream) {
-            stream.writeInt(tracks.size());
-            stream.writeLong(computeCheckHash());
-            for (Map.Entry<Track, File> entry : tracks.entrySet()) {
-                Track track = entry.getKey();
-                String trackName = entry.getValue().getName();
-                track.writeToStream(stream);
-                stream.writeUTF(trackName);
-                stream.writeLong(Utils.getAdler32FileHash(entry.getValue()));
-                Loggers.playerLogger.info("track id={}, name='{}' registered in index", track.getID(), trackName);
-            }
-            Loggers.playerLogger.info("index successfully saved");
+        stream.writeInt(tracks.size());
+        stream.writeLong(computeCheckHash());
+        for (Map.Entry<Track, File> entry : tracks.entrySet()) {
+            Track track = entry.getKey();
+            String trackName = entry.getValue().getName();
+            track.writeToStream(stream);
+            stream.writeUTF(trackName);
+            stream.writeLong(Utils.getAdler32FileHash(entry.getValue()));
+            Loggers.playerLogger.info("track id={}, name='{}' registered in index", track.getID(), trackName);
         }
+        Loggers.playerLogger.info("index successfully saved");
     }
 
     private long computeCheckHash() {
@@ -114,12 +113,12 @@ public class TrackStorage {
         try {
             readFromStream(new DataInputStream(new BufferedInputStream(new FileInputStream(trackIndex))));
         } catch (EOFException | UTFDataFormatException e) {
-            Loggers.playerLogger.error("corrupted track index, re-indexing", e);
-            reindex();
+            Loggers.playerLogger.error("corrupted track index, need re-indexing", e);
+            needReindex = true;
         }
         if (isCorrupted()) {
             Loggers.playerLogger.info("got corrupted track index, re-indexing");
-            reindex();
+            needReindex = true;
         }
     }
 
@@ -145,6 +144,7 @@ public class TrackStorage {
     }
 
     public synchronized void reindex() {
+        notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_STARTED));
         clear();
         for (File file : getTrackFolder().listFiles()) {
             saveTrack(file, false);
@@ -154,6 +154,7 @@ public class TrackStorage {
         } catch (IOException e) {
             Loggers.playerLogger.error("error while reindexing", e);
         }
+        notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_FINISHED));
     }
 
     /**
@@ -168,7 +169,12 @@ public class TrackStorage {
         Loggers.playerLogger.debug("got file to check, path='{}'", sourceFile.getAbsolutePath());
         long fileHash = Utils.getAdler32FileHash(sourceFile);
         Loggers.playerLogger.debug("file hash = {}", fileHash);
-        return trackHashes.containsKey(fileHash);
+        return isInStorage(fileHash);
+    }
+
+    public synchronized boolean isInStorage(long hash) {
+        Loggers.playerLogger.debug("got hash to check, hash={}", hash);
+        return trackHashes.containsKey(hash);
     }
 
     /**
@@ -181,7 +187,7 @@ public class TrackStorage {
         Loggers.playerLogger.info("got track '{}' for saving", trackFile.getAbsolutePath());
         try {
             long fileHash = Utils.getAdler32FileHash(trackFile);
-            if (isInStorage(trackFile)) {
+            if (isInStorage(fileHash)) {
                 Loggers.playerLogger.info("track already registered in index");
                 return trackHashes.get(fileHash);
             } else {
@@ -252,6 +258,10 @@ public class TrackStorage {
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot save index", e);
         }
+    }
+
+    public boolean isNeedReindex() {
+        return needReindex;
     }
 
     public void addEventListener(EventListener listener) {

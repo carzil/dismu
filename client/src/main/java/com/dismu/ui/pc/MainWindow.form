@@ -38,7 +38,7 @@
               <component id="803f1" class="javax.swing.JButton" binding="prevButton">
                 <constraints border-constraint="West"/>
                 <properties>
-                  <text value="&lt;&lt;"/>
+                  <text value=""/>
                 </properties>
               </component>
               <grid id="a2ff5" layout-manager="BorderLayout" hgap="0" vgap="0">
@@ -54,7 +54,7 @@
                       <component id="378dc" class="javax.swing.JButton" binding="playButton" default-binding="true">
                         <constraints border-constraint="West"/>
                         <properties>
-                          <text value="Play"/>
+                          <text value=""/>
                         </properties>
                       </component>
                     </children>
@@ -67,7 +67,7 @@
                       <component id="5d073" class="javax.swing.JButton" binding="stopButton" default-binding="true">
                         <constraints border-constraint="West"/>
                         <properties>
-                          <text value="Stop"/>
+                          <text value=""/>
                         </properties>
                       </component>
                       <grid id="96e93" layout-manager="BorderLayout" hgap="0" vgap="0">
@@ -78,7 +78,7 @@
                           <component id="915de" class="javax.swing.JButton" binding="nextButton">
                             <constraints border-constraint="West"/>
                             <properties>
-                              <text value="&gt;&gt;"/>
+                              <text value=""/>
                             </properties>
                           </component>
                           <component id="542a6" class="com.dismu.ui.pc.SeekBar" binding="seekBar">

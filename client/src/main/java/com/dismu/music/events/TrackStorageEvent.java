@@ -6,6 +6,8 @@ import com.dismu.utils.events.Event;
 public class TrackStorageEvent implements Event {
     public static final int TRACK_ADDED = 0;
     public static final int TRACK_REMOVED = 1;
+    public static final int REINDEX_STARTED = 2;
+    public static final int REINDEX_FINISHED = 3;
 
     private Track track;
     private int id;

@@ -25,6 +25,8 @@ public class TrackListTable extends JTable {
             public Class getColumnClass(int column) {
                 switch (column) {
                     case 0:
+                        return ImageIcon.class;
+                    case 1:
                         return Integer.class;
                     default:
                         return String.class;
@@ -32,12 +34,14 @@ public class TrackListTable extends JTable {
             }
         };
         setModel(model);
+        model.addColumn(" ");
         model.addColumn("#");
         model.addColumn("Artist");
         model.addColumn("Album");
         model.addColumn("Title");
         model.addColumn("Track");
         removeColumn(getColumn("Track"));
+        getColumn(" ").setMaxWidth(20);
         getColumn("#").setMaxWidth(20);
         setAutoCreateRowSorter(true);
         setIntercellSpacing(new Dimension(0, 0));
@@ -62,8 +66,26 @@ public class TrackListTable extends JTable {
         model.setRowCount(0);
         int n = 1;
         for (Track track : tracks) {
-            model.addRow(new Object[]{n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
+            model.addRow(new Object[]{"", n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
             n++;
+        }
+    }
+
+    public void updateCurrentTrack(Track track) {
+        if (track != null) {
+            DefaultTableModel model = (DefaultTableModel) getModel();
+            for (int i = 0; i < model.getRowCount(); i++) {
+                if (model.getValueAt(i, 5).equals(track)) {
+                    setValueAt(Icons.getPlayIcon(), i, 0);
+                    Loggers.uiLogger.debug("set current track at {}, 0", i);
+                    break;
+                }
+            }
+        } else {
+            DefaultTableModel model = (DefaultTableModel) getModel();
+            for (int i = 0; i < model.getRowCount(); i++) {
+                setValueAt(" ", i, 0);
+            }
         }
     }
 }

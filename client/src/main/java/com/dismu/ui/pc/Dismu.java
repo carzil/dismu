@@ -1,7 +1,6 @@
 package com.dismu.ui.pc;
 
 import com.dismu.exceptions.EmptyPlaylistException;
-import com.dismu.exceptions.NeedReindexingException;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.events.PlayerEvent;
@@ -21,9 +20,6 @@ import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
-import com.sun.media.sound.JDK13Services;
-
-import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -243,7 +239,7 @@ public class Dismu {
     private void updateNowPlaying(Track track) {
         nowPlaying.setLabel(track.getPrettifiedName());
         showInfoMessage("Now playing", track.getPrettifiedName());
-        setStatus("Playing '" + track.getPrettifiedName() + "'", Icons.getPlayIcon());
+        setStatus(track.getPrettifiedName(), Icons.getPlayIcon());
         togglePlayItem.setLabel("Pause");
     }
 
@@ -252,7 +248,7 @@ public class Dismu {
             nowPlaying.setName("Not playing");
         } else {
             nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
-            setStatus("Playing '" + track.getPrettifiedName() + "'", Icons.getPauseIcon());
+            setStatus(track.getPrettifiedName(), Icons.getPauseIcon());
         }
     }
 

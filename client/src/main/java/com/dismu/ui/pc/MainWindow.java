@@ -136,7 +136,7 @@ public class MainWindow {
                     if (SwingUtilities.isLeftMouseButton(e)) {
                         if (e.getClickCount() >= 2) {
                             int rowNumber = currentPlaylistTable.rowAtPoint(e.getPoint());
-                            Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 4);
+                            Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 5);
                             Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
                             try {
                                 playlist.setCurrentTrack(track);
@@ -343,10 +343,20 @@ public class MainWindow {
         update();
     }
 
+    public void updateCurrentTrack() {
+        if (Dismu.getInstance().isPlaying()) {
+            currentPlaylistTable.updateCurrentTrack(null);
+            currentPlaylistTable.updateCurrentTrack(PlayerBackend.getInstance().getCurrentTrack());
+        } else {
+            currentPlaylistTable.updateCurrentTrack(null);
+        }
+    }
+
     public void update() {
         updateTracks();
         updatePlaylists();
         updateSeekBar();
+        updateCurrentTrack();
     }
 
     public void updateSeekBar() {
@@ -364,6 +374,7 @@ public class MainWindow {
         this.isPlaying = isPlaying;
         if (isPlaying) {
             playButton.setIcon(Icons.getPauseIcon());
+            updateCurrentTrack();
         } else {
             playButton.setIcon(Icons.getPlayIcon());
         }

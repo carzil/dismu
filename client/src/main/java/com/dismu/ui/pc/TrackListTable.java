@@ -66,8 +66,10 @@ public class TrackListTable extends JTable {
         model.setRowCount(0);
         int n = 1;
         for (Track track : tracks) {
-            model.addRow(new Object[]{"", n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
-            n++;
+            if (track != null) {
+                model.addRow(new Object[]{"", n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
+                n++;
+            }
         }
     }
 
@@ -76,7 +78,7 @@ public class TrackListTable extends JTable {
             DefaultTableModel model = (DefaultTableModel) getModel();
             for (int i = 0; i < model.getRowCount(); i++) {
                 if (model.getValueAt(i, 5).equals(track)) {
-                    setValueAt(Icons.getPlayIcon(), i, 0);
+                    setValueAt(Icons.getPlayIcon(), convertRowIndexToView(i), 0);
                     Loggers.uiLogger.debug("set current track at {}, 0", i);
                     break;
                 }

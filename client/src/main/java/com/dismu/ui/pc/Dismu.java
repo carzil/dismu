@@ -27,7 +27,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -134,7 +133,7 @@ public class Dismu {
                 if (e.getType() == TrackStorageEvent.REINDEX_STARTED) {
                     setStatus("Re-indexing media library...", Icons.getLoaderIcon());
                 } else if (e.getType() == TrackStorageEvent.REINDEX_FINISHED) {
-                    setStatus("Re-indexing finished");
+                    setStatus(String.format("Re-indexing finished (found %d tracks)", trackStorage.getTracks().length));
                 }
             }
         });
@@ -255,6 +254,7 @@ public class Dismu {
     private void updateStopped() {
         nowPlaying.setLabel("Not playing");
         setStatus("Stopped", Icons.getStopIcon());
+        mainWindow.updateCurrentTrack();
     }
 
     public void run() {
@@ -271,7 +271,11 @@ public class Dismu {
                 startP2P();
             }
         });
-
+        try {
+            uiThread.join();
+        } catch (InterruptedException e) {
+            Loggers.uiLogger.error("error while joining", e);
+        }
         if (trackStorage.isNeedReindex()) {
             trackStorage.removeEventListener(trackListener);
             trackStorage.reindex();

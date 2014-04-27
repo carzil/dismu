@@ -55,7 +55,7 @@ public class PlaylistWindow {
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() >= 2) {
                         if (SwingUtilities.isLeftMouseButton(e)) {
-                            int rowNumber = table1.rowAtPoint(e.getPoint());
+                            int rowNumber = table1.convertRowIndexToModel(table1.rowAtPoint(e.getPoint()));
                             Track track = (Track) table1.getModel().getValueAt(rowNumber, 4);
                             try {
                                 Dismu dismu = Dismu.getInstance();

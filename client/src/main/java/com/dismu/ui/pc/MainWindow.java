@@ -14,6 +14,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -135,7 +137,7 @@ public class MainWindow {
                 public void mouseClicked(MouseEvent e) {
                     if (SwingUtilities.isLeftMouseButton(e)) {
                         if (e.getClickCount() >= 2) {
-                            int rowNumber = currentPlaylistTable.rowAtPoint(e.getPoint());
+                            int rowNumber = currentPlaylistTable.convertRowIndexToModel(currentPlaylistTable.rowAtPoint(e.getPoint()));
                             Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 5);
                             Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
                             try {
@@ -184,7 +186,7 @@ public class MainWindow {
             allPlaylistsTable.setBorder(BorderFactory.createEmptyBorder());
             allPlaylistsTable.removeColumn(allPlaylistsTable.getColumn("Playlist"));
             allPlaylistsTable.getColumn("#").setMaxWidth(25);
-            allPlaylistsTable.setAutoCreateRowSorter(true);
+            allPlaylistsTable.setRowSorter(new TableRowSorter<>(allPlaylistsModel));
             allPlaylistsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
                 @Override
@@ -202,7 +204,7 @@ public class MainWindow {
             allPlaylistsTable.addMouseListener(new MouseListener() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    int rowNumber = allPlaylistsTable.rowAtPoint(e.getPoint());
+                    int rowNumber = allPlaylistsTable.convertRowIndexToModel(allPlaylistsTable.rowAtPoint(e.getPoint()));
                     Dismu dismu = Dismu.getInstance();
                     Playlist playlist = (Playlist) allPlaylistsTable.getModel().getValueAt(rowNumber, 3);
                     if (SwingUtilities.isLeftMouseButton(e)) {

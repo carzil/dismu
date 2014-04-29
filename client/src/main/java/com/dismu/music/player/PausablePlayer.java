@@ -19,7 +19,7 @@ public class PausablePlayer {
     public final static int FULL_STOP = 4;
 
     private volatile int playerStatus;
-    private int bufferSize = 4096;
+    private int bufferSize = 4096 * 4;
     private SourceDataLine playerLine;
     private AudioInputStream currentStream;
     private Thread playerThread;
@@ -45,6 +45,7 @@ public class PausablePlayer {
             if (playerLine != null) {
                 playerLine.stop();
                 playerLine.close();
+                Loggers.playerLogger.info("line stopped");
             }
             try {
                 if (currentStream != null) {
@@ -58,8 +59,10 @@ public class PausablePlayer {
                 AudioFormat decodedFormat = getDecodedFormat(currentStream.getFormat());
                 playerLine = (SourceDataLine) AudioSystem.getLine(new DataLine.Info(SourceDataLine.class, decodedFormat));
                 currentStream = AudioSystem.getAudioInputStream(decodedFormat, currentStream);
+                Loggers.playerLogger.debug("current stream = {}", currentStream);
                 playerLine.open(decodedFormat, bufferSize);
                 playerLine.start();
+                Loggers.playerLogger.info("line opened and started");
             } catch (UnsupportedAudioFileException e) {
                 Loggers.playerLogger.error("unsupported format", e);
                 return;
@@ -175,8 +178,9 @@ public class PausablePlayer {
                     }
                     if (readBytes == -1) {
                         playerLine.drain();
+                        playerLine.stop();
+                        playerLine.close();
                         notify(PlayerEvent.FINISHED);
-                        stop();
                     } else if (readBytes > 0) {
                         writtenBytes = playerLine.write(data, 0, readBytes);
                     }

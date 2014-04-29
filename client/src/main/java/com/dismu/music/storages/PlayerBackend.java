@@ -77,6 +77,7 @@ public class PlayerBackend {
     public void setTrack(Track track) throws TrackNotFoundException {
         currentTrack = track;
         currentTrackFile = TrackStorage.getInstance().getTrackFile(track);
+        Loggers.playerLogger.info("TrackStorage yielded file {}", currentTrackFile);
         try {
             currentInputStream = new BufferedInputStream(new FileInputStream(currentTrackFile));
             player.loadInputStream(currentInputStream);

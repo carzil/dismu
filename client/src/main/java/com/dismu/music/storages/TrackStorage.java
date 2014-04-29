@@ -30,7 +30,11 @@ public class TrackStorage {
     }
 
     private File getTrackFolder() {
-        return new File(Utils.getAppFolderPath(), "tracks");
+        File trackFolder = new File(Utils.getAppFolderPath(), "tracks");
+        if (!trackFolder.exists()) {
+            trackFolder.mkdirs();
+        }
+        return trackFolder;
     }
 
     private TrackStorage() {
@@ -70,9 +74,14 @@ public class TrackStorage {
             String trackFileName = stream.readUTF();
             long fileHash = stream.readLong();
             File trackFile = new File(getTrackFolder(), trackFileName);
-            synchronized (storageLock) {
-                trackHashes.put(fileHash, track);
-                tracks.put(track, trackFile);
+            if (trackFile.exists()) {
+                Loggers.playerLogger.info("file '{}' exists", trackFileName);
+                synchronized (storageLock) {
+                    trackHashes.put(fileHash, track);
+                    tracks.put(track, trackFile);
+                }
+            } else {
+                Loggers.playerLogger.info("file '{}' doesn't exists", trackFileName);
             }
             Loggers.playerLogger.info("read track from index, id={}, hash={}, filename='{}'", track.getID(), fileHash, trackFileName);
         }
@@ -146,13 +155,18 @@ public class TrackStorage {
     public synchronized void reindex() {
         notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_STARTED));
         clear();
-        for (File file : getTrackFolder().listFiles()) {
-            saveTrack(file, false);
-        }
-        try {
-            saveIndex();
-        } catch (IOException e) {
-            Loggers.playerLogger.error("error while reindexing", e);
+        File[] files = getTrackFolder().listFiles();
+        if (files != null) {
+            for (File file : files) {
+                saveTrack(file, false);
+            }
+            try {
+                saveIndex();
+            } catch (IOException e) {
+                Loggers.playerLogger.error("error while reindexing", e);
+            }
+        } else {
+            Loggers.playerLogger.info("no tracks in '{}'", getTrackFolder().getAbsolutePath());
         }
         notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_FINISHED));
     }
@@ -195,7 +209,7 @@ public class TrackStorage {
                 if (track != null) {
                     maxTrackID++;
                     track.setID(maxTrackID);
-                    File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());
+                    File finalTrackFile = new File(getTrackFolder(), Long.toString(fileHash) + track.getExtension());
                     Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
                     tracks.put(track, finalTrackFile);
                     trackHashes.put(fileHash, track);
@@ -217,6 +231,10 @@ public class TrackStorage {
             Loggers.playerLogger.error("cannot save track file", e);
             return null;
         }
+    }
+
+    public synchronized void commit() throws IOException {
+        saveIndex();
     }
 
     public Track saveTrack(File file) {

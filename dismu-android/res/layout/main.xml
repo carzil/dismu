@@ -8,5 +8,43 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:id="@+id/listView" android:focusable="true"/>
+    <LinearLayout android:orientation="horizontal"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content">
+        <ImageView
+                android:id="@+id/icon"
+                android:layout_width="68dip"
+                android:layout_height="68dip"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentTop="true"
+                android:layout_marginRight="6dip"
+                android:scaleType="centerCrop"
+                android:contentDescription="TODO"
+                android:src="@drawable/adele" />
+
+        <TextView
+                android:id="@+id/secondLine"
+                android:layout_below="@+id/line"
+                android:layout_width="fill_parent"
+                android:layout_height="26dip"
+                android:layout_alignParentRight="true"
+                android:layout_toRightOf="@id/icon"
+                android:ellipsize="marquee"
+                android:singleLine="true"
+                android:text="Description"
+                android:textSize="12sp" />
+
+        <TextView
+                android:id="@+id/line"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentTop="true"
+                android:layout_alignWithParentIfMissing="true"
+                android:layout_toRightOf="@id/icon"
+                android:gravity="center_vertical"
+                android:text="Example application"
+                android:textSize="16sp" />
+    </LinearLayout>
 </LinearLayout>
 

@@ -43,20 +43,16 @@
             <version>1.0.2</version>
         </dependency>
         <dependency>
-            <groupId>de.huxhorn.sulky</groupId>
-            <artifactId>de.huxhorn.sulky.3rdparty.jlayer</artifactId>
-            <version>1.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
         </dependency>
         <dependency>
-            <groupId>com.mpatric</groupId>
-            <artifactId>mp3agic</artifactId>
-            <version>0.8.2</version>
+            <groupId>net.jthink</groupId>
+            <artifactId>jaudiotagger</artifactId>
+            <version>2.0.4</version>
         </dependency>
+
     </dependencies>
 	<build>
 		<finalName>${project.artifactId}</finalName>

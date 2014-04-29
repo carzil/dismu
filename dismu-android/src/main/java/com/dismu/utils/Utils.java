@@ -144,4 +144,35 @@ public class Utils {
         buffer.flush();
         return buffer.toByteArray();
     }
+
+    public static String titleCase(String string) {
+        StringBuilder titleCase = new StringBuilder();
+        boolean nextTitleCase = true;
+        for (char c : string.toCharArray()) {
+            if (Character.isSpaceChar(c)) {
+                nextTitleCase = true;
+            } else if (nextTitleCase) {
+                c = Character.toTitleCase(c);
+                nextTitleCase = false;
+            }
+            titleCase.append(c);
+        }
+        return titleCase.toString();
+    }
+
+    public static String fileBasename(String filename) {
+        return splitFilename(filename)[0];
+    }
+
+    private static String[] splitFilename(String filename) {
+        return filename.split("\\.(?=[^\\.]+$)");
+    }
+
+    public static String fileExtension(String filename) {
+        String[] tmp = splitFilename(filename);
+        if (tmp.length == 1) {
+            return null;
+        }
+        return tmp[1];
+    }
 }

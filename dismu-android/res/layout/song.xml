@@ -24,7 +24,7 @@
             android:textSize="16dp"
             android:paddingLeft="10dp"
             android:textStyle="bold"
-            android:text="The Good, The Bad And The Ugly"
+            android:text="Not loaded"
             android:layout_marginTop="10dp"/>"
         
         <!-- Playlist button -->
@@ -37,18 +37,19 @@
     </LinearLayout>
     
     <!-- Song Thumbnail Image -->
-    <LinearLayout 
+    <LinearLayout
         android:id="@+id/songThumbnail"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="fill_parent"
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
         android:gravity="center"
         android:layout_below="@id/player_header_bg">
-    	<ImageView android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+    	<ImageView android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
             android:src="@drawable/adele"
-            android:id="@+id/songThumbnailImage" />
+            android:id="@+id/songThumbnailImage"
+            android:scaleType="fitStart"/>
     </LinearLayout>
     
     <!-- Player Footer -->

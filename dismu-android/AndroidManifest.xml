@@ -29,9 +29,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="com.dismu.ui.android.SongActivity"
-                  android:noHistory="true">
-        </activity>
     </application>
 
 </manifest>

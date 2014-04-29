@@ -41,10 +41,9 @@
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-log4j12:1.7.5" level="project" />
     <orderEntry type="library" name="Maven: log4j:log4j:1.2.17" level="project" />
     <orderEntry type="library" name="Maven: de.mindpipe.android:android-logging-log4j:1.0.2" level="project" />
-    <orderEntry type="library" name="Maven: de.huxhorn.sulky:de.huxhorn.sulky.3rdparty.jlayer:1.0" level="project" />
     <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
     <orderEntry type="library" name="Maven: junit:junit:4.10" level="project" />
-    <orderEntry type="library" name="Maven: com.mpatric:mp3agic:0.8.2" level="project" />
+    <orderEntry type="library" name="Maven: net.jthink:jaudiotagger:2.0.4" level="project" />
   </component>
 </module>
 

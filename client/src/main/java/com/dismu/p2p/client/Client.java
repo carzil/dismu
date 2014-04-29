@@ -1,5 +1,6 @@
 package com.dismu.p2p.client;
 
+import com.dismu.logging.Loggers;
 import com.dismu.music.player.Track;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;
@@ -9,7 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 public class Client {
     private InetAddress address;
@@ -18,6 +21,8 @@ public class Client {
     private OutputStream os = null;
     private InputStream in = null;
     private String userId;
+    private final static int TIMEOUT = 10 * 1000; // in ms
+    private boolean isConnected = false;
 
     public static void main(String[] args) throws IOException {
         Client client = new Client(InetAddress.getLocalHost(), 1775, "a");
@@ -35,7 +40,14 @@ public class Client {
     }
 
     public void start() throws IOException {
-        socket = new Socket(address, port);
+        socket = new Socket();
+        try {
+            socket.connect(new InetSocketAddress(address, port), TIMEOUT);
+            isConnected = true;
+        } catch (SocketTimeoutException e) {
+            Loggers.clientLogger.info("connection timeout, address='{}', port='{}'", address, port);
+            return;
+        }
         os = socket.getOutputStream();
         in = socket.getInputStream();
     }
@@ -73,5 +85,9 @@ public class Client {
 
     public int getPort() {
         return port;
+    }
+
+    public boolean isConnected() {
+        return isConnected;
     }
 }

@@ -95,6 +95,7 @@ public class Track {
     }
 
     public void writeToStream(DataOutputStream stream) throws IOException {
+        stream.writeInt(trackFormat);
         stream.writeInt(trackID);
         stream.writeInt(trackNumber);
         stream.writeInt(trackDuration);
@@ -105,6 +106,7 @@ public class Track {
 
     public static Track readFromStream(DataInputStream stream) throws IOException {
         Track track = new Track();
+        track.setTrackFormat(stream.readInt());
         track.setID(stream.readInt());
         track.setTrackNumber(stream.readInt());
         track.setTrackDuration(stream.readInt());
@@ -244,7 +246,6 @@ public class Track {
         }
         String encoding = audioFile.getAudioHeader().getEncodingType().toLowerCase();
         track.setTrackDuration(audioFile.getAudioHeader().getTrackLength());
-        Loggers.playerLogger.debug("{}", encoding);
         if (encoding.contains("mp3")) {
             track.setTrackFormat(FORMAT_MP3);
             track.parseMp3Meta((MP3File) audioFile);
@@ -253,5 +254,18 @@ public class Track {
             track.parseFlacMeta(audioFile);
         }
         return track;
+    }
+
+    public String toString() {
+        return String.format("Track['%s', format=%d]", getPrettifiedName(), trackFormat);
+    }
+
+    public String getExtension() {
+        if (getTrackFormat() == FORMAT_MP3) {
+            return ".mp3";
+        } else if (getTrackFormat() == FORMAT_FLAC) {
+            return ".flac";
+        }
+        return ".unknown";
     }
 }

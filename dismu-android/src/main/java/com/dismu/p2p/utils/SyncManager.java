@@ -14,7 +14,7 @@ public class SyncManager {
         TransactionHelper helper = new TransactionHelper(os, is);
         TrackStorage ts = TrackStorage.getInstance();
 
-        File tempfile = File.createTempFile("dismu-", null, Utils.getAppFolderPath());
+        File tempfile = File.createTempFile("dismu-", ".mp3", Utils.getAppFolderPath());
 
         OutputStream fos = new BufferedOutputStream(new FileOutputStream(tempfile)); // TODO
         InputStream fin = helper.receiveFile(

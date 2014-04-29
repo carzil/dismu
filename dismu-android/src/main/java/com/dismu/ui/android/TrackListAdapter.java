@@ -54,19 +54,11 @@ public class TrackListAdapter extends ArrayAdapter<Track> {
     private final List<Track> items;
     private final ArtLoader artLoader;
 
-    public TrackListAdapter(Activity context,
-                            List<Track> items) {
-        super(context, R.layout.listitem, items);
-        this.context = context;
-        this.items = new ArrayList<>(items);
-        this.artLoader = new ArtLoader(context);
-    }
-
-    public TrackListAdapter(Activity context, Track[] items) {
+    public TrackListAdapter(Activity context, Track[] items, ArtLoader artLoader) {
         super(context, R.layout.listitem, items);
         this.context = context;
         this.items = new ArrayList<>(Arrays.asList(items));
-        this.artLoader = new ArtLoader(context);
+        this.artLoader = artLoader;
     }
 
     @Override

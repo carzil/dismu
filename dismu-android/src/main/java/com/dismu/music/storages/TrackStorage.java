@@ -139,7 +139,7 @@ public class TrackStorage {
                 Loggers.playerLogger.info("track already registered in index");
                 return trackFileHashes.get(fileHash);
             } else {
-                Track track = Track.fromMp3File(trackFile);
+                Track track = Track.fromFile(trackFile);
                 maxTrackID++;
                 track.setID(maxTrackID);
                 File finalTrackFile = new File(getTrackFolder(), track.getPrettifiedFileName());

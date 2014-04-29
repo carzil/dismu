@@ -13,6 +13,7 @@ import android.os.Build;
 import android.util.LruCache;
 import android.view.View;
 import android.widget.ImageView;
+import com.dismu.android1.R;
 import com.dismu.music.player.Track;
 import com.dismu.ui.android.albumart.AlbumArtDownloader;
 import com.dismu.ui.android.albumart.AlbumArtDownloaderCached;
@@ -45,7 +46,7 @@ public class ArtLoader {
         Runtime rt = Runtime.getRuntime();
         final int cacheSize = (int)(rt.freeMemory()/8);
         memoryCache = new LruCache(cacheSize);
-        stubDrawable = context.getResources().getDrawable(android.R.drawable.progress_horizontal);
+        stubDrawable = context.getResources().getDrawable(R.drawable.adele);//android.R.drawable.progress_horizontal);
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)

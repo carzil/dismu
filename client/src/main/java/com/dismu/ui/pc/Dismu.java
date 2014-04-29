@@ -20,6 +20,7 @@ import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
+import javax.media.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -27,6 +28,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -188,6 +190,7 @@ public class Dismu {
         final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
         Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
+        Loggers.p2pLogger.info("userID={}", getUserID());
         for (final Seed s : seeds) {
             if (!seedsTable.containsKey(s)) {
                 if (s.userId.equals(userId)) {
@@ -203,8 +206,10 @@ public class Dismu {
                     public void run() {
                         try {
                             client.start();
-                            clients.add(client);
-                            client.synchronize();
+                            if (client.isConnected()) {
+                                clients.add(client);
+                                client.synchronize();
+                            }
                         } catch (IOException e) {
                             Loggers.uiLogger.error("error in client", e);
                         }
@@ -239,12 +244,14 @@ public class Dismu {
         nowPlaying.setLabel(track.getPrettifiedName());
         showInfoMessage("Now playing", track.getPrettifiedName());
         setStatus(track.getPrettifiedName(), Icons.getPlayIcon());
+        trayIcon.setToolTip(String.format("Dismu playing: %s", track.getPrettifiedFileName()));
         togglePlayItem.setLabel("Pause");
     }
 
     private void updatePaused(Track track) {
         if (track == null) {
             nowPlaying.setName("Not playing");
+            trayIcon.setToolTip("Dismu");
         } else {
             nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
             setStatus(track.getPrettifiedName(), Icons.getPauseIcon());
@@ -340,14 +347,17 @@ public class Dismu {
             playerBackend.stop();
         }
         try {
-            if (next) {
-                Loggers.uiLogger.info("next track");
-                currentPlaylist.next();
-            } else {
-                Loggers.uiLogger.info("prev track");
-                currentPlaylist.prev();
+            Playlist cPlaylist = getCurrentPlaylist();
+            if (cPlaylist != null) {
+                if (next) {
+                    Loggers.uiLogger.info("next track");
+                    cPlaylist.next();
+                } else {
+                    Loggers.uiLogger.info("prev track");
+                    cPlaylist.prev();
+                }
+                play();
             }
-            play();
         } catch (EmptyPlaylistException e) {
             showAlert("Current playlist is empty!");
         }

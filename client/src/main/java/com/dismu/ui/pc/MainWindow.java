@@ -7,6 +7,7 @@ import com.dismu.music.player.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.utils.Utils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -19,6 +20,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
@@ -64,6 +66,7 @@ public class MainWindow {
     private JButton stopButton;
     private JButton nextButton;
     private SeekBar seekBar;
+    private JPanel allTracksPanel;
     private JTable table1;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
@@ -81,12 +84,6 @@ public class MainWindow {
                 @Override
                 public boolean dispatchKeyEvent(KeyEvent e) {
                     if (e.getID() == KeyEvent.KEY_PRESSED) {
-//                        Loggers.uiLogger.debug("key event, key={}", e.getKeyCode());
-                        // TODO: it's not working: when prompting it's pauses too
-                        /*if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                            Dismu.getInstance().togglePlay();
-                            Loggers.uiLogger.debug("pause issued by space");
-                        } else*/
                         if (e.isControlDown()) {
                             if (e.getKeyCode() == KeyEvent.VK_O) {
                                 addTracks();
@@ -98,6 +95,7 @@ public class MainWindow {
                     return false;
                 }
             });
+            bindAllKeys();
             fileChooser.setMultiSelectionEnabled(true);
             statusPanel.setBorder(BorderFactory.createLoweredBevelBorder());
             statusLabel.setBorder(new EmptyBorder(0, 2, 0, 0));
@@ -142,6 +140,7 @@ public class MainWindow {
                             Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
                             try {
                                 playlist.setCurrentTrack(track);
+                                Dismu.getInstance().stop();
                                 Dismu.getInstance().play();
                             } catch (TrackNotFoundException ex) {
                                 Loggers.uiLogger.error("TrackNotFound exception", e);
@@ -302,6 +301,13 @@ public class MainWindow {
         return dismuFrame;
     }
 
+    public void bindKey(KeyStroke keyStroke, ActionListener actionListener) {
+        mainPanel.registerKeyboardAction(actionListener, keyStroke, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    }
+
+    public void bindAllKeys() {
+    }
+
     public void updateTracks() {
         Playlist currentPlaylist = Dismu.getInstance().getCurrentPlaylist();
         if (currentPlaylist != null) {
@@ -326,14 +332,35 @@ public class MainWindow {
         statusLabel.setIcon(icon);
     }
 
+    private void processTracks() {
+        File[] selectedFiles = fileChooser.getSelectedFiles();
+        Dismu dismuInstance = Dismu.getInstance();
+        TrackStorage storage = TrackStorage.getInstance();
+        int processed = 0;
+        for (File file : selectedFiles) {
+            storage.saveTrack(file, false);
+            processed++;
+            dismuInstance.setStatus(String.format("Processing selected files... (%d/%d done)", processed, selectedFiles.length), Icons.getLoaderIcon());
+        }
+        dismuInstance.setStatus("Saving tracks...", Icons.getLoaderIcon());
+        try {
+            storage.commit();
+            dismuInstance.setStatus("Tracks saved to media library");
+        } catch (IOException e) {
+            Loggers.uiLogger.error("cannot save track index");
+            dismuInstance.setStatus("Failed to save tracks");
+        }
+    }
+
     private void addTracks() {
         int result = fileChooser.showOpenDialog(mainPanel);
         if (result == JFileChooser.APPROVE_OPTION) {
-            for (File file : fileChooser.getSelectedFiles()) {
-                // TODO: check for mp3
-                Track track = TrackStorage.getInstance().saveTrack(file);
-                Dismu.getInstance().setStatus("Track '" + track.getTrackArtist() + " - " + track.getTrackName() + "' added to media library");
-            }
+            Utils.runThread(new Runnable() {
+                @Override
+                public void run() {
+                    processTracks();
+                }
+            });
         }
     }
 
@@ -380,5 +407,9 @@ public class MainWindow {
         } else {
             playButton.setIcon(Icons.getPlayIcon());
         }
+    }
+
+    private void createUIComponents() {
+        tabbedPane1 = new JTabbedPane();
     }
 }

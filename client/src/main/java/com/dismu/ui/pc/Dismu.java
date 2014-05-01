@@ -15,6 +15,8 @@ import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.Server;
+import com.dismu.utils.PCPlatformUtils;
+import com.dismu.utils.Utils;
 import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
@@ -36,6 +38,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Dismu {
+    static {
+        Utils.setPlatformUtils(new PCPlatformUtils());
+    }
+
     public static ArrayList<Client> clients = new ArrayList<>();
     public static Server server;
 
@@ -181,7 +187,16 @@ public class Dismu {
             }
         });
         serverThread.start();
-        api.register(userId, groupId, serverPort);
+        String localIP = "";
+         try {
+            localIP = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        api.register(userId, groupId, localIP, serverPort);
         initClients();
     }
 

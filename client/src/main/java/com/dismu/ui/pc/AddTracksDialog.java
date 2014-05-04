@@ -1,15 +1,9 @@
 package com.dismu.ui.pc;
 
-import com.dismu.logging.Loggers;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.utils.Utils;
 
-import javax.management.DescriptorAccess;
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;

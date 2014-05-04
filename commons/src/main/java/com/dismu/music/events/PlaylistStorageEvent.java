@@ -1,4 +1,4 @@
-package com.dismu.music.storages.events;
+package com.dismu.music.events;
 
 import com.dismu.music.player.Playlist;
 import com.dismu.utils.events.Event;
@@ -26,4 +26,4 @@ public class PlaylistStorageEvent implements Event {
     public Playlist getPlaylist() {
         return playlist;
     }
- }
+}

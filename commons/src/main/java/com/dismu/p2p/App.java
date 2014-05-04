@@ -88,13 +88,6 @@ public class App {
             clientThread.start();
 
         }
-        clients.clear();
-        server.stop();
-        final API api = new APIImpl();
-        api.unregister(userId);
-        hasStarted = false;
-
-        start(userId, groupId, localIP, port);
     }
 
     synchronized public void restart(String localIP) {

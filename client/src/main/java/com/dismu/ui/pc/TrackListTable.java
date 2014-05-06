@@ -2,11 +2,17 @@ package com.dismu.ui.pc;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Track;
+import com.dismu.music.storages.TrackStorage;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.ArrayList;
 
 public class TrackListTable extends JTable {
     public TrackListTable() {
@@ -55,6 +61,35 @@ public class TrackListTable extends JTable {
                 return c;
             }
         });
+        registerKeyboardAction(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSelectedTracks();
+            }
+        }, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    }
+
+    private void deleteSelectedTracks() {
+        if (getSelectedRowCount() > 0) {
+            int[] selectedRows = getSelectedRows();
+            ArrayList<Track> selectedTracks = new ArrayList<>();
+            TrackStorage storage = TrackStorage.getInstance();
+            if (Dismu.getInstance().confirmAction("Delete selected tracks", String.format("Delete selected tracks (%d tracks(s))?", selectedRows.length))) {
+                for (int rowIndex : selectedRows) {
+                    selectedTracks.add(getTrackByRow(rowIndex));
+                }
+                int processed = 0;
+                for (Track track : selectedTracks) {
+                    storage.removeTrack(track);
+                    processed++;
+                }
+                Dismu.getInstance().setStatus(String.format("Deleted %d track(s)", processed));
+            }
+        }
+    }
+
+    public Track getTrackByRow(int rowIndex) {
+        return (Track) getModel().getValueAt(convertRowIndexToModel(rowIndex), 5);
     }
 
     public void updateTracks(Track[] tracks) {
@@ -73,9 +108,8 @@ public class TrackListTable extends JTable {
         if (track != null) {
             DefaultTableModel model = (DefaultTableModel) getModel();
             for (int i = 0; i < model.getRowCount(); i++) {
-                if (model.getValueAt(i, 5).equals(track)) {
+                if (getTrackByRow(i).equals(track)) {
                     setValueAt(Icons.getPlayIcon(), convertRowIndexToView(i), 0);
-                    Loggers.uiLogger.debug("set current track at {}, 0", i);
                     break;
                 }
             }

@@ -141,6 +141,8 @@ public class Dismu {
                     setStatus("Re-indexing media library...", Icons.getLoaderIcon());
                 } else if (e.getType() == TrackStorageEvent.REINDEX_FINISHED) {
                     setStatus(String.format("Re-indexing finished (found %d tracks)", trackStorage.getTracks().length));
+                } else if (e.getType() == TrackStorageEvent.TRACK_REMOVED) {
+                    updateTracks();
                 }
             }
         });
@@ -190,8 +192,6 @@ public class Dismu {
          try {
             localIP = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -679,7 +679,7 @@ public class Dismu {
     }
 
     public void updateTracks() {
-        mainWindow.updateTracks();
+        mainWindow.update();
     }
 
     public boolean isPlaying() {
@@ -708,4 +708,8 @@ public class Dismu {
             playerBackend.seek(playerBackend.getCurrentTrack().getTrackDuration() * (1.0 * value / 100.0));
         }
     }
+
+    public boolean confirmAction(String header, String message) {
+        return JOptionPane.showConfirmDialog(mainWindow.getFrame(), message, header, JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION;
+    };
 }

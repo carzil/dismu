@@ -86,9 +86,8 @@ public class AddTracksDialog extends JDialog {
     private void onOK() {
         tracks = new Track[table1.getSelectedRowCount()];
         int i = 0;
-        DefaultTableModel model = (DefaultTableModel) table1.getModel();
         for (int rowIndex : table1.getSelectedRows()) {
-            tracks[i] = (Track) model.getValueAt(table1.convertRowIndexToModel(rowIndex), 5);
+            tracks[i] = table1.getTrackByRow(rowIndex);
             i++;
         }
         dispose();

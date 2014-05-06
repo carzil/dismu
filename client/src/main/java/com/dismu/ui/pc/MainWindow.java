@@ -131,8 +131,7 @@ public class MainWindow {
                 public void mouseClicked(MouseEvent e) {
                     if (SwingUtilities.isLeftMouseButton(e)) {
                         if (e.getClickCount() >= 2) {
-                            int rowNumber = currentPlaylistTable.convertRowIndexToModel(currentPlaylistTable.rowAtPoint(e.getPoint()));
-                            Track track = (Track) currentPlaylistTable.getModel().getValueAt(rowNumber, 5);
+                            Track track = currentPlaylistTable.getTrackByRow(currentPlaylistTable.rowAtPoint(e.getPoint()));
                             Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
                             try {
                                 playlist.setCurrentTrack(track);

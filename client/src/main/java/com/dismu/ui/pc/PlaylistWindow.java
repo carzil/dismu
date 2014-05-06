@@ -55,8 +55,7 @@ public class PlaylistWindow {
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() >= 2) {
                         if (SwingUtilities.isLeftMouseButton(e)) {
-                            int rowNumber = table1.convertRowIndexToModel(table1.rowAtPoint(e.getPoint()));
-                            Track track = (Track) table1.getModel().getValueAt(rowNumber, 4);
+                            Track track = table1.getTrackByRow(table1.rowAtPoint(e.getPoint()));
                             try {
                                 Dismu dismu = Dismu.getInstance();
                                 dismu.setCurrentPlaylist(playlist);
@@ -104,7 +103,7 @@ public class PlaylistWindow {
                         }
                         refreshPlaylist(playlist);
                     } else {
-                        Dismu.getInstance().showAlert("You didn't selected any track");
+                        Dismu.getInstance().showAlert("You didn't selected any track!");
                     }
                 }
             });

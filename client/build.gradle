@@ -1,0 +1,29 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name 'Shadow'
+            url 'http://dl.bintray.com/content/johnrengelman/gradle-plugins'
+        }
+    }
+    dependencies {
+        classpath 'org.gradle.plugins:shadow:0.7.4'
+    }
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.1.5'
+}
+
+run {
+    ignoreExitValue = true
+}
+
+mainClassName = 'com.dismu.ui.pc.Dismu'
+
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest { 
+        attributes 'Main-Class': mainClassName
+    }
+}

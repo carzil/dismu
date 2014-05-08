@@ -91,6 +91,14 @@ public class App {
     }
 
     synchronized public void restart(String localIP) {
+        stop();
+
+        this.localIP = localIP;
+
+        start(userId, groupId, this.localIP, port);
+    }
+
+    synchronized public void stop() {
         for (Client c : clients) {
             try {
                 c.stop();
@@ -103,9 +111,5 @@ public class App {
         final API api = new APIImpl();
         api.unregister(userId);
         hasStarted = false;
-
-        this.localIP = localIP;
-
-        start(userId, groupId, this.localIP, port);
     }
 }

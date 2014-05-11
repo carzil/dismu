@@ -19,10 +19,10 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.LinkedList;
 
-public class ServerWorker implements Runnable {
+public class ClassicalServerWorker implements Runnable {
     private final Socket clientSocket;
 
-    public ServerWorker(Socket s) {
+    public ClassicalServerWorker(Socket s) {
         this.clientSocket = s;
     }
 

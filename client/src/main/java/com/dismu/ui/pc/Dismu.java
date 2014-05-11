@@ -14,12 +14,17 @@ import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
+import com.dismu.p2p.server.ClassicalServer;
+import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
 import com.dismu.utils.PCPlatformUtils;
 import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import javax.swing.*;
 import java.awt.*;
@@ -179,7 +184,11 @@ public class Dismu {
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                server = new Server(serverPort);
+                try {
+                    server = new NIOServer(serverPort);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 try {
                     server.start();
                 } finally {
@@ -192,6 +201,8 @@ public class Dismu {
          try {
             localIP = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
 

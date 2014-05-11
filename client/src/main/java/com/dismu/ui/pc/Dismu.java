@@ -14,6 +14,8 @@ import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
+import com.dismu.p2p.server.ClassicalServer;
+import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
 import com.dismu.utils.PCPlatformUtils;
 import com.dismu.utils.Utils;
@@ -158,7 +160,11 @@ public class Dismu {
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                server = new Server(serverPort);
+                try {
+                    server = new NIOServer(serverPort);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 try {
                     server.start();
                 } finally {

@@ -5,9 +5,14 @@ import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
+import com.dismu.p2p.server.ClassicalServer;
+import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
+import com.dismu.utils.Utils;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class App {
@@ -31,10 +36,22 @@ public class App {
     }
 
     public static void main(final String[] args) {
-        final String userId = args[0];
-        final int port = Integer.valueOf(args[1]);
+        String userId = "pi";
+        int port = 1337;
+        String localIP = "";
 
-        App.getInstance().start(userId, "alpha", args[2], port);
+        try {
+            localIP = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        if (args.length >= 3) {
+            userId = args[0];
+            port = Integer.valueOf(args[1]);
+            localIP = args[2];
+        }
+        App.getInstance().start(userId, "alpha", localIP, port);
     }
 
     synchronized public void start(final String userId, final String groupId, String localIP, final int port) {
@@ -53,7 +70,11 @@ public class App {
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                server = new Server(port);
+                try {
+                    server = new NIOServer(port);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 try {
                     server.start();
                 } catch (Exception e) {

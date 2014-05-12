@@ -82,6 +82,7 @@ public class TrackStorage {
                 synchronized (storageLock) {
                     trackHashes.put(track.hashCode(), track);
                     trackFileHashes.put(fileHash, track);
+                    trackFileHashesInv.put(track, fileHash);
                     tracks.put(track, trackFile);
                 }
             } else {

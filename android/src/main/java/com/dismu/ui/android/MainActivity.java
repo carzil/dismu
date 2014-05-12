@@ -16,7 +16,7 @@ import android.widget.*;
 import com.dismu.android1.R;
 import com.dismu.music.player.Track;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.music.storages.events.TrackStorageEvent;
+import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.p2p.App;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.utils.SettingsManager;

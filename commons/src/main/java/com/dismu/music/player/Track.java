@@ -10,6 +10,7 @@ import org.jaudiotagger.audio.exceptions.CannotReadException;
 import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
 import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
 import org.jaudiotagger.audio.mp3.MP3File;
+import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.TagException;
 import org.jaudiotagger.tag.flac.FlacTag;
 import org.jaudiotagger.tag.id3.*;
@@ -153,9 +154,9 @@ public class Track {
         } catch (Exception e) {
             Loggers.playerLogger.error("cannot read track no", e);
         }
-        setTrackArtist(tag.getFirstArtist());
+        setTrackArtist(tag.getFirst(FieldKey.ARTIST));
         setTrackName(tag.getFirstTitle());
-        setTrackAlbum(tag.getFirstAlbum());
+        setTrackAlbum(tag.getFirst(FieldKey.ALBUM));
     }
 
     private void parseID3v2Tag(ID3v24Tag tag) {

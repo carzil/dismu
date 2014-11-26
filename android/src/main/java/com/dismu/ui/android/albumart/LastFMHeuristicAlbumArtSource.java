@@ -1,7 +1,7 @@
 package com.dismu.ui.android.albumart;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 
 import java.io.BufferedReader;
 import java.io.IOException;

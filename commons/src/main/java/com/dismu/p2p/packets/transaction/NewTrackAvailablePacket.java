@@ -1,6 +1,6 @@
 package com.dismu.p2p.packets.transaction;
 
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.PacketType;
 

@@ -1,4 +1,4 @@
-package com.dismu.music.player;
+package com.dismu.music.core;
 
 
 import com.dismu.logging.Loggers;

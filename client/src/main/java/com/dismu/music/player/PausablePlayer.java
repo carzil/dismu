@@ -187,6 +187,7 @@ public class PausablePlayer {
 //                    Loggers.playerLogger.debug("read {} bytes, written {} bytes", readBytes, writtenBytes);
 //                    notify(PlayerEvent.FRAME_PLAYED);
                 }
+                Thread.sleep(10);
             } catch (Exception e) {
                 Loggers.playerLogger.error("exception in playerInternal", e);
             }

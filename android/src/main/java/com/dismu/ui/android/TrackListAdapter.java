@@ -41,9 +41,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 import com.dismu.android1.R;
-import com.dismu.music.player.Track;
-import com.dismu.ui.android.albumart.AlbumArtDownloader;
-import com.dismu.ui.android.albumart.AlbumArtDownloaderCached;
+import com.dismu.music.core.Track;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,6 +1,6 @@
 package com.dismu.music.events;
 
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.utils.events.Event;
 
 public class TrackStorageEvent implements Event {

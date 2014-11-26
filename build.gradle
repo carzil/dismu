@@ -1,4 +1,4 @@
-buildscript {
+dbuildscript {
     repositories { mavenCentral() }
     dependencies { classpath 'com.android.tools.build:gradle:0.13.0' }
 }
@@ -10,7 +10,7 @@ allprojects {
 
     repositories {
         mavenCentral()
-	mavenLocal()
+        mavenLocal()
     }
 }
 
@@ -22,9 +22,9 @@ project(':commons') {
         compile group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.5'
         compile group: 'log4j', name: 'log4j', version: '1.2.17'
         compile (group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1.1') {
-                exclude group: 'org.hamcrest' //by artifact name
-	}
-	compile group: 'org', name: 'jaudiotagger', version: '2.0.3'
+            exclude group: 'org.hamcrest'
+        }
+        compile group: 'org', name: 'jaudiotagger', version: '2.0.3'
     }
 }
 
@@ -34,9 +34,10 @@ project(':client') {
 
     dependencies {
         compile project(':commons')
-	compile group: 'de.huxhorn.sulky', name: 'de.huxhorn.sulky.3rdparty.jlayer', version: '1.0'
-	compile group: 'com.mpatric', name: 'mp3agic', version: '0.8.2'
-	compile group: 'com.intellij', name: 'forms_rt', version: '7.0.3'
+        compile group: 'de.huxhorn.sulky', name: 'de.huxhorn.sulky.3rdparty.jlayer', version: '1.0'
+        compile group: 'com.googlecode.soundlibs', name: 'mp3spi', version: '1.9.5-1'
+        compile group: 'com.mpatric', name: 'mp3agic', version: '0.8.2'
+        compile group: 'com.intellij', name: 'forms_rt', version: '7.0.3'
     }
 }
 
@@ -45,6 +46,6 @@ project(':android') {
 
     dependencies {
         compile project(':commons')
- 	compile group: 'de.mindpipe.android', name: 'android-logging-log4j', version: '1.0.2'
+        compile group: 'de.mindpipe.android', name: 'android-logging-log4j', version: '1.0.2'
     }
 }

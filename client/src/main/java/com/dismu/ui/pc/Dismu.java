@@ -6,7 +6,7 @@ import com.dismu.logging.Loggers;
 import com.dismu.music.events.PlayerEvent;
 import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
@@ -14,7 +14,6 @@ import com.dismu.p2p.apiclient.API;
 import com.dismu.p2p.apiclient.APIImpl;
 import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
-import com.dismu.p2p.server.ClassicalServer;
 import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
 import com.dismu.utils.PCPlatformUtils;
@@ -22,10 +21,12 @@ import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
+import com.sun.media.sound.JDK13Services;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -33,8 +34,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -100,6 +99,7 @@ public class Dismu {
     }
 
     private Dismu() {
+        Loggers.uiLogger.debug("{}", JDK13Services.getProviders(AudioFileReader.class));
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
             return;
@@ -434,10 +434,9 @@ public class Dismu {
     }
 
     public static void closeAllFrames() {
-        Frame[] frames = JFrame.getFrames();
         int cnt = 0;
-        for (Frame frame : frames) {
-            Loggers.uiLogger.debug("got frame {}", frame);
+        for (Frame frame : JFrame.getFrames()) {
+            Loggers.uiLogger.debug("got frame {} to close", frame);
             frame.setVisible(false);
             frame.dispose();
             cnt++;

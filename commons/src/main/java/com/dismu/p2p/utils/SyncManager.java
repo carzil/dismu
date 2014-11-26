@@ -1,6 +1,6 @@
 package com.dismu.p2p.utils;
 
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.utils.FileNameEscaper;
 import com.dismu.utils.MediaUtils;

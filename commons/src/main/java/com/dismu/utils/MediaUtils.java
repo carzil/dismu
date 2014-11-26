@@ -1,6 +1,6 @@
 package com.dismu.utils;
 
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 
 import java.io.*;
 

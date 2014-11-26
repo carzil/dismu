@@ -2,7 +2,7 @@ package com.dismu.ui.pc;
 
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.music.storages.PlaylistStorage;
 
 import javax.swing.*;

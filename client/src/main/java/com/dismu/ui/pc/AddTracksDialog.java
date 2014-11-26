@@ -1,13 +1,12 @@
 package com.dismu.ui.pc;
 
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 

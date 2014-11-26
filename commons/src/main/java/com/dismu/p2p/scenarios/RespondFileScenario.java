@@ -1,7 +1,8 @@
 package com.dismu.p2p.scenarios;
 
+import com.dismu.logging.Loggers;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.utils.TransactionIdPool;
@@ -73,6 +74,7 @@ public class RespondFileScenario extends Scenario {
                 }
                 this.lastPos = 0;
             } else if (packet.filename.startsWith("tracks/")) {
+                Loggers.p2pLogger.debug("got packet.filename '{}'", packet.filename);
                 packet.filename = packet.filename.replaceFirst("tracks/", "");
                 String[] exploded = packet.filename.split("/");
                 if (exploded.length != 3) {

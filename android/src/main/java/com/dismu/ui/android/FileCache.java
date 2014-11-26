@@ -3,7 +3,7 @@ package com.dismu.ui.android;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import com.dismu.music.player.Track;
+import com.dismu.music.core.Track;
 import com.dismu.utils.Utils;
 
 import java.io.*;

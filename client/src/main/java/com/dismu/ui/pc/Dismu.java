@@ -201,9 +201,8 @@ public class Dismu {
          try {
             localIP = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            Loggers.p2pLogger.debug("cannot resolve local host IP");
+            Loggers.p2pLogger.debug("we will not register new seed");
         }
 
         api.register(userId, groupId, localIP, serverPort);
@@ -410,13 +409,11 @@ public class Dismu {
     public void showDismu() {
         JFrame frame = mainWindow.getFrame();
         frame.setVisible(true);
-        frame.toFront();
     }
 
     public void hideDismu() {
         JFrame frame = mainWindow.getFrame();
         frame.setVisible(false);
-        frame.dispose();
     }
 
     public void toggleDismu() {

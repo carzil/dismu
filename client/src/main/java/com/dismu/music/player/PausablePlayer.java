@@ -184,8 +184,6 @@ public class PausablePlayer {
                     } else if (readBytes > 0) {
                         writtenBytes = playerLine.write(data, 0, readBytes);
                     }
-//                    Loggers.playerLogger.debug("read {} bytes, written {} bytes", readBytes, writtenBytes);
-//                    notify(PlayerEvent.FRAME_PLAYED);
                 }
                 Thread.sleep(10);
             } catch (Exception e) {

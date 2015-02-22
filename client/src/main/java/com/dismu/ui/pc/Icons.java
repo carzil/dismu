@@ -31,7 +31,7 @@ public class Icons {
     public static ImageIcon getNextIcon() {
         ImageIcon icon = loadIcon(NEXT_ICON_FILENAME);
         if (icon == null) {
-            Loggers.uiLogger.error("no play icon found");
+            Loggers.uiLogger.error("no stop icon found");
         }
         return icon;
     }
@@ -39,7 +39,7 @@ public class Icons {
     public static ImageIcon getStopIcon() {
         ImageIcon icon = loadIcon(STOP_ICON_FILENAME);
         if (icon == null) {
-            Loggers.uiLogger.error("no play icon found");
+            Loggers.uiLogger.error("no stop icon found");
         }
         return icon;
     }

@@ -99,7 +99,6 @@ public class Dismu {
     }
 
     private Dismu() {
-        Loggers.uiLogger.debug("{}", JDK13Services.getProviders(AudioFileReader.class));
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
             return;

@@ -5,6 +5,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -199,5 +200,21 @@ public class Utils {
             titleCase.append(c);
         }
         return titleCase.toString();
+    }
+
+    public static BufferedImage createResizedCopy(Image originalImage, int scaledWidth, int scaledHeight) {
+        return createResizedCopy(originalImage, scaledWidth, scaledHeight, false);
+    }
+
+    public static BufferedImage createResizedCopy(Image originalImage, int scaledWidth, int scaledHeight, boolean preserveAlpha) {
+        int imageType = preserveAlpha ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
+        BufferedImage scaledBI = new BufferedImage(scaledWidth, scaledHeight, imageType);
+        Graphics2D g = scaledBI.createGraphics();
+        if (preserveAlpha) {
+            g.setComposite(AlphaComposite.Src);
+        }
+        g.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
+        g.dispose();
+        return scaledBI;
     }
 }

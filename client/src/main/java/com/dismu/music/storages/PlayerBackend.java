@@ -31,7 +31,7 @@ public class PlayerBackend {
         return localInstance;
     }
 
-    public double getPosition() {
+    public long getPosition() {
         return player.getPosition();
     }
 

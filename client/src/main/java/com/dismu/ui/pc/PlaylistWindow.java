@@ -60,12 +60,7 @@ public class PlaylistWindow {
                                 Dismu dismu = Dismu.getInstance();
                                 dismu.setCurrentPlaylist(playlist);
                                 playlist.setCurrentTrack(track);
-                                if (!dismu.isPlaying() || !dismu.getCurrentTrack().equals(track)) {
-                                    dismu.play(track);
-                                } else if (dismu.isPlaying() && dismu.getCurrentTrack().equals(track)) {
-                                    dismu.pause();
-                                }
-
+                                dismu.addTrackAfterCurrent(track);
                             } catch (TrackNotFoundException ex) {
 
                             }

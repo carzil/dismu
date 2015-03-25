@@ -1,8 +1,10 @@
 package com.dismu.ui.pc;
 
-import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
+import com.dismu.music.Scrobbler;
+import com.dismu.music.core.queue.TrackQueue;
+import com.dismu.music.core.queue.TrackQueueEntry;
 import com.dismu.music.events.PlayerEvent;
 import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.music.player.Playlist;
@@ -21,18 +23,12 @@ import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
-import com.sun.media.sound.JDK13Services;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,19 +36,22 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+
+/**
+ * {@link Dismu} is the main class of desktop UI. This is singleton.
+ *
+ */
 public class Dismu {
+
     static {
         Utils.setPlatformUtils(new PCPlatformUtils());
+        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
     }
 
     public static ArrayList<Client> clients = new ArrayList<>();
     public static Server server;
 
     private MainWindow mainWindow;
-    TrayIcon trayIcon;
-
-    private MenuItem nowPlaying;
-    private MenuItem togglePlayItem;
 
     private TrackStorage trackStorage;
     private PlayerBackend playerBackend;
@@ -62,9 +61,15 @@ public class Dismu {
     private boolean isRunning = false;
     private boolean isPlaying = false;
 
+    private DismuTray tray = new DismuTray();
+
     private Playlist currentPlaylist;
 
     private static Dismu instance;
+
+    private TrackQueue trackQueue = new TrackQueue();
+
+    private Scrobbler scrobbler = null;
 
     private EventListener trackListener = new EventListener() {
         @Override
@@ -78,19 +83,25 @@ public class Dismu {
     public static SettingsManager accountSettingsManager = SettingsManager.getSection("account");
     public static SettingsManager networkSettingsManager = SettingsManager.getSection("network");
     public static SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
+    public static SettingsManager scrobblerSettingsManager = SettingsManager.getSection("scrobbler");
 
     public static SettingsManager globalSettingsManager = SettingsManager.getSection("global");
 
-    static {
-        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
-    }
     private static HashMap<Seed, Client> seedsTable = new HashMap<>();
+
+    private String username;
+    private String password;
+
 
     public static void main(String[] args) {
         Dismu dismu = Dismu.getInstance();
         dismu.run();
     }
 
+    /**
+     * If Dismu isn't initialized, initilize it and returns instance
+     * @return {@link Dismu} instance
+     */
     public static Dismu getInstance() {
         if (Dismu.instance == null) {
             Dismu.instance = new Dismu();
@@ -99,10 +110,6 @@ public class Dismu {
     }
 
     private Dismu() {
-        if (!SystemTray.isSupported()) {
-            Loggers.uiLogger.error("OS doesn't support system tray");
-            return;
-        }
         try {
             if (Utils.isLinux()) {
                 UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
@@ -112,31 +119,64 @@ public class Dismu {
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             Loggers.uiLogger.error("error while setting look & feel", e);
         }
+    }
+
+    private void initDismu(String username, String password) {
+        Loggers.uiLogger.debug("called initDismu, username={}, password={}", username, password);
+        if (!SystemTray.isSupported()) {
+            Loggers.uiLogger.error("OS doesn't support system tray");
+            return;
+        }
+
+        Dismu.accountSettingsManager.setString("user.groupID", username);
+
+        this.username = username;
+        this.password = password;
+
         trackStorage = TrackStorage.getInstance();
         playerBackend = PlayerBackend.getInstance();
         playlistStorage = PlaylistStorage.getInstance();
         mainWindow = new MainWindow();
+
         playerBackend.addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
                 if (e.getType() == PlayerEvent.PLAYING) {
-                    updateNowPlaying(playerBackend.getCurrentTrack());
+                    Track track = playerBackend.getCurrentTrack();
+                    scrobbler.startScrobbling(track);
+                    updateNowPlaying(track);
                 } else if (e.getType() == PlayerEvent.PAUSED) {
                     updatePaused(playerBackend.getCurrentTrack());
                 } else if (e.getType() == PlayerEvent.STOPPED) {
+                    scrobbler.stopScrobbling();
+                    mainWindow.setScrobblerStatus("", null, "");
                     updateStopped();
                 } else if (e.getType() == PlayerEvent.FINISHED) {
-                    Playlist playlist = getCurrentPlaylist();
-                    if (!playlist.isEnded()) {
-                        Dismu.getInstance().goNearly(true);
-                    } else {
-                        showInfoMessage("Playlist ended", "Playlist '" + playlist.getName() + "' ended");
-                    }
+                    scrobbler.stopScrobbling();
+                    mainWindow.setScrobblerStatus("", null, "");
+                    trackQueue.popFirst();
+                    play();
                 } else if (e.getType() == PlayerEvent.FRAME_PLAYED) {
+                    Utils.runThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (Scrobbler.isScrobblingEnabled()) {
+                                scrobbler.updatePosition(playerBackend.getPosition() / 1000000);
+                                if (scrobbler.isScrobbled()) {
+                                    mainWindow.setScrobblerStatus("", Icons.getSuccessIcon(), "Scrobbled");
+                                } else {
+                                    mainWindow.setScrobblerStatus("", Icons.getScrobblingIcon(), "Scrobbling...");
+                                }
+                            } else {
+                                mainWindow.setScrobblerStatus("", null, "");
+                            }
+                        }
+                    });
                     mainWindow.updateSeekBar();
                 }
             }
         });
+
         trackStorage.addEventListener(trackListener);
         trackStorage.addEventListener(new EventListener() {
             @Override
@@ -170,8 +210,16 @@ public class Dismu {
                 }
             }
         });
+
+        tray.init();
+
+        try {
+            scrobbler = new Scrobbler();
+        } catch (Exception e) {
+            Loggers.miscLogger.error("cannot create scrobbler", e);
+        }
+
         isRunning = true;
-        setupSystemTray();
     }
 
     private static void startP2P() {
@@ -186,7 +234,8 @@ public class Dismu {
                 try {
                     server = new NIOServer(serverPort);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Loggers.p2pLogger.error("starting server failed", e);
+                    return;
                 }
                 try {
                     server.start();
@@ -213,7 +262,7 @@ public class Dismu {
         final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
         Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
-        Loggers.p2pLogger.info("userID={}", getUserID());
+        Loggers.p2pLogger.info("userID={}", userId);
         for (final Seed s : seeds) {
             if (!seedsTable.containsKey(s)) {
                 if (s.userId.equals(userId)) {
@@ -249,14 +298,18 @@ public class Dismu {
 
     private static String getUserID() {
         // XXX: i think we should generate UUID on our server
-        String random = UUID.randomUUID().toString();
-        String res = accountSettingsManager.getString("user.userId", random);
-        if (res.equals(random)) {
-            accountSettingsManager.setString("user.userId", res);
+        String res = accountSettingsManager.getString("user.userId", "");
+        if (res.length() == 0) {
+            res = UUID.randomUUID().toString();
         }
+        accountSettingsManager.setString("user.userId", res);
         return res;
     }
 
+    /**
+     * Informs user about new track in media library
+     * @param track track added to media library
+     */
     private void trackAdded(Track track) {
         String label = track.getPrettifiedName();
         showInfoMessage("New track in media library", label);
@@ -264,30 +317,59 @@ public class Dismu {
     }
 
     private void updateNowPlaying(Track track) {
-        nowPlaying.setLabel(track.getPrettifiedName());
-        showInfoMessage("Now playing", track.getPrettifiedName());
+        tray.setNowPlaying(track.getPrettifiedName());
+        tray.setTooltip(String.format("Dismu playing: %s", track.getPrettifiedFileName()));
+        tray.setTogglePlaybackInfo("Pause");
+
         setStatus(track.getPrettifiedName(), Icons.getPlayIcon());
-        trayIcon.setToolTip(String.format("Dismu playing: %s", track.getPrettifiedFileName()));
-        togglePlayItem.setLabel("Pause");
+        showInfoMessage("Now playing", track.getPrettifiedName());
     }
 
-    private void updatePaused(Track track) {
+    private void updateNext(Track track) {
         if (track == null) {
-            nowPlaying.setName("Not playing");
-            trayIcon.setToolTip("Dismu");
+            mainWindow.setNextTrack("");
         } else {
-            nowPlaying.setLabel(track.getPrettifiedName() + " (PAUSED)");
+            mainWindow.setNextTrack(track.getPrettifiedName());
+        }
+    }
+    private void updatePaused(Track track) {
+        isPlaying = false;
+        if (track == null) {
+            tray.setNowPlaying("Not playing");
+        } else {
+            tray.setNowPlaying(track.getPrettifiedName() + " (PAUSED)");
             setStatus(track.getPrettifiedName(), Icons.getPauseIcon());
         }
+        tray.setTogglePlaybackInfo("Play");
+        tray.setTooltip("Dismu");
     }
 
     private void updateStopped() {
-        nowPlaying.setLabel("Not playing");
+        isPlaying = false;
+        tray.setNotPlaying();
+        tray.setTooltip("Dismu");
+        tray.setTogglePlaybackInfo("Play");
         setStatus("Stopped", Icons.getStopIcon());
+        mainWindow.updateControl(false);
         mainWindow.updateCurrentTrack();
     }
 
     public void run() {
+        LoginScreen loginScreen = new LoginScreen();
+        JFrame frame = loginScreen.getFrame();
+        frame.setVisible(true);
+        while (!loginScreen.isLogged() && frame.isVisible()) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Loggers.uiLogger.error("cannot sleep", e);
+            }
+        }
+        frame.dispose();
+        if (!loginScreen.isLogged()) {
+            return;
+        }
+        initDismu(loginScreen.getUsername(), loginScreen.getPassword());
         Thread uiThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
@@ -306,6 +388,7 @@ public class Dismu {
         } catch (InterruptedException e) {
             Loggers.uiLogger.error("error while joining", e);
         }
+
         if (trackStorage.isNeedReindex()) {
             trackStorage.removeEventListener(trackListener);
             trackStorage.reindex();
@@ -318,50 +401,61 @@ public class Dismu {
      * If player is paused, trying to resume playback.
      */
     public void play() {
-        isPlaying = true;
         if (playerBackend.isPaused()) {
             Loggers.uiLogger.info("play in paused status issued, resuming");
+            isPlaying = true;
             playerBackend.play();
             mainWindow.updateControl(true);
         } else {
+            updateQueueStatus();
+            TrackQueueEntry top = trackQueue.peek();
+            if (top == null) {
+                stop();
+                return;
+            }
+            Track currentTrack = top.getItem();
             try {
-                if (!currentPlaylist.isEmpty()) {
-                    if (currentPlaylist.isEnded()) {
-                        Loggers.uiLogger.debug("playlist reset");
-                        currentPlaylist.reset();
-                    } else {
-                        if (playerBackend.isPlaying()) {
-                            playerBackend.stop();
-                        }
-                        Track currentTrack = currentPlaylist.getCurrentTrack();
-                        try {
-                            playerBackend.setTrack(currentTrack);
-                            Loggers.uiLogger.info("set track {}", currentTrack);
-                            playerBackend.play();
-                            mainWindow.updateControl(true);
-                        } catch (TrackNotFoundException ex) {
-                            // TODO: what we have to do here?
-                        }
-                    }
-                }
-            } catch (EmptyPlaylistException | NullPointerException e) {
-                showAlert("Current playlist is empty!");
-                Loggers.uiLogger.error("", e);
+                playerBackend.setTrack(currentTrack);
+                Loggers.uiLogger.info("set track {}", currentTrack);
+                isPlaying = true;
+                playerBackend.play();
+                mainWindow.updateControl(true);
+            } catch (TrackNotFoundException e) {
+                // TODO: what we have to do here
             }
         }
     }
 
-    public void play(Track track) throws TrackNotFoundException {
-        isPlaying = true;
-        playerBackend.stop();
-        playerBackend.setTrack(track);
-        playerBackend.play();
-        mainWindow.updateControl(true);
+    public void addTrackAfterCurrent(Track track) {
+        TrackQueueEntry top = trackQueue.peek();
+        if (top == null) {
+            trackQueue.pushBack(track);
+            Loggers.uiLogger.debug("pushBack");
+        } else {
+            trackQueue.insertAfter(top, track);
+            Loggers.uiLogger.debug("insertAfter");
+        }
+        Loggers.uiLogger.debug("added track to queue {}", track);
+        updateQueueStatus();
+    }
+
+    private void updateQueueStatus() {
+        TrackQueueEntry top = trackQueue.peek();
+        if (top == null) {
+            updateNext(null);
+        } else {
+            TrackQueueEntry next = top.getNext();
+            if (next == null) {
+                updateNext(null);
+            } else {
+                updateNext(next.getItem());
+            }
+        }
+
     }
 
     public void stop() {
         playerBackend.stop();
-        mainWindow.updateControl(false);
     }
 
     public void goNearly(boolean next) {
@@ -369,25 +463,13 @@ public class Dismu {
             Loggers.uiLogger.info("stopping player");
             playerBackend.stop();
         }
-        try {
-            Playlist cPlaylist = getCurrentPlaylist();
-            if (cPlaylist != null) {
-                if (next) {
-                    Loggers.uiLogger.info("next track");
-                    cPlaylist.next();
-                } else {
-                    Loggers.uiLogger.info("prev track");
-                    cPlaylist.prev();
-                }
-                play();
-            }
-        } catch (EmptyPlaylistException e) {
-            showAlert("Current playlist is empty!");
+        if (next) {
+            trackQueue.popFirst();
+            play();
+        } else {
+            trackQueue.restoreFirst();
+            play();
         }
-    }
-
-    public Track getCurrentTrack() {
-        return playerBackend.getCurrentTrack();
     }
 
     public void pause() {
@@ -537,88 +619,9 @@ public class Dismu {
         Loggers.uiLogger.info("closed {} clients", cnt);
     }
 
-    private void setupSystemTray() {
-        PopupMenu popupMenu = new PopupMenu();
-        SystemTray systemTray = SystemTray.getSystemTray();
-        MenuItem exitItem = new MenuItem("Exit");
-        MenuItem sDismu = new MenuItem("Show Dismu");
-        MenuItem stopItem = new MenuItem("Stop");
-        togglePlayItem = new MenuItem("Play");
-        nowPlaying = new MenuItem("Not playing");
-        nowPlaying.setEnabled(false);
-        popupMenu.add(nowPlaying);
-        popupMenu.add(sDismu);
-        popupMenu.addSeparator();
-        popupMenu.add(togglePlayItem);
-        popupMenu.add(stopItem);
-        popupMenu.addSeparator();
-        popupMenu.add(exitItem);
-        sDismu.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                toggleDismu();
-            }
-        });
-        exitItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Dismu.fullExit(0);
-            }
-        });
-        togglePlayItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                togglePlay();
-            }
-        });
-        stopItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                stop();
-            }
-        });
-        trayIcon = new TrayIcon(Dismu.getIcon(), "Dismu", popupMenu);
-        trayIcon.setImageAutoSize(true);
-        trayIcon.addMouseListener(new MouseListener() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getButton() == MouseEvent.BUTTON1) {
-                    toggleDismu();
-                }
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-
-            }
-        });
-
-        try {
-            systemTray.add(trayIcon);
-        } catch (AWTException e) {
-            Loggers.uiLogger.error("couldn't initialize tray icon", e);
-        }
-
-    }
-
     public void showInfoMessage(String header, String message) {
         if (!uiSettingsManager.getBoolean("quiet", false)) {
-            trayIcon.displayMessage(header, message, TrayIcon.MessageType.INFO);
+            tray.displayMessage(header, message, TrayIcon.MessageType.INFO);
         }
     }
 
@@ -708,14 +711,27 @@ public class Dismu {
         }
     }
 
-    public void setPlayingPercentage(int value) {
-        if (playerBackend.isPlaying()) {
-            Loggers.uiLogger.debug("{}, {}", playerBackend.getCurrentTrack().getTrackDuration(), value);
-            playerBackend.seek(playerBackend.getCurrentTrack().getTrackDuration() * (1.0 * value / 100.0));
-        }
-    }
-
     public boolean confirmAction(String header, String message) {
         return JOptionPane.showConfirmDialog(mainWindow.getFrame(), message, header, JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION;
-    };
+    }
+
+    public TrackQueue getTrackQueue() {
+        return trackQueue;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
 }

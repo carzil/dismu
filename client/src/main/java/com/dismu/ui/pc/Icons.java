@@ -7,72 +7,62 @@ import java.awt.*;
 import java.net.URL;
 
 public class Icons {
-    private static final String TRAY_ICON_FILENAME = "icon.png";
-    private static final String LOADER_ICON_FILENAME = "loader.gif";
-    private static final String PLAY_ICON_FILENAME = "play.png";
-    private static final String PAUSE_ICON_FILENAME = "pause.png";
-    private static final String STOP_ICON_FILENAME = "stop.png";
-    private static final String NEXT_ICON_FILENAME = "next.png";
-    private static final String PREV_ICON_FILENAME = "prev.png";
+    private static final ImageIcon TRAY_ICON = loadIcon("icon.png");
+    private static final ImageIcon LOADER_ICON = loadIcon("loader.gif");
+    private static final ImageIcon PLAY_ICON = loadIcon("play.png");
+    private static final ImageIcon PAUSE_ICON = loadIcon("pause.png");
+    private static final ImageIcon STOP_ICON = loadIcon("stop.png");
+    private static final ImageIcon NEXT_ICON = loadIcon("next.png");
+    private static final ImageIcon PREV_ICON = loadIcon("prev.png");
+    private static final ImageIcon SUCCESS_ICON = loadIcon("success.png");
+    private static final ImageIcon LOGO = loadIcon("logo.png");
 
     private static ImageIcon loadIcon(String filename) {
-        URL icon = ClassLoader.getSystemResource(filename);
-        return new ImageIcon(icon);
+        URL iconUrl = ClassLoader.getSystemResource(filename);
+        if (iconUrl == null) {
+            Loggers.uiLogger.debug("cannot load icon '{}'", filename);
+            return null;
+        }
+        return new ImageIcon(iconUrl);
     }
 
     public static ImageIcon getPrevIcon() {
-        ImageIcon icon = loadIcon(PREV_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no play icon found");
-        }
-        return icon;
+        return PREV_ICON;
     }
 
     public static ImageIcon getNextIcon() {
-        ImageIcon icon = loadIcon(NEXT_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no stop icon found");
-        }
-        return icon;
+        return NEXT_ICON;
     }
 
     public static ImageIcon getStopIcon() {
-        ImageIcon icon = loadIcon(STOP_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no stop icon found");
-        }
-        return icon;
+        return STOP_ICON;
     }
 
     public static ImageIcon getPauseIcon() {
-        ImageIcon icon = loadIcon(PAUSE_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no play icon found");
-        }
-        return icon;
+        return PAUSE_ICON;
     }
 
     public static ImageIcon getPlayIcon() {
-        ImageIcon icon = loadIcon(PLAY_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no play icon found");
-        }
-        return icon;
+        return PLAY_ICON;
     }
 
     public static ImageIcon getTrayIcon() {
-        ImageIcon icon = loadIcon(TRAY_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no tray icon found");
-        }
-        return icon;
+        return TRAY_ICON;
     }
 
     public static ImageIcon getLoaderIcon() {
-        ImageIcon icon = loadIcon(LOADER_ICON_FILENAME);
-        if (icon == null) {
-            Loggers.uiLogger.error("no loader icon found");
-        }
-        return icon;
+        return LOADER_ICON;
+    }
+
+    public static ImageIcon getSuccessIcon() {
+        return SUCCESS_ICON;
+    }
+
+    public static ImageIcon getScrobblingIcon() {
+        return LOADER_ICON;
+    }
+
+    public static ImageIcon getLogo() {
+        return LOGO;
     }
 }

@@ -97,6 +97,14 @@ public class Playlist {
         throw new TrackNotFoundException();
     }
 
+    public void setCurrentTrack(int index) throws TrackNotFoundException {
+        if (index >= tracks.size()) {
+            throw new TrackNotFoundException();
+        } else {
+            currentTrackIndex = index;
+        }
+    }
+
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeUTF(getName());
         stream.writeInt(tracks.size());
@@ -111,7 +119,6 @@ public class Playlist {
         playlist.setName(stream.readUTF());
         int trackCount = stream.readInt();
         playlist.currentTrackIndex = stream.readInt();
-        Loggers.playerLogger.debug("{}", playlist.currentTrackIndex);
         for (int i = 0; i < trackCount; i++) {
             Track track = Track.readFromStream(stream);
             playlist.addTrack(track);

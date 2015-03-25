@@ -21,6 +21,7 @@ import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 class PlaylistPopup extends JPopupMenu {
     private Playlist playlist;
@@ -46,6 +47,64 @@ class PlaylistPopup extends JPopupMenu {
     }
 }
 
+class PlaylistTab {
+    private Playlist playlist;
+    private JPanel playlistPanel;
+    private TrackListTable trackTable;
+    private JScrollPane scrollPane;
+
+    public PlaylistTab(Playlist playlist) {
+        this.playlist = playlist;
+    }
+
+    public void addToTabbedPane(JTabbedPane tabbedPane) {
+        playlistPanel = new JPanel();
+        playlistPanel.setLayout(new BorderLayout(0, 0));
+        tabbedPane.addTab(playlist.getName(), playlistPanel);
+        scrollPane = new JScrollPane();
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        playlistPanel.add(scrollPane, BorderLayout.CENTER);
+        trackTable = new TrackListTable();
+        trackTable.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (SwingUtilities.isLeftMouseButton(e)) {
+                    if (e.getClickCount() >= 2) {
+                        Track track = trackTable.getTrackByRow(trackTable.rowAtPoint(e.getPoint()));
+                        Dismu.getInstance().addTrackAfterCurrent(track);
+                    }
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
+        trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
+        scrollPane.setViewportView(trackTable);
+    }
+
+    public void update() {
+        trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
+    }
+}
+
 public class MainWindow {
     private JPanel mainPanel;
     private JButton playButton;
@@ -55,21 +114,21 @@ public class MainWindow {
     private JPanel innerPanel;
     private JPanel controlPanel;
     private JTabbedPane tabbedPane1;
-    private JPanel currentPlaylistPanel;
-    private JPanel allPlaylistsPanel;
-    private JTable allPlaylistsTable;
-    private TrackListTable currentPlaylistTable;
     private TrackListTable allTracksTable;
     private JButton prevButton;
     private JButton stopButton;
     private JButton nextButton;
     private SeekBar seekBar;
     private JPanel allTracksPanel;
-    private JTable table1;
+    private JLabel nextTrackLabel;
+    private JLabel elapsedTimeLabel;
+    private JLabel scrobblerStatus;
+    private JLabel remainingTimeLabel;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
     private boolean isPlaying;
     private JPopupMenu playlistsTablePopupMenu;
+    private HashMap<Playlist, PlaylistTab> playlistTabs = new HashMap<>();
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -127,119 +186,7 @@ public class MainWindow {
             fileMenu.add(exitItem);
             menuBar.add(fileMenu);
             menuBar.add(helpMenu);
-            // ==== Menu bar ====
-            currentPlaylistTable.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        if (e.getClickCount() >= 2) {
-                            Track track = currentPlaylistTable.getTrackByRow(currentPlaylistTable.rowAtPoint(e.getPoint()));
-                            Playlist playlist = Dismu.getInstance().getCurrentPlaylist();
-                            try {
-                                playlist.setCurrentTrack(track);
-                                Dismu.getInstance().stop();
-                                Dismu.getInstance().play();
-                            } catch (TrackNotFoundException ex) {
-                                Loggers.uiLogger.error("TrackNotFound exception", e);
-                            }
-                        }
-                    }
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-
-                }
-            });
-            DefaultTableModel allPlaylistsModel = new DefaultTableModel() {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return false;
-                }
-            };
-            allPlaylistsTable.setModel(allPlaylistsModel);
-            allPlaylistsTable.setIntercellSpacing(new Dimension(0, 0));
-            allPlaylistsModel.addColumn("#");
-            allPlaylistsModel.addColumn("Name");
-            allPlaylistsModel.addColumn("Track count");
-            allPlaylistsModel.addColumn("Playlist");
-            allPlaylistsTable.setShowGrid(false);
-            allPlaylistsTable.setBorder(BorderFactory.createEmptyBorder());
-            allPlaylistsTable.removeColumn(allPlaylistsTable.getColumn("Playlist"));
-            allPlaylistsTable.getColumn("#").setMaxWidth(25);
-            allPlaylistsTable.setRowSorter(new TableRowSorter<>(allPlaylistsModel));
-            allPlaylistsTable.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-
-                @Override
-                public Component getTableCellRendererComponent(JTable table,
-                                                               Object value, boolean isSelected, boolean hasFocus,
-                                                               int row, int column) {
-                    Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                    if (!isSelected) {
-                        c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
-                    }
-                    return c;
-                }
-            });
-
-            allPlaylistsTable.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    int rowNumber = allPlaylistsTable.convertRowIndexToModel(allPlaylistsTable.rowAtPoint(e.getPoint()));
-                    Dismu dismu = Dismu.getInstance();
-                    Playlist playlist = (Playlist) allPlaylistsTable.getModel().getValueAt(rowNumber, 3);
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        if (e.getClickCount() >= 2) {
-                            if (dismu.isPlaying()) {
-                                dismu.stop();
-                            }
-                            dismu.play();
-
-                        } else {
-                            dismu.setCurrentPlaylist(playlist);
-                        }
-                    } else if (SwingUtilities.isRightMouseButton(e)) {
-                        PlaylistPopup popup = new PlaylistPopup(playlist);
-                        popup.show(e.getComponent(), e.getX(), e.getY());
-                        update();
-                    }
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-
-                }
-            });
+            createTabs();
             addTrackItem.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -250,6 +197,40 @@ public class MainWindow {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     createPlaylist();
+                }
+            });
+            allTracksTable.addMouseListener(new MouseListener() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (SwingUtilities.isLeftMouseButton(e)) {
+                        if (e.getClickCount() >= 2) {
+                            Track track = allTracksTable.getTrackByRow(allTracksTable.rowAtPoint(e.getPoint()));
+                            Dismu.getInstance().addTrackAfterCurrent(track);
+                            if (!Dismu.getInstance().isPlaying()) {
+                                Dismu.getInstance().play();
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+
                 }
             });
             playButton.addActionListener(new ActionListener() {
@@ -298,6 +279,14 @@ public class MainWindow {
         return dismuFrame;
     }
 
+    private void createTabs() {
+        for (Playlist playlist : PlaylistStorage.getInstance().getPlaylists()) {
+            PlaylistTab tab = new PlaylistTab(playlist);
+            playlistTabs.put(playlist, tab);
+            tab.addToTabbedPane(tabbedPane1);
+        }
+    }
+
     public void bindKey(KeyStroke keyStroke, ActionListener actionListener) {
         mainPanel.registerKeyboardAction(actionListener, keyStroke, JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
@@ -306,27 +295,33 @@ public class MainWindow {
     }
 
     public void updateTracks() {
-        Playlist currentPlaylist = Dismu.getInstance().getCurrentPlaylist();
-        if (currentPlaylist != null) {
-            ArrayList<Track> tracks = currentPlaylist.getTracks();
-            currentPlaylistTable.updateTracks(tracks.toArray(new Track[tracks.size()]));
-        }
         allTracksTable.updateTracks(TrackStorage.getInstance().getTracks());
     }
 
     public void updatePlaylists() {
-        DefaultTableModel model = (DefaultTableModel) allPlaylistsTable.getModel();
-        model.setRowCount(0);
-        int n = 1;
         for (Playlist playlist : PlaylistStorage.getInstance().getPlaylists()) {
-            model.addRow(new Object[]{n, playlist.getName(), playlist.getTrackCount(), playlist});
-            n++;
+            PlaylistTab tab = playlistTabs.get(playlist);
+            if (tab == null) {
+                tab = new PlaylistTab(playlist);
+                tab.addToTabbedPane(tabbedPane1);
+                playlistTabs.put(playlist, tab);
+            } else {
+                tab.update();
+            }
         }
     }
 
     public void setStatus(String message, ImageIcon icon) {
         statusLabel.setText(message);
         statusLabel.setIcon(icon);
+    }
+
+    public void setNextTrack(String nextTrack) {
+        if (nextTrack.equals("")) {
+            nextTrackLabel.setText("");
+        } else {
+            nextTrackLabel.setText("next: " + nextTrack);
+        }
     }
 
     private void processTracks() {
@@ -370,12 +365,12 @@ public class MainWindow {
     }
 
     public void updateCurrentTrack() {
-        if (Dismu.getInstance().isPlaying()) {
-            currentPlaylistTable.updateCurrentTrack(null);
-            currentPlaylistTable.updateCurrentTrack(PlayerBackend.getInstance().getCurrentTrack());
-        } else {
-            currentPlaylistTable.updateCurrentTrack(null);
-        }
+//        if (Dismu.getInstance().isPlaying()) {
+//            currentPlaylistTable.updateCurrentTrack(null);
+//            currentPlaylistTable.updateCurrentTrack(PlayerBackend.getInstance().getCurrentTrack());
+//        } else {
+//            currentPlaylistTable.updateCurrentTrack(null);
+//        }
     }
 
     public void update() {
@@ -386,14 +381,25 @@ public class MainWindow {
     }
 
     public void updateSeekBar() {
-        try {
-            PlayerBackend playerBackend = PlayerBackend.getInstance();
-            int percent = (int) Math.round(playerBackend.getPosition() / (playerBackend.getCurrentTrack().getTrackDuration() * 10.0));
-//            Loggers.uiLogger.debug("percent = {}, position = {}", percent, playerBackend.getPosition());
-            seekBar.setValue(percent);
-        } catch (NullPointerException ignored) {
+        PlayerBackend playerBackend = PlayerBackend.getInstance();
+        long position = playerBackend.getPosition();
+        Track currentTrack = playerBackend.getCurrentTrack();
+        if (currentTrack == null) {
+            seekBar.setValue(0);
+            elapsedTimeLabel.setText("0:00");
+            return;
         }
-
+        long duration = currentTrack.getTrackDuration();
+        double ratio = position / (duration * 1000000.0);
+        seekBar.setValue(ratio);
+        long positionSeconds = (long) (position / 1000000.0);
+        long m = positionSeconds / 60;
+        long s = positionSeconds % 60;
+        long rest = duration - positionSeconds;
+        long rm = rest / 60;
+        long rs = rest % 60;
+        elapsedTimeLabel.setText(String.format("%d:%02d", m, s));
+        remainingTimeLabel.setText(String.format("-%d:%02d", rm, rs));
     }
 
     public void updateControl(boolean isPlaying) {
@@ -404,6 +410,16 @@ public class MainWindow {
         } else {
             playButton.setIcon(Icons.getPlayIcon());
         }
+    }
+
+    public void setScrobblerStatus(String status) {
+        setScrobblerStatus(status, null, "");
+    }
+
+    public void setScrobblerStatus(String status, ImageIcon icon, String tooltip) {
+        scrobblerStatus.setText(status);
+        scrobblerStatus.setIcon(icon);
+        scrobblerStatus.setToolTipText(tooltip);
     }
 
     private void createUIComponents() {
@@ -430,17 +446,25 @@ public class MainWindow {
         mainPanel.setLayout(new BorderLayout(0, 0));
         mainPanel.setMinimumSize(new Dimension(800, 600));
         statusPanel = new JPanel();
-        statusPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        statusPanel.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
         statusLabel = new JLabel();
         statusLabel.setText("Label");
         statusPanel.add(statusLabel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        nextTrackLabel = new JLabel();
+        nextTrackLabel.setText("");
+        statusPanel.add(nextTrackLabel, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        scrobblerStatus = new JLabel();
+        scrobblerStatus.setText("");
+        statusPanel.add(scrobblerStatus, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         innerPanel = new JPanel();
         innerPanel.setLayout(new BorderLayout(0, 0));
         mainPanel.add(innerPanel, BorderLayout.CENTER);
+        innerPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         controlPanel = new JPanel();
         controlPanel.setLayout(new BorderLayout(0, 0));
         innerPanel.add(controlPanel, BorderLayout.SOUTH);
+        controlPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(0, 2, 0, 2), null));
         prevButton = new JButton();
         prevButton.setText("");
         controlPanel.add(prevButton, BorderLayout.WEST);
@@ -465,31 +489,34 @@ public class MainWindow {
         nextButton = new JButton();
         nextButton.setText("");
         panel4.add(nextButton, BorderLayout.WEST);
+        final JPanel panel5 = new JPanel();
+        panel5.setLayout(new BorderLayout(0, 0));
+        panel4.add(panel5, BorderLayout.CENTER);
+        panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0), null));
+        elapsedTimeLabel = new JLabel();
+        elapsedTimeLabel.setText("Label");
+        panel5.add(elapsedTimeLabel, BorderLayout.WEST);
+        final JPanel panel6 = new JPanel();
+        panel6.setLayout(new BorderLayout(0, 0));
+        panel5.add(panel6, BorderLayout.CENTER);
         seekBar = new SeekBar();
-        seekBar.setValueIsAdjusting(true);
-        panel4.add(seekBar, BorderLayout.CENTER);
+        panel6.add(seekBar, BorderLayout.CENTER);
+        remainingTimeLabel = new JLabel();
+        remainingTimeLabel.setText("-0:00");
+        panel6.add(remainingTimeLabel, BorderLayout.EAST);
+        tabbedPane1.setTabLayoutPolicy(0);
+        tabbedPane1.setTabPlacement(2);
         innerPanel.add(tabbedPane1, BorderLayout.CENTER);
-        currentPlaylistPanel = new JPanel();
-        currentPlaylistPanel.setLayout(new BorderLayout(0, 0));
-        tabbedPane1.addTab("Current playlist", currentPlaylistPanel);
-        final JScrollPane scrollPane1 = new JScrollPane();
-        currentPlaylistPanel.add(scrollPane1, BorderLayout.CENTER);
-        currentPlaylistTable = new TrackListTable();
-        scrollPane1.setViewportView(currentPlaylistTable);
-        allPlaylistsPanel = new JPanel();
-        allPlaylistsPanel.setLayout(new BorderLayout(0, 0));
-        tabbedPane1.addTab("All playlists", allPlaylistsPanel);
-        final JScrollPane scrollPane2 = new JScrollPane();
-        allPlaylistsPanel.add(scrollPane2, BorderLayout.CENTER);
-        allPlaylistsTable = new JTable();
-        scrollPane2.setViewportView(allPlaylistsTable);
+        tabbedPane1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         allTracksPanel = new JPanel();
         allTracksPanel.setLayout(new BorderLayout(0, 0));
-        tabbedPane1.addTab("All tracks", allTracksPanel);
-        final JScrollPane scrollPane3 = new JScrollPane();
-        allTracksPanel.add(scrollPane3, BorderLayout.CENTER);
+        tabbedPane1.addTab("Tracks", allTracksPanel);
+        allTracksPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
+        final JScrollPane scrollPane1 = new JScrollPane();
+        allTracksPanel.add(scrollPane1, BorderLayout.CENTER);
+        scrollPane1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         allTracksTable = new TrackListTable();
-        scrollPane3.setViewportView(allTracksTable);
+        scrollPane1.setViewportView(allTracksTable);
     }
 
     /**

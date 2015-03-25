@@ -92,7 +92,10 @@ public class PausablePlayer {
     }
 
     public long getPosition() {
-        return 0;
+        if (playerLine == null) {
+            return 0;
+        }
+        return playerLine.getMicrosecondPosition();
     }
 
     public void addEventListener(EventListener listener) {
@@ -183,6 +186,7 @@ public class PausablePlayer {
                         notify(PlayerEvent.FINISHED);
                     } else if (readBytes > 0) {
                         writtenBytes = playerLine.write(data, 0, readBytes);
+                        notify(PlayerEvent.FRAME_PLAYED);
                     }
                 }
                 Thread.sleep(10);

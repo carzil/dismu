@@ -25,6 +25,7 @@ project(':commons') {
             exclude group: 'org.hamcrest'
         }
         compile group: 'org', name: 'jaudiotagger', version: '2.0.3'
+        compile group: 'de.u-mass', name: 'lastfm-java', version: '0.1.2'
     }
 }
 

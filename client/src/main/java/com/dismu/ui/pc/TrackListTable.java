@@ -13,6 +13,8 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
 public class TrackListTable extends JTable {
+    private static final int TRACK_COLUMN = 4;
+
     public TrackListTable() {
         super();
         DefaultTableModel model = new DefaultTableModel() {
@@ -26,8 +28,6 @@ public class TrackListTable extends JTable {
                 switch (column) {
                     case 0:
                         return ImageIcon.class;
-                    case 1:
-                        return Integer.class;
                     default:
                         return String.class;
                 }
@@ -35,17 +35,16 @@ public class TrackListTable extends JTable {
         };
         setModel(model);
         model.addColumn(" ");
-        model.addColumn("#");
         model.addColumn("Artist");
         model.addColumn("Album");
         model.addColumn("Title");
         model.addColumn("Track");
         removeColumn(getColumn("Track"));
         getColumn(" ").setMaxWidth(20);
-        getColumn("#").setMaxWidth(20);
         setAutoCreateRowSorter(true);
         setIntercellSpacing(new Dimension(0, 0));
         setShowGrid(false);
+        setBorder(BorderFactory.createEmptyBorder());
         setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
 
             @Override
@@ -87,7 +86,7 @@ public class TrackListTable extends JTable {
     }
 
     public Track getTrackByRow(int rowIndex) {
-        return (Track) getModel().getValueAt(convertRowIndexToModel(rowIndex), 5);
+        return (Track) getModel().getValueAt(convertRowIndexToModel(rowIndex), TRACK_COLUMN);
     }
 
     public void updateTracks(Track[] tracks) {
@@ -96,7 +95,7 @@ public class TrackListTable extends JTable {
         int n = 1;
         for (Track track : tracks) {
             if (track != null) {
-                model.addRow(new Object[]{"", n, track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
+                model.addRow(new Object[]{"", track.getTrackArtist(), track.getTrackAlbum(), track.getTrackName(), track});
                 n++;
             }
         }

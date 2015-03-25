@@ -226,7 +226,7 @@ public class Utils {
             Runtime runtime = Runtime.getRuntime();
             try {
                 // TODO: escape symbols in uri
-                runtime.exec(new String[] {"sh", "-c", String.format("xdg-open '%s'", uri)});
+                runtime.exec(new String[] {"sh", "-c", String.format("xdg-open %s", uri)});
             } catch (IOException e) {
                 Loggers.miscLogger.error("cannot open uri '{}'");
                 return false;

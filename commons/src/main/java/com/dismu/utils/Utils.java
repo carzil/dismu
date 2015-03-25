@@ -1,5 +1,6 @@
 package com.dismu.utils;
 
+import com.dismu.logging.Loggers;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -8,6 +9,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Callable;
@@ -216,5 +219,26 @@ public class Utils {
         g.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
         g.dispose();
         return scaledBI;
+    }
+
+    public static boolean openInBrowser(String uri) {
+        if (isLinux()) {
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                // TODO: escape symbols in uri
+                runtime.exec(new String[] {"sh", "-c", String.format("xdg-open '%s'", uri)});
+            } catch (IOException e) {
+                Loggers.miscLogger.error("cannot open uri '{}'");
+                return false;
+            }
+        } else {
+            try {
+                Desktop.getDesktop().browse(new URI(uri));
+            } catch (IOException | URISyntaxException ex) {
+                Loggers.miscLogger.error("open uri '{}'", uri, ex);
+                return false;
+            }
+        }
+        return true;
     }
 }

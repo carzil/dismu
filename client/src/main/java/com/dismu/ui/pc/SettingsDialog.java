@@ -3,6 +3,7 @@ package com.dismu.ui.pc;
 import com.dismu.logging.Loggers;
 import com.dismu.music.Scrobbler;
 import com.dismu.utils.SettingsManager;
+import com.dismu.utils.Utils;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
@@ -72,12 +73,7 @@ public class SettingsDialog extends JDialog {
                         Loggers.miscLogger.debug("got last.fm token {}", token);
                         String uri = String.format("http://www.last.fm/api/auth/?api_key=%s&token=%s", Scrobbler.LASTFM_KEY, token);
                         Loggers.miscLogger.debug("constructed URI {}", uri);
-                        try {
-                            Desktop.getDesktop().browse(new URI(uri));
-                        } catch (IOException | URISyntaxException ex) {
-                            Loggers.miscLogger.debug("cannot get last.fm session", ex);
-                            return;
-                        }
+                        Utils.openInBrowser(uri);
                         while (isRunning) {
                             lastfmSession = Authenticator.getSession(token, Scrobbler.LASTFM_KEY, Scrobbler.LASTFM_SECRET);
                             if (lastfmSession == null) {

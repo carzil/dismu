@@ -23,10 +23,12 @@ import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
+import com.sun.media.sound.JDK13Services;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
@@ -110,6 +112,9 @@ public class Dismu {
     }
 
     private Dismu() {
+        for (Object c : JDK13Services.getProviders(AudioFileReader.class)) {
+            Loggers.uiLogger.debug("{}", c);
+        }
         try {
             if (Utils.isLinux()) {
                 UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");

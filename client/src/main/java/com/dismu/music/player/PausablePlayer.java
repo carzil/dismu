@@ -20,8 +20,8 @@ public class PausablePlayer {
 
     private volatile int playerStatus;
     private int bufferSize = 4096 * 4;
-    private SourceDataLine playerLine;
-    private AudioInputStream currentStream;
+    private volatile SourceDataLine playerLine;
+    private volatile AudioInputStream currentStream;
     private Thread playerThread;
 
     private ArrayList<EventListener> listeners = new ArrayList<>();

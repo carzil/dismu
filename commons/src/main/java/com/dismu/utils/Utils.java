@@ -105,6 +105,9 @@ public class Utils {
      * @param destinationFile file to copy
      */
     public static void copyFile(File sourceFile, File destinationFile) throws IOException {
+        if (sourceFile.equals(destinationFile)) {
+            return;
+        }
         if (!destinationFile.exists()) {
             destinationFile.createNewFile();
         }

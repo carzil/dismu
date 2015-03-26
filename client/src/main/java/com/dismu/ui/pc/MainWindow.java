@@ -23,8 +23,8 @@ class PlaylistPopup extends JPopupMenu {
 
     public PlaylistPopup(Playlist p) {
         this.playlist = p;
-        JMenuItem editItem = new JMenuItem("Edit playlist...");
-        JMenuItem removeItem = new JMenuItem("Remove playlist...");
+        JMenuItem editItem = new JMenuItem("Edit");
+        JMenuItem removeItem = new JMenuItem("Remove");
         add(editItem);
         add(removeItem);
         editItem.addActionListener(new ActionListener() {

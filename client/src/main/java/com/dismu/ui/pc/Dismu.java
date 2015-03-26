@@ -190,6 +190,7 @@ public class Dismu {
                     setStatus("Re-indexing media library...", Icons.getLoaderIcon());
                 } else if (e.getType() == TrackStorageEvent.REINDEX_FINISHED) {
                     setStatus(String.format("Re-indexing finished (found %d tracks)", trackStorage.getTracks().length));
+                    mainWindow.update();
                 } else if (e.getType() == TrackStorageEvent.TRACK_REMOVED) {
                     updateTracks();
                 }
@@ -672,9 +673,45 @@ public class Dismu {
     }
 
     public boolean removePlaylist(Playlist playlist) {
-        if (JOptionPane.showConfirmDialog(mainWindow.getFrame(), String.format("Remove playlist '%s'?", playlist.getName()), "Remove playlist", JOptionPane.YES_NO_OPTION) == JOptionPane.OK_OPTION) {
+        if (confirmAction("Remove playlist", String.format("Remove playlist '%s'?", playlist.getName()))) {
             PlaylistStorage.getInstance().removePlaylist(playlist);
             mainWindow.update();
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removeTracks(final Track[] tracks) {
+        String h = "Remove track";
+        String q = "Remove selected track";
+        if (tracks.length > 1) {
+            h += "s?";
+            q += String.format("s? (%d selected)", tracks.length);
+        } else {
+            h += "?";
+            q += "?";
+        }
+        if (confirmAction(h, q)) {
+            Utils.runThread(new Runnable() {
+                @Override
+                public void run() {
+                    // TODO: we need to check all playlists and track queue for this track
+                    int removed = 0;
+                    for (Track track : tracks) {
+                        setStatus(String.format("Removed %d/%d", removed, tracks.length), Icons.getLoaderIcon());
+                        trackStorage.removeTrack(track);
+                        removed++;
+                    }
+                    try {
+                        TrackStorage.getInstance().commit();
+                    } catch (IOException e) {
+                        Loggers.playerLogger.error("cannot commit changes", e);
+                        setStatus("");
+                        return;
+                    }
+                    setStatus("Tracks removed", Icons.getSuccessIcon());
+                }
+            });
             return true;
         }
         return false;

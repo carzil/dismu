@@ -206,6 +206,7 @@ public class TrackStorage {
         Loggers.playerLogger.info("got track '{}' for saving", trackFile.getAbsolutePath());
         try {
             long fileHash = Utils.getAdler32FileHash(trackFile);
+
             if (isInStorage(fileHash)) {
                 Loggers.playerLogger.info("track already registered in index");
                 return trackHashes.get(fileHash);
@@ -215,6 +216,7 @@ public class TrackStorage {
                     maxTrackID++;
                     track.setID(maxTrackID);
                     File finalTrackFile = new File(getTrackFolder(), Long.toString(fileHash) + track.getExtension());
+                    Loggers.playerLogger.info("processing track {}", track);
                     Loggers.playerLogger.info("final track name = '{}'", finalTrackFile.getAbsolutePath());
                     tracks.put(track, finalTrackFile);
                     trackHashes.put(track.hashCode(), track);
@@ -249,26 +251,22 @@ public class TrackStorage {
         return saveTrack(file, true);
     }
 
-    public Track saveTrack(byte[] bytes) {
-        try {
-            File tmpFile = File.createTempFile("tmp", ".mp3"); // hash here, mb?
-            new FileOutputStream(tmpFile).write(bytes);
-            return saveTrack(tmpFile);
-        } catch (IOException e) {
-
-        }
-        return new Track();
-    }
-
     public synchronized void removeTrack(Track track) {
         try {
             File trackFile = tracks.get(track);
+            if (trackFile == null) {
+                Loggers.playerLogger.info("track already deleted");
+                return;
+            }
             long hash = Utils.getAdler32FileHash(trackFile);
+            tracks.remove(track);
             trackHashes.remove(track.hashCode());
             trackFileHashes.remove(hash);
             trackFileHashesInv.remove(track);
+            if (trackFile.delete()) {
+                Loggers.playerLogger.info("removed track from filesystem, filename='{}'", trackFile.getAbsolutePath());
+            }
             notify(new TrackStorageEvent(TrackStorageEvent.TRACK_REMOVED, track));
-            trackFile.delete();
             Loggers.playerLogger.info("removed track id={}, hash={}, filename='{}'", track.getID(), hash, trackFile.getName());
         } catch (IOException e) {
             Loggers.playerLogger.error("exception occurred while removing track", e);

@@ -45,11 +45,6 @@ public class LoginScreen {
         Utils.runThread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 isLogged = true;
                 loginButton.setEnabled(true);
                 loginButton.setText("Login");

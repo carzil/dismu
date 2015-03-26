@@ -1,5 +1,7 @@
 package com.dismu.ui.pc;
 
+import com.dismu.utils.Utils;
+
 import javax.swing.*;
 import java.lang.reflect.Field;
 
@@ -8,14 +10,16 @@ public class SeekBar extends JSlider {
 
     public SeekBar() {
         super(JSlider.HORIZONTAL, 0, RESOLUTION, 0);
-        try {
-            Class<?> sliderUIClass = null;
-            sliderUIClass = Class.forName("javax.swing.plaf.synth.SynthSliderUI");
-            final Field paintValue = sliderUIClass.getDeclaredField("paintValue");
-            paintValue.setAccessible(true);
-            paintValue.set(this.getUI(), false);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (Utils.isLinux()) {
+            try {
+                Class<?> sliderUIClass = null;
+                sliderUIClass = Class.forName("javax.swing.plaf.synth.SynthSliderUI");
+                final Field paintValue = sliderUIClass.getDeclaredField("paintValue");
+                paintValue.setAccessible(true);
+                paintValue.set(this.getUI(), false);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -14,6 +14,7 @@ public class Playlist {
     private ArrayList<Track> tracks;
     private int currentTrackIndex = 0;
     private String name = "Untitled";
+    private volatile boolean isRemoved = false;
 
     public Playlist() {
         tracks = new ArrayList<>();
@@ -124,5 +125,13 @@ public class Playlist {
             playlist.addTrack(track);
         }
         return playlist;
+    }
+
+    public boolean isRemoved() {
+        return isRemoved;
+    }
+
+    public void setRemoved(boolean isRemoved) {
+        this.isRemoved = isRemoved;
     }
 }

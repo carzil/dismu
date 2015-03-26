@@ -1,6 +1,5 @@
 package com.dismu.ui.pc;
 
-import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.core.Track;
@@ -13,14 +12,10 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 class PlaylistPopup extends JPopupMenu {
@@ -47,25 +42,20 @@ class PlaylistPopup extends JPopupMenu {
     }
 }
 
-class PlaylistTab {
+class PlaylistTab extends JPanel {
     private Playlist playlist;
-    private JPanel playlistPanel;
     private TrackListTable trackTable;
     private JScrollPane scrollPane;
 
     public PlaylistTab(Playlist playlist) {
+        super();
         this.playlist = playlist;
-    }
-
-    public void addToTabbedPane(JTabbedPane tabbedPane) {
-        playlistPanel = new JPanel();
-        playlistPanel.setLayout(new BorderLayout(0, 0));
-        tabbedPane.addTab(playlist.getName(), playlistPanel);
+        setLayout(new BorderLayout(0, 0));
         scrollPane = new JScrollPane();
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        playlistPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
         trackTable = new TrackListTable();
-        trackTable.addMouseListener(new MouseListener() {
+        trackTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (SwingUtilities.isLeftMouseButton(e)) {
@@ -75,33 +65,25 @@ class PlaylistTab {
                     }
                 }
             }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-
-            }
         });
         trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
         scrollPane.setViewportView(trackTable);
     }
 
+    public String getName() {
+        return playlist.getName();
+    }
+
     public void update() {
         trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
+    }
+
+    public PlaylistPopup getPopup() {
+        return new PlaylistPopup(playlist);
+    }
+
+    public boolean isRemoved() {
+        return playlist.isRemoved();
     }
 }
 
@@ -127,7 +109,6 @@ public class MainWindow {
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
     private boolean isPlaying;
-    private JPopupMenu playlistsTablePopupMenu;
     private HashMap<Playlist, PlaylistTab> playlistTabs = new HashMap<>();
 
     public JFrame getFrame() {
@@ -199,7 +180,7 @@ public class MainWindow {
                     createPlaylist();
                 }
             });
-            allTracksTable.addMouseListener(new MouseListener() {
+            allTracksTable.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (SwingUtilities.isLeftMouseButton(e)) {
@@ -211,26 +192,6 @@ public class MainWindow {
                             }
                         }
                     }
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-
                 }
             });
             playButton.addActionListener(new ActionListener() {
@@ -275,6 +236,21 @@ public class MainWindow {
             prevButton.setIcon(Icons.getPrevIcon());
             dismuFrame.setJMenuBar(menuBar);
             dismuFrame.setIconImage(Dismu.getIcon());
+            tabbedPane1.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (SwingUtilities.isRightMouseButton(e)) {
+                        int tabIndex = tabbedPane1.getUI().tabForCoordinate(tabbedPane1, e.getX(), e.getY());
+                        Component tab = tabbedPane1.getComponentAt(tabIndex);
+//                        Loggers.uiLogger.debug("tab #{}, component is {}", tabIndex, tab);
+                        if (tab instanceof PlaylistTab) {
+                            PlaylistPopup popup = ((PlaylistTab) tab).getPopup();
+                            popup.show(e.getComponent(), e.getX(), e.getY());
+                            Loggers.uiLogger.debug("showed popup tab #{}", tabIndex);
+                        }
+                    }
+                }
+            });
         }
         return dismuFrame;
     }
@@ -283,7 +259,7 @@ public class MainWindow {
         for (Playlist playlist : PlaylistStorage.getInstance().getPlaylists()) {
             PlaylistTab tab = new PlaylistTab(playlist);
             playlistTabs.put(playlist, tab);
-            tab.addToTabbedPane(tabbedPane1);
+            tabbedPane1.add(tab);
         }
     }
 
@@ -303,10 +279,19 @@ public class MainWindow {
             PlaylistTab tab = playlistTabs.get(playlist);
             if (tab == null) {
                 tab = new PlaylistTab(playlist);
-                tab.addToTabbedPane(tabbedPane1);
+                tabbedPane1.add(tab);
                 playlistTabs.put(playlist, tab);
             } else {
                 tab.update();
+            }
+        }
+        for (int tabIndex = 0; tabIndex < tabbedPane1.getTabCount(); tabIndex++) {
+            Component tab = tabbedPane1.getComponentAt(tabIndex);
+            if (tab instanceof PlaylistTab) {
+                if (((PlaylistTab) tab).isRemoved()) {
+                    tabbedPane1.remove(tabIndex);
+                    tabIndex--;
+                }
             }
         }
     }

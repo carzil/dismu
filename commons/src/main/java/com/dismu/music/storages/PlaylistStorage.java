@@ -52,6 +52,7 @@ public class PlaylistStorage {
     public synchronized void removePlaylist(Playlist playlist) {
         playlists.remove(playlist);
         save();
+        playlist.setRemoved(true);
         notify(new PlaylistStorageEvent(PlaylistStorageEvent.PLAYLIST_REMOVED, playlist));
     }
 

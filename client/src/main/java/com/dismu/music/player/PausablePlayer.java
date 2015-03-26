@@ -188,8 +188,10 @@ public class PausablePlayer {
                         writtenBytes = playerLine.write(data, 0, readBytes);
                         notify(PlayerEvent.FRAME_PLAYED);
                     }
+                    Thread.yield();
+                } else {
+                    Thread.sleep(10);
                 }
-                Thread.sleep(10);
             } catch (Exception e) {
                 Loggers.playerLogger.error("exception in playerInternal", e);
             }

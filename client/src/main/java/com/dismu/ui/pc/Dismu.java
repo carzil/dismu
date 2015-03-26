@@ -364,11 +364,7 @@ public class Dismu {
         JFrame frame = loginScreen.getFrame();
         frame.setVisible(true);
         while (!loginScreen.isLogged() && frame.isVisible()) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Loggers.uiLogger.error("cannot sleep", e);
-            }
+            Thread.yield();
         }
         frame.dispose();
         if (!loginScreen.isLogged()) {

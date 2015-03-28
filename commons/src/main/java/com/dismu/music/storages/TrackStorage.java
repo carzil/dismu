@@ -188,12 +188,12 @@ public class TrackStorage {
         Loggers.playerLogger.debug("got file to check, path='{}'", sourceFile.getAbsolutePath());
         long fileHash = Utils.getAdler32FileHash(sourceFile);
         Loggers.playerLogger.debug("file hash = {}", fileHash);
-        return isInStorage(fileHash);
+        return isFileInStorage(fileHash);
     }
 
-    public synchronized boolean isInStorage(long hash) {
+    public synchronized boolean isFileInStorage(long hash) {
         Loggers.playerLogger.debug("got hash to check, hash={}", hash);
-        return trackHashes.containsKey(hash);
+        return trackFileHashes.containsKey(hash);
     }
 
     /**
@@ -207,9 +207,9 @@ public class TrackStorage {
         try {
             long fileHash = Utils.getAdler32FileHash(trackFile);
 
-            if (isInStorage(fileHash)) {
+            if (isFileInStorage(fileHash)) {
                 Loggers.playerLogger.info("track already registered in index");
-                return trackHashes.get(fileHash);
+                return trackFileHashes.get(fileHash);
             } else {
                 Track track = Track.fromFile(trackFile);
                 if (track != null) {

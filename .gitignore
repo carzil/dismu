@@ -10,3 +10,4 @@ gradlew.bat
 local.properties
 server/
 out/
+.gradle/

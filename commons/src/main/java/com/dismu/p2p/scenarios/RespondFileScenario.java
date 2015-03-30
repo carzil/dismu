@@ -67,8 +67,7 @@ public class RespondFileScenario extends Scenario {
                 response.fileSize = tracklist.length;
                 this.size = tracklist.length;
                 try {
-                    response.fileHash =
-                            Utils.getAdler32StreamHash(new ByteArrayInputStream(tracklist));
+                    response.fileHash = Utils.getStreamHash64(new ByteArrayInputStream(tracklist));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -101,7 +100,7 @@ public class RespondFileScenario extends Scenario {
                 } else {
                     File file = ts.getTrackFile(track);
                     try {
-                        response.fileHash = Utils.getAdler32FileHash(file);
+                        response.fileHash = Utils.getFileHash64(file);
                         response.fileSize = (int) file.length();
                         this.size = (int) file.length();
                         this.stream = new BufferedInputStream(new FileInputStream(file));

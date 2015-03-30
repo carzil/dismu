@@ -6,17 +6,59 @@ import com.dismu.music.core.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.utils.ITrackFinderActionListener;
 import com.dismu.utils.Utils;
+import com.dismu.utils.TrackFinder;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.*;
+
+class MultiThreadProcessingActionListener implements ITrackFinderActionListener {
+    private int processedTracks = 0;
+    private ExecutorService pool = Executors.newFixedThreadPool(8);
+    private final TrackStorage storage = TrackStorage.getInstance();
+    private final Dismu dismuInstance = Dismu.getInstance();
+
+    @Override
+    public void trackFound(final File file) {
+        Runnable task = new Runnable() {
+            @Override
+            public void run() {
+                Loggers.uiLogger.debug("saving of '{}' started", file);
+                storage.saveTrack(file, false);
+                processedTracks++;
+                dismuInstance.setStatus(String.format("Processing selected files... (%d done)", processedTracks), Icons.getLoaderIcon());
+                Loggers.uiLogger.debug("saving of '{}' done", file);
+            }
+        };
+        Future<?> future = pool.submit(task);
+    }
+
+    public void shutdown() {
+        pool.shutdown();
+    }
+
+    public void waitFinished() {
+        try {
+            pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Loggers.miscLogger.error("cannot wait", e);
+        }
+    }
+}
 
 class PlaylistPopup extends JPopupMenu {
     private Playlist playlist;
@@ -85,6 +127,10 @@ class PlaylistTab extends JPanel {
     public boolean isRemoved() {
         return playlist.isRemoved();
     }
+
+    public void updateFilter(String pattern) {
+        trackTable.updateFilter(pattern);
+    }
 }
 
 public class MainWindow {
@@ -106,10 +152,14 @@ public class MainWindow {
     private JLabel elapsedTimeLabel;
     private JLabel scrobblerStatus;
     private JLabel remainingTimeLabel;
+    private JPanel finderPanel;
+    private JTextField patternField;
     private JFrame dismuFrame;
     private JFileChooser fileChooser = new JFileChooser();
     private boolean isPlaying;
     private HashMap<Playlist, PlaylistTab> playlistTabs = new HashMap<>();
+    private InfoWindow infoWindow = new InfoWindow();
+    private boolean isFinderVisible = false;
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -127,6 +177,10 @@ public class MainWindow {
                                 addTracks();
                             } else if (e.getKeyCode() == KeyEvent.VK_N) {
                                 createPlaylist();
+                            } else if (e.getKeyCode() == KeyEvent.VK_I) {
+                                showInfoWindow();
+                            } else if (e.getKeyCode() == KeyEvent.VK_F) {
+                                toggleFinder();
                             }
                         }
                     }
@@ -241,18 +295,70 @@ public class MainWindow {
                 public void mouseClicked(MouseEvent e) {
                     if (SwingUtilities.isRightMouseButton(e)) {
                         int tabIndex = tabbedPane1.getUI().tabForCoordinate(tabbedPane1, e.getX(), e.getY());
-                        Component tab = tabbedPane1.getComponentAt(tabIndex);
-//                        Loggers.uiLogger.debug("tab #{}, component is {}", tabIndex, tab);
-                        if (tab instanceof PlaylistTab) {
-                            PlaylistPopup popup = ((PlaylistTab) tab).getPopup();
-                            popup.show(e.getComponent(), e.getX(), e.getY());
-                            Loggers.uiLogger.debug("showed popup tab #{}", tabIndex);
+                        if (tabIndex >= 0) {
+                            Component tab = tabbedPane1.getComponentAt(tabIndex);
+                            if (tab instanceof PlaylistTab) {
+                                PlaylistPopup popup = ((PlaylistTab) tab).getPopup();
+                                popup.show(e.getComponent(), e.getX(), e.getY());
+                            }
                         }
+                        // TODO: popup here (create playlist etc)
+                    }
+                }
+            });
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+            finderPanel.setVisible(false);
+            patternField.getDocument().addDocumentListener(new DocumentListener() {
+                @Override
+                public void insertUpdate(DocumentEvent e) {
+                    updateFinder(patternField.getText());
+                }
+
+                @Override
+                public void removeUpdate(DocumentEvent e) {
+                    updateFinder(patternField.getText());
+                }
+
+                @Override
+                public void changedUpdate(DocumentEvent e) {
+                    updateFinder(patternField.getText());
+                }
+            });
+            seekBar.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    if (seekBar.isChangedByUser()) {
+                        PlayerBackend playerBackend = PlayerBackend.getInstance();
+                        playerBackend.setMicrosecondsPosition(seekBar.getValueM(playerBackend.getCurrentTrack().getTrackDuration()));
                     }
                 }
             });
         }
         return dismuFrame;
+    }
+
+    private void updateFinder(String pattern) {
+        for (PlaylistTab tab : playlistTabs.values()) {
+            tab.updateFilter(pattern);
+        }
+        allTracksTable.updateFilter(pattern);
+    }
+
+    private void toggleFinder() {
+        isFinderVisible = !isFinderVisible;
+        finderPanel.setVisible(isFinderVisible);
+        if (isFinderVisible) {
+            patternField.requestFocusInWindow();
+            patternField.setText("");
+        } else {
+            updateFinder(null);
+        }
+    }
+
+    private void showInfoWindow() {
+        JFrame frame = infoWindow.getFrame();
+        frame.setLocationRelativeTo(getFrame());
+        frame.setVisible(true);
     }
 
     private void createTabs() {
@@ -310,19 +416,21 @@ public class MainWindow {
     }
 
     private void processTracks() {
-        File[] selectedFiles = fileChooser.getSelectedFiles();
-        Dismu dismuInstance = Dismu.getInstance();
-        TrackStorage storage = TrackStorage.getInstance();
-        int processed = 0;
+        final File[] selectedFiles = fileChooser.getSelectedFiles();
+        final Dismu dismuInstance = Dismu.getInstance();
+        final TrackStorage storage = TrackStorage.getInstance();
+        TrackFinder finder = new TrackFinder();
+        MultiThreadProcessingActionListener actionListener = new MultiThreadProcessingActionListener();
         for (File file : selectedFiles) {
-            storage.saveTrack(file, false);
-            processed++;
-            dismuInstance.setStatus(String.format("Processing selected files... (%d/%d done)", processed, selectedFiles.length), Icons.getLoaderIcon());
+            finder.findTrack(file, actionListener);
         }
+        actionListener.shutdown();
+        actionListener.waitFinished();
+        Loggers.uiLogger.debug("wait and shutdown");
         dismuInstance.setStatus("Saving tracks...", Icons.getLoaderIcon());
         try {
             storage.commit();
-            dismuInstance.setStatus("Tracks saved to media library");
+            dismuInstance.setStatus("Tracks saved to media library", Icons.getSuccessIcon());
         } catch (IOException e) {
             Loggers.uiLogger.error("cannot save track index");
             dismuInstance.setStatus("Failed to save tracks");
@@ -375,9 +483,9 @@ public class MainWindow {
             return;
         }
         long duration = currentTrack.getTrackDuration();
-        double ratio = position / (duration * 1000000.0);
+        double ratio = position / (duration * 1000.0);
         seekBar.setValue(ratio);
-        long positionSeconds = (long) (position / 1000000.0);
+        long positionSeconds = (long) (position / 1000.0);
         long m = positionSeconds / 60;
         long s = positionSeconds % 60;
         long rest = duration - positionSeconds;
@@ -502,6 +610,17 @@ public class MainWindow {
         scrollPane1.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         allTracksTable = new TrackListTable();
         scrollPane1.setViewportView(allTracksTable);
+        finderPanel = new JPanel();
+        finderPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        mainPanel.add(finderPanel, BorderLayout.NORTH);
+        final JPanel panel7 = new JPanel();
+        panel7.setLayout(new GridLayoutManager(1, 2, new Insets(0, 2, 1, 0), -1, -1));
+        finderPanel.add(panel7, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        patternField = new JTextField();
+        panel7.add(patternField, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label1 = new JLabel();
+        label1.setText("Find:");
+        panel7.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**

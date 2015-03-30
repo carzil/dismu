@@ -26,12 +26,13 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="slf4j-api-1.7.5" level="project" />
-    <orderEntry type="library" exported="" name="slf4j-log4j12-1.7.5" level="project" />
-    <orderEntry type="library" exported="" name="log4j-1.2.17" level="project" />
-    <orderEntry type="library" exported="" name="json-simple-1.1.1" level="project" />
-    <orderEntry type="library" exported="" name="jaudiotagger-2.0.3" level="project" />
-    <orderEntry type="library" exported="" name="lastfm-java-0.1.2" level="project" />
-    <orderEntry type="library" exported="" name="junit-4.10" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.slf4j:slf4j-api:1.7.5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org.slf4j:slf4j-log4j12:1.7.5" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: log4j:log4j:1.2.17" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: org:jaudiotagger:2.0.3" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: de.u-mass:lastfm-java:0.1.2" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: net.jpountz.lz4:lz4:1.3.0" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: junit:junit:4.10" level="project" />
   </component>
 </module>

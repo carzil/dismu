@@ -13,16 +13,10 @@ public class SyncManager {
         TransactionHelper helper = new TransactionHelper(os, is);
         TrackStorage ts = TrackStorage.getInstance();
 
-        InputStream fin = helper.receiveFile(
-                "tracks/" +
-                        FileNameEscaper.escape(curr.getTrackArtist()) + "/" +
-                        FileNameEscaper.escape(curr.getTrackName()) + "/" +
-                        FileNameEscaper.escape(curr.getTrackAlbum())
-        );
+        InputStream fin = helper.receiveFile("tracks/" + curr.hashCode());
 
         File tempfile = File.createTempFile("dismu-", curr.getExtension(), Utils.getAppFolderPath());
         OutputStream fos = new BufferedOutputStream(new FileOutputStream(tempfile)); // TODO
-
         byte[] buffer = new byte[4096];
         int bytesRead;
         while ((bytesRead = fin.read(buffer)) != -1) {
@@ -36,8 +30,8 @@ public class SyncManager {
     public void synchronize(InputStream is, OutputStream os) throws IOException {
         TransactionHelper helper = new TransactionHelper(os, is);
         InputStream tis = helper.receiveFile("tracklist");
-        byte[] tracks_bytes = Utils.readStreamToBytes(tis);
 
+        byte[] tracks_bytes = Utils.readStreamToBytes(tis);
         Track[] tracks = MediaUtils.ByteArrayToTrackList(tracks_bytes);
 
         TrackStorage ts = TrackStorage.getInstance();

@@ -24,7 +24,6 @@ public class Track {
     private static final int FORMAT_MP3 = 0;
     private static final int FORMAT_FLAC = 1;
 
-    private int trackID = -1;
     private int trackFormat = -1;
     private int trackDuration = -1; // in milliseconds
 
@@ -34,10 +33,6 @@ public class Track {
     private int trackNumber = -1;
 
     public Track() {}
-    public Track(int trackID) {
-        this.trackID = trackID;
-    }
-
 
     public int getTrackDuration() {
         return trackDuration;
@@ -53,14 +48,6 @@ public class Track {
 
     public void setTrackFormat(int trackFormat) {
         this.trackFormat = trackFormat;
-    }
-
-    public int getID() {
-        return trackID;
-    }
-
-    public void setID(int id) {
-        this.trackID = id;
     }
 
     public String getTrackName() {
@@ -97,7 +84,6 @@ public class Track {
 
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeInt(trackFormat);
-        stream.writeInt(trackID);
         stream.writeInt(trackNumber);
         stream.writeInt(trackDuration);
         stream.writeUTF(trackName);
@@ -108,7 +94,6 @@ public class Track {
     public static Track readFromStream(DataInputStream stream) throws IOException {
         Track track = new Track();
         track.setTrackFormat(stream.readInt());
-        track.setID(stream.readInt());
         track.setTrackNumber(stream.readInt());
         track.setTrackDuration(stream.readInt());
         track.setTrackName(stream.readUTF());
@@ -149,11 +134,6 @@ public class Track {
     }
 
     private void parseID3v1Tag(ID3v1Tag tag) {
-        try {
-            setTrackNumber(Integer.parseInt(tag.getFirstTrack()));
-        } catch (Exception e) {
-            Loggers.playerLogger.error("cannot read track no", e);
-        }
         setTrackArtist(tag.getFirst(FieldKey.ARTIST));
         setTrackName(tag.getFirstTitle());
         setTrackAlbum(tag.getFirst(FieldKey.ALBUM));
@@ -236,8 +216,19 @@ public class Track {
         }
     }
 
+    public static boolean isValidTrackFile(File file) {
+        AudioFile audioFile;
+        try {
+            audioFile = AudioFileIO.read(file);
+        } catch (IOException | TagException | ReadOnlyFileException | CannotReadException | InvalidAudioFrameException e) {
+            return false;
+        }
+        String encoding = audioFile.getAudioHeader().getEncodingType().toLowerCase();
+        return encoding.contains("mp3") || encoding.contains("flac");
+    }
+
     public static Track fromFile(File trackFile) {
-        Track track = new Track();
+        Track track = null;
         AudioFile audioFile;
         try {
             audioFile = AudioFileIO.read(trackFile);
@@ -246,11 +237,14 @@ public class Track {
             return null;
         }
         String encoding = audioFile.getAudioHeader().getEncodingType().toLowerCase();
-        track.setTrackDuration(audioFile.getAudioHeader().getTrackLength());
         if (encoding.contains("mp3")) {
+            track = new Track();
+            track.setTrackDuration(audioFile.getAudioHeader().getTrackLength());
             track.setTrackFormat(FORMAT_MP3);
             track.parseMp3Meta((MP3File) audioFile);
         } else if (encoding.contains("flac")) {
+            track = new Track();
+            track.setTrackDuration(audioFile.getAudioHeader().getTrackLength());
             track.setTrackFormat(FORMAT_FLAC);
             track.parseFlacMeta(audioFile);
         }

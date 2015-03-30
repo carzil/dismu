@@ -2,12 +2,17 @@ package com.dismu.music.player;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.events.PlayerEvent;
+import com.dismu.utils.DynamicByteArray;
+import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
+import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sound.sampled.*;
 
@@ -19,17 +24,19 @@ public class PausablePlayer {
     public final static int FULL_STOP = 4;
 
     private volatile int playerStatus;
-    private int bufferSize = 4096 * 4;
+    private int bufferSize = 4 * 4096;
     private volatile SourceDataLine playerLine;
     private volatile AudioInputStream currentStream;
+    private volatile int currentPosition = 0;
     private Thread playerThread;
 
+    private Lock playerLock = new ReentrantLock();
     private ArrayList<EventListener> listeners = new ArrayList<>();
-    private final Object playerLock;
+    private volatile boolean isBuffering = false;
+    private DynamicByteArray byteArray = new DynamicByteArray();
 
     public PausablePlayer() {
         playerStatus = NOT_STARTED;
-        playerLock = new Object();
         playerThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -63,6 +70,10 @@ public class PausablePlayer {
                 playerLine.open(decodedFormat, bufferSize);
                 playerLine.start();
                 Loggers.playerLogger.info("line opened and started");
+                Loggers.playerLogger.info("sample rate = {}", playerLine.getFormat().getSampleRate());
+                byteArray.clear();
+                startBuffering();
+                currentPosition = 0;
             } catch (UnsupportedAudioFileException e) {
                 Loggers.playerLogger.error("unsupported format", e);
                 return;
@@ -76,6 +87,27 @@ public class PausablePlayer {
             playerLock.notifyAll();
             Loggers.playerLogger.debug("set new track");
         }
+    }
+
+    private void startBuffering() {
+        Utils.runThread(new Runnable() {
+            @Override
+            public void run() {
+                isBuffering = true;
+                byte[] buffer = new byte[1 << 13];
+                int readBytes;
+                try {
+                    Loggers.playerLogger.debug("started buffering");
+                    while ((readBytes = currentStream.read(buffer, 0, buffer.length)) != -1) {
+                        byteArray.addBytes(buffer, readBytes);
+                    }
+                    Loggers.playerLogger.debug("stream buffered");
+                } catch (IOException e) {
+                    Loggers.playerLogger.error("cannot buffer stream", e);
+                }
+                isBuffering = false;
+            }
+        });
     }
 
     private AudioFormat getDecodedFormat(AudioFormat baseFormat) {
@@ -95,7 +127,7 @@ public class PausablePlayer {
         if (playerLine == null) {
             return 0;
         }
-        return playerLine.getMicrosecondPosition();
+        return convertFramesToMicroseconds(getFramePosition());
     }
 
     public void addEventListener(EventListener listener) {
@@ -107,63 +139,71 @@ public class PausablePlayer {
     }
 
     public boolean play() {
-        synchronized (playerLock) {
-            if (playerLine == null) {
-                Loggers.playerLogger.error("play on non-initialized player");
-                return false;
-            }
-            playerStatus = PLAYING;
-            playerLock.notifyAll();
-            notify(PlayerEvent.PLAYING);
-            return playerStatus == PLAYING;
+        playerLock.lock();
+        if (playerLine == null) {
+            Loggers.playerLogger.error("play on non-initialized player");
+            return false;
         }
+        playerStatus = PLAYING;
+        playerLock.unlock();
+        notify(PlayerEvent.PLAYING);
+        return playerStatus == PLAYING;
     }
 
-    public void seek(double st) {
-        st *= 1000.0;
-        synchronized (playerLock) {
-            if (playerLine == null) {
-                Loggers.playerLogger.error("pause on non-initialized player");
-                return;
-            }
-            playerLine.notifyAll();
+    private long convertFramesToMicroseconds(long frames) {
+        return frames * 1000 / (long) playerLine.getFormat().getFrameRate();
+    }
+
+    private int convertMicrosecondsToFrames(long m) {
+        return (int) (m * playerLine.getFormat().getFrameRate() / 1000);
+    }
+
+    public void setMicrosecondsPosition(long position) {
+        if (playerLine == null) {
+            return;
         }
+        int frame = convertMicrosecondsToFrames(position);
+        setFramePosition(frame);
+    }
+
+    public void setFramePosition(int frame) {
+        playerLock.lock();
+        currentPosition = frame * playerLine.getFormat().getFrameSize();
+        playerLock.unlock();
+    }
+
+    public int getFramePosition() {
+        return currentPosition / playerLine.getFormat().getFrameSize();
     }
 
     public boolean pause() {
-        synchronized (playerLock) {
-            if (playerLine == null) {
-                Loggers.playerLogger.error("play on non-initialized player");
-                return false;
-            }
-            playerStatus = PAUSED;
-            playerLock.notifyAll();
-            notify(PlayerEvent.PAUSED);
-            return playerStatus == PAUSED;
+        playerLock.lock();
+        if (playerLine == null) {
+            Loggers.playerLogger.error("play on non-initialized player");
+            return false;
         }
+        playerStatus = PAUSED;
+        playerLock.unlock();
+        notify(PlayerEvent.PAUSED);
+        return playerStatus == PAUSED;
     }
 
     public void stop() {
-        synchronized (playerLock) {
-            if (playerLine != null) {
-                playerLine.stop();
-                playerLine.close();
-            }
-            playerStatus = FINISHED;
-            playerLock.notifyAll();
-            notify(PlayerEvent.STOPPED);
-        }
+        playerLock.lock();
+        currentPosition = 0;
+        playerStatus = FINISHED;
+        playerLock.unlock();
+        notify(PlayerEvent.STOPPED);
     }
 
     public void close() {
-        synchronized (playerLock) {
-            playerStatus = FULL_STOP;
-            if (playerLine != null) {
-                playerLine.stop();
-                playerLine.close();
-            }
-            playerLock.notifyAll();
+        playerLock.lock();
+        playerStatus = FULL_STOP;
+        if (playerLine != null) {
+            playerLine.stop();
+            playerLine.close();
         }
+        playerLock.unlock();
     }
 
     private void playerInternal() {
@@ -172,14 +212,12 @@ public class PausablePlayer {
         while (playerStatus != FULL_STOP) {
             try {
                 if (playerStatus == PLAYING) {
-                    try {
-                        readBytes = currentStream.read(data, 0, data.length);
-                    } catch (IOException e) {
-                        Loggers.playerLogger.error("read error", e);
-                        playerLine.drain();
-                        stop();
+                    while ((readBytes = byteArray.read(data, currentPosition)) == 0 && isBuffering) {
+                        Thread.yield();
                     }
-                    if (readBytes == -1) {
+                    Thread.yield();
+                    currentPosition = currentPosition + readBytes;
+                    if (readBytes == 0 && !isBuffering) {
                         playerLine.drain();
                         playerLine.stop();
                         playerLine.close();
@@ -194,6 +232,7 @@ public class PausablePlayer {
                 }
             } catch (Exception e) {
                 Loggers.playerLogger.error("exception in playerInternal", e);
+                return;
             }
         }
     }

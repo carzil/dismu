@@ -1,6 +1,8 @@
 package com.dismu.utils;
 
 import com.dismu.logging.Loggers;
+import net.jpountz.xxhash.StreamingXXHash64;
+import net.jpountz.xxhash.XXHashFactory;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -13,13 +15,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
-import java.util.concurrent.Callable;
-import java.util.zip.Adler32;
-import java.util.zip.Checksum;
-import java.lang.reflect.InvocationTargetException;
 
 public class Utils {
     static PlatformUtils platformUtils = null;
+    private static final int HASH_SEED = 0x9747b28c;
+    private static final XXHashFactory hashFactory = XXHashFactory.fastestInstance();
 
     public static synchronized void setPlatformUtils(PlatformUtils cl) {
         platformUtils = cl;
@@ -86,17 +86,6 @@ public class Utils {
             e.printStackTrace();
         }
         return null;
-        /*File appFolder;
-        
-        if (Utils.isWindows()) {
-            appFolder = new File(System.getenv("APPDATA"), ".dismu");
-        } else {
-            appFolder = new File(System.getProperty("user.home"), ".dismu");
-        }
-        if (!appFolder.exists()) {
-            appFolder.mkdirs();
-        }
-        return appFolder;*/
     }
 
     /**
@@ -138,14 +127,15 @@ public class Utils {
      * @return hash of stream
      * @throws IOException
      */
-    public static long getAdler32StreamHash(InputStream stream) throws IOException {
+    public static long getStreamHash64(InputStream stream) throws IOException {
         int readCount;
-        byte[] chunk = new byte[1024];
-        Checksum checksum = new Adler32();
+        byte[] chunk = new byte[8192];
+        StreamingXXHash64 hasher = hashFactory.newStreamingHash64(HASH_SEED);
+        hasher.reset();
         while ((readCount = stream.read(chunk)) != -1) {
-            checksum.update(chunk, 0, readCount);
+            hasher.update(chunk, 0, readCount);
         }
-        return checksum.getValue();
+        return hasher.getValue();
     }
 
     /**
@@ -154,8 +144,8 @@ public class Utils {
      * @return hash of file
      * @throws IOException
      */
-    public static long getAdler32FileHash(File file) throws IOException {
-        return getAdler32StreamHash(new BufferedInputStream(new FileInputStream(file)));
+    public static long getFileHash64(File file) throws IOException {
+        return getStreamHash64(new BufferedInputStream(new FileInputStream(file)));
     }
 
     public static byte[] readStreamToBytes(InputStream is) throws IOException {
@@ -172,6 +162,7 @@ public class Utils {
     }
 
     public static Thread runThread(Runnable runnable) {
+        // TODO: rewrite this with cached pool
         Thread thread = new Thread(runnable);
         thread.start();
         return thread;

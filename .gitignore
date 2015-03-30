@@ -1,3 +1,12 @@
 *.class
 *.jar
 .idea
+build/
+gen/
+target/
+gradle/
+gradlew
+gradlew.bat
+local.properties
+server/
+out/

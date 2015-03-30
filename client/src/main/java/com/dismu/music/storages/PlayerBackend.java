@@ -55,7 +55,7 @@ public class PlayerBackend {
         try {
             player.play();
         } catch (Exception e) {
-            Loggers.playerLogger.error("exception occurred while playing track id={}", currentTrack.getID(), e);
+            Loggers.playerLogger.error("exception occurred while playing track {}", currentTrack, e);
             return false;
         }
         return true;
@@ -65,8 +65,13 @@ public class PlayerBackend {
         return player.pause();
     }
 
-    public boolean seek(double seconds) {
-        player.seek(seconds);
+    public boolean setMicrosecondsPosition(long mSeconds) {
+        player.setMicrosecondsPosition(mSeconds);
+        return true;
+    }
+
+    public boolean setFramePosition(int frame) {
+        player.setFramePosition(frame);
         return true;
     }
 
@@ -77,7 +82,7 @@ public class PlayerBackend {
     public void setTrack(Track track) throws TrackNotFoundException {
         currentTrack = track;
         currentTrackFile = TrackStorage.getInstance().getTrackFile(track);
-        Loggers.playerLogger.info("TrackStorage yielded file {}", currentTrackFile);
+        Loggers.playerLogger.info("TrackStorage yielded file '{}'", currentTrackFile);
         try {
             currentInputStream = new BufferedInputStream(new FileInputStream(currentTrackFile));
             player.loadInputStream(currentInputStream);

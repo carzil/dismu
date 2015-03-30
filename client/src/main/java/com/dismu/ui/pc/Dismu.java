@@ -25,6 +25,7 @@ import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 import com.sun.media.sound.JDK13Services;
 
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -34,8 +35,10 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 
@@ -47,7 +50,16 @@ public class Dismu {
 
     static {
         Utils.setPlatformUtils(new PCPlatformUtils());
-        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+        initLoggers();
+        try {
+            if (Utils.isLinux()) {
+                UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
+            } else {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
+            Loggers.uiLogger.error("error while setting look & feel", e);
+        }
     }
 
     public static ArrayList<Client> clients = new ArrayList<>();
@@ -60,7 +72,7 @@ public class Dismu {
     private PlaylistStorage playlistStorage;
 
     private boolean isVisible = false;
-    private boolean isRunning = false;
+    private static volatile boolean isRunning = true;
     private boolean isPlaying = false;
 
     private DismuTray tray = new DismuTray();
@@ -100,6 +112,16 @@ public class Dismu {
         dismu.run();
     }
 
+    private static void initLoggers() {
+        InputStream inputStream = ClassLoader.getSystemResourceAsStream("logging.properties");
+        try {
+            LogManager.getLogManager().readConfiguration(inputStream);
+            inputStream.close();
+        } catch (IOException ignored) {
+
+        }
+    }
+
     /**
      * If Dismu isn't initialized, initilize it and returns instance
      * @return {@link Dismu} instance
@@ -112,18 +134,6 @@ public class Dismu {
     }
 
     private Dismu() {
-        for (Object c : JDK13Services.getProviders(AudioFileReader.class)) {
-            Loggers.uiLogger.debug("{}", c);
-        }
-        try {
-            if (Utils.isLinux()) {
-                UIManager.setLookAndFeel("com.sun.java.swing.plaf.gtk.GTKLookAndFeel");
-            } else {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
-            Loggers.uiLogger.error("error while setting look & feel", e);
-        }
     }
 
     private void initDismu(String username, String password) {
@@ -141,6 +151,7 @@ public class Dismu {
         trackStorage = TrackStorage.getInstance();
         playerBackend = PlayerBackend.getInstance();
         playlistStorage = PlaylistStorage.getInstance();
+
         mainWindow = new MainWindow();
 
         playerBackend.addEventListener(new EventListener() {
@@ -166,7 +177,7 @@ public class Dismu {
                         @Override
                         public void run() {
                             if (Scrobbler.isScrobblingEnabled()) {
-                                scrobbler.updatePosition(playerBackend.getPosition() / 1000000);
+                                scrobbler.updatePosition(playerBackend.getPosition() / 1000);
                                 if (scrobbler.isScrobbled()) {
                                     mainWindow.setScrobblerStatus("", Icons.getSuccessIcon(), "Scrobbled");
                                 } else {
@@ -232,7 +243,8 @@ public class Dismu {
         final API api = new APIImpl();
         final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
-        final int serverPort = networkSettingsManager.getInt("server.port", 1337);
+        Random random = new Random();
+        final int serverPort = networkSettingsManager.getInt("server.port", Math.abs(random.nextInt()) % 3000 + 1024);
 
         Thread serverThread = new Thread(new Runnable() {
             @Override
@@ -244,6 +256,7 @@ public class Dismu {
                     return;
                 }
                 try {
+                    Loggers.p2pLogger.info("starting server at port={}", serverPort);
                     server.start();
                 } finally {
                     api.unregister(userId);
@@ -432,13 +445,25 @@ public class Dismu {
         TrackQueueEntry top = trackQueue.peek();
         if (top == null) {
             trackQueue.pushBack(track);
-            Loggers.uiLogger.debug("pushBack");
         } else {
             trackQueue.insertAfter(top, track);
-            Loggers.uiLogger.debug("insertAfter");
         }
         Loggers.uiLogger.debug("added track to queue {}", track);
         updateQueueStatus();
+    }
+
+    public void addTrackAfterNext(Track track) {
+        TrackQueueEntry top = trackQueue.peek();
+        if (top == null) {
+            trackQueue.pushBack(track);
+        } else {
+            TrackQueueEntry next = top.getNext();
+            if (next == null) {
+                trackQueue.insertAfter(top, track);
+            } else {
+                trackQueue.insertAfter(next, track);
+            }
+        }
     }
 
     private void updateQueueStatus() {
@@ -528,6 +553,7 @@ public class Dismu {
     }
 
     public static void fullExit(int exitCode) {
+        isRunning = false;
         Thread closingStoragesThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
@@ -771,5 +797,9 @@ public class Dismu {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public static boolean isRunning() {
+        return isRunning;
     }
 }

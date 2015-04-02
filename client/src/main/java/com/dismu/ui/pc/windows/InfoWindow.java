@@ -1,7 +1,8 @@
-package com.dismu.ui.pc;
+package com.dismu.ui.pc.windows;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.ui.pc.Dismu;
 import com.dismu.utils.Utils;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
@@ -57,7 +58,7 @@ public class InfoWindow {
             Utils.runThread(new Runnable() {
                 @Override
                 public void run() {
-                    while (Dismu.isRunning()) {
+                    while (Dismu.getInstance().isRunning()) {
                         updateInfo();
                         try {
                             Thread.sleep(10);

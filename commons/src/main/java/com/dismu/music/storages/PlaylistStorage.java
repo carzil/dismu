@@ -14,6 +14,7 @@ public class PlaylistStorage {
     private ArrayList<Playlist> playlists;
     private ArrayList<EventListener> listeners = new ArrayList<>();;
     private static volatile PlaylistStorage instance;
+    private int maxId = -1;
 
     private PlaylistStorage() {
         playlists = new ArrayList<>();
@@ -42,6 +43,12 @@ public class PlaylistStorage {
         return false;
     }
 
+    public synchronized Playlist createPlaylist() {
+        Playlist newPlaylist = new Playlist();
+        maxId++;
+        newPlaylist.setId(maxId);
+        return newPlaylist;
+    }
 
     public synchronized void addPlaylist(Playlist playlist) {
         playlists.add(playlist);
@@ -115,6 +122,7 @@ public class PlaylistStorage {
             for (int i = 0; i < playlistCount; i++) {
                 Playlist playlist = Playlist.readFromStream(index);
                 this.playlists.add(playlist);
+                maxId = Math.max(maxId, playlist.getId());
                 Loggers.playerLogger.info("read playlist, name='{}', track count={}", playlist.getName(), playlist.getTrackCount());
             }
         } catch (IOException e) {

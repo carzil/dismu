@@ -1,6 +1,8 @@
-package com.dismu.ui.pc;
+package com.dismu.ui.pc.windows;
 
 import com.dismu.logging.Loggers;
+import com.dismu.ui.pc.Dismu;
+import com.dismu.ui.pc.Icons;
 import com.dismu.utils.Utils;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
@@ -53,12 +55,12 @@ public class LoginScreen {
                 usernameField.setEditable(true);
                 if (isLogged) {
                     boolean keepMeLoggedIn = keepMeLoggedInCheckBox.isSelected();
-                    Dismu.accountSettingsManager.setBoolean("keepLoggedIn", keepMeLoggedIn);
+                    Dismu.getInstance().accountSettingsManager.setBoolean("keepLoggedIn", keepMeLoggedIn);
                     if (keepMeLoggedIn) {
-                        Dismu.accountSettingsManager.setString("username", getUsername());
-                        Dismu.accountSettingsManager.setString("password", getPassword());
+                        Dismu.getInstance().accountSettingsManager.setString("username", getUsername());
+                        Dismu.getInstance().accountSettingsManager.setString("password", getPassword());
                     } else {
-                        Dismu.accountSettingsManager.setString("password", "");
+                        Dismu.getInstance().accountSettingsManager.setString("password", "");
                     }
                 }
             }
@@ -83,10 +85,10 @@ public class LoginScreen {
             } catch (IOException e) {
                 Loggers.uiLogger.error("cannot load logo", e);
             }
-            boolean keepLoggedIn = Dismu.accountSettingsManager.getBoolean("keepLoggedIn", false);
+            boolean keepLoggedIn = Dismu.getInstance().accountSettingsManager.getBoolean("keepLoggedIn", false);
             if (keepLoggedIn) {
-                String username = Dismu.accountSettingsManager.getString("username", "");
-                String password = Dismu.accountSettingsManager.getString("password", "");
+                String username = Dismu.getInstance().accountSettingsManager.getString("username", "");
+                String password = Dismu.getInstance().accountSettingsManager.getString("password", "");
                 keepMeLoggedInCheckBox.setSelected(true);
                 usernameField.setText(username);
                 passwordField.setText(password);
@@ -108,7 +110,7 @@ public class LoginScreen {
     }
 
     public String getPassword() {
-        return passwordField.getText();
+        return new String(passwordField.getPassword());
     }
 
     /**

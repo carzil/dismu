@@ -38,7 +38,7 @@ public class DismuTray {
         exitItem.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                Dismu.fullExit(0);
+                Dismu.getInstance().fullExit(0);
             }
         });
         togglePlayItem.addActionListener(new ActionListener() {

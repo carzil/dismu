@@ -2,7 +2,7 @@ package com.dismu.ui.pc;
 
 import com.dismu.logging.Loggers;
 
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -23,7 +23,8 @@ public class ImagePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        g.drawImage(image, 0, 0, null);
+        Graphics2D graphics2D = (Graphics2D) g;
+        graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics2D.drawImage(image, 0, 0, null);
     }
-
 }

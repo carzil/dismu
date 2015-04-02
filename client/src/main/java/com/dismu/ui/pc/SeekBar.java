@@ -3,6 +3,8 @@ package com.dismu.ui.pc;
 import com.dismu.utils.Utils;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicSliderUI;
+import javax.swing.plaf.metal.MetalSliderUI;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.lang.reflect.Field;
@@ -33,6 +35,14 @@ public class SeekBar extends JSlider {
             @Override
             public void mouseReleased(MouseEvent e) {
                 changedByUser = false;
+            }
+        });
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                BasicSliderUI ui = (BasicSliderUI) getUI();
+                int value = ui.valueForXPosition(e.getX());
+                setValue(value);
             }
         });
     }

@@ -13,6 +13,8 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
@@ -52,6 +54,12 @@ class MultipleTrackPopup extends JPopupMenu {
     private void addGroupOperationsMenu(final Track[] tracks) {
         addSeparator();
         JMenuItem deleteTracks = new JMenuItem("Create playlist");
+        deleteTracks.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Dismu.getInstance().createPlaylist(tracks);
+            }
+        });
         add(deleteTracks);
     }
 }
@@ -59,21 +67,32 @@ class MultipleTrackPopup extends JPopupMenu {
 class TrackListTableCellRenderer extends DefaultTableCellRenderer {
     private Pattern patternObj;
     private String pattern;
+    private HashMap<String, String> cache = new HashMap<>();
+    private Color evenColor = Color.WHITE;
+    private Color oddColor = new Color(245, 245, 245);
 
-    @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         if (!isSelected) {
-            c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(245, 245, 245));
+            c.setBackground(row % 2 == 0 ? evenColor : oddColor);
         }
+        setBorder(BorderFactory.createEmptyBorder());
         if (pattern != null) {
-            Matcher matcher = patternObj.matcher(value.toString());
-            setText("<html>" + matcher.replaceAll("<b>$1</b>") + "</html>");
+            String newValue;
+            if (cache.containsKey(value.toString())) {
+                newValue = cache.get(value.toString());
+            } else {
+                Matcher matcher = patternObj.matcher(value.toString());
+                newValue = "<html>" + matcher.replaceAll("<b>$1</b>") + "</html>";
+                cache.put(value.toString(), newValue);
+            }
+            setText(newValue);
         }
         return c;
     }
 
     public void updatePattern(String pattern) {
+        cache.clear();
         if (pattern == null) {
             this.pattern = null;
             return;

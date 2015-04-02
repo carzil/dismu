@@ -20,6 +20,7 @@ public class Utils {
     static PlatformUtils platformUtils = null;
     private static final int HASH_SEED = 0x9747b28c;
     private static final XXHashFactory hashFactory = XXHashFactory.fastestInstance();
+    public static final int MEGABYTE = 1 << 20;
 
     public static synchronized void setPlatformUtils(PlatformUtils cl) {
         platformUtils = cl;
@@ -207,6 +208,7 @@ public class Utils {
         int imageType = preserveAlpha ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB;
         BufferedImage scaledBI = new BufferedImage(scaledWidth, scaledHeight, imageType);
         Graphics2D g = scaledBI.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if (preserveAlpha) {
             g.setComposite(AlphaComposite.Src);
         }

@@ -18,28 +18,26 @@ import com.dismu.p2p.apiclient.Seed;
 import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
+import com.dismu.ui.pc.dialogs.AddTracksDialog;
+import com.dismu.ui.pc.dialogs.PlaylistWindow;
+import com.dismu.ui.pc.dialogs.SettingsDialog;
+import com.dismu.ui.pc.windows.LoginScreen;
+import com.dismu.ui.pc.windows.main.MainWindow;
 import com.dismu.utils.PCPlatformUtils;
 import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
-import com.sun.media.sound.JDK13Services;
 
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import javax.sound.sampled.spi.AudioFileReader;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.UUID;
-import java.util.logging.Level;
+import java.util.*;
 import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 
 /**
@@ -57,13 +55,14 @@ public class Dismu {
             } else {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             }
+            UIManager.put("Slider.focus", UIManager.get("Slider.background"));
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) {
             Loggers.uiLogger.error("error while setting look & feel", e);
         }
     }
 
-    public static ArrayList<Client> clients = new ArrayList<>();
-    public static Server server;
+    public ArrayList<Client> clients = new ArrayList<>();
+    public Server server;
 
     private MainWindow mainWindow;
 
@@ -72,7 +71,7 @@ public class Dismu {
     private PlaylistStorage playlistStorage;
 
     private boolean isVisible = false;
-    private static volatile boolean isRunning = true;
+    private volatile boolean isRunning = true;
     private boolean isPlaying = false;
 
     private DismuTray tray = new DismuTray();
@@ -94,17 +93,18 @@ public class Dismu {
         }
     };
 
-    public static SettingsManager accountSettingsManager = SettingsManager.getSection("account");
-    public static SettingsManager networkSettingsManager = SettingsManager.getSection("network");
-    public static SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
-    public static SettingsManager scrobblerSettingsManager = SettingsManager.getSection("scrobbler");
+    public SettingsManager accountSettingsManager = SettingsManager.getSection("account");
+    public SettingsManager networkSettingsManager = SettingsManager.getSection("network");
+    public SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
+    public SettingsManager scrobblerSettingsManager = SettingsManager.getSection("scrobbler");
 
-    public static SettingsManager globalSettingsManager = SettingsManager.getSection("global");
+    public SettingsManager globalSettingsManager = SettingsManager.getSection("global");
 
-    private static HashMap<Seed, Client> seedsTable = new HashMap<>();
+    private HashMap<Seed, Client> seedsTable = new HashMap<>();
 
     private String username;
     private String password;
+    private boolean repeatOne = false;
 
 
     public static void main(String[] args) {
@@ -143,7 +143,7 @@ public class Dismu {
             return;
         }
 
-        Dismu.accountSettingsManager.setString("user.groupID", username);
+        Dismu.getInstance().accountSettingsManager.setString("user.groupID", username);
 
         this.username = username;
         this.password = password;
@@ -163,6 +163,7 @@ public class Dismu {
                     updateNowPlaying(track);
                 } else if (e.getType() == PlayerEvent.PAUSED) {
                     updatePaused(playerBackend.getCurrentTrack());
+                    mainWindow.setScrobblerStatus("", null, "");
                 } else if (e.getType() == PlayerEvent.STOPPED) {
                     scrobbler.stopScrobbling();
                     mainWindow.setScrobblerStatus("", null, "");
@@ -170,7 +171,9 @@ public class Dismu {
                 } else if (e.getType() == PlayerEvent.FINISHED) {
                     scrobbler.stopScrobbling();
                     mainWindow.setScrobblerStatus("", null, "");
-                    trackQueue.popFirst();
+                    if (!repeatOne) {
+                        trackQueue.popFirst();
+                    }
                     play();
                 } else if (e.getType() == PlayerEvent.FRAME_PLAYED) {
                     Utils.runThread(new Runnable() {
@@ -239,12 +242,11 @@ public class Dismu {
         isRunning = true;
     }
 
-    private static void startP2P() {
+    private void startP2P() {
         final API api = new APIImpl();
         final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
-        Random random = new Random();
-        final int serverPort = networkSettingsManager.getInt("server.port", Math.abs(random.nextInt()) % 3000 + 1024);
+        final int serverPort = networkSettingsManager.getInt("server.port", 1337);
 
         Thread serverThread = new Thread(new Runnable() {
             @Override
@@ -276,7 +278,7 @@ public class Dismu {
         initClients();
     }
 
-    public static void updateSeeds() {
+    public void updateSeeds() {
         final String userId = getUserID();
         final API api = new APIImpl();
         Seed[] seeds = api.getNeighbours(userId);
@@ -311,11 +313,11 @@ public class Dismu {
         }
     }
 
-    public static void initClients() {
+    public void initClients() {
         updateSeeds();
     }
 
-    private static String getUserID() {
+    public String getUserID() {
         // XXX: i think we should generate UUID on our server
         String res = accountSettingsManager.getString("user.userId", "");
         if (res.length() == 0) {
@@ -337,10 +339,9 @@ public class Dismu {
 
     private void updateNowPlaying(Track track) {
         tray.setNowPlaying(track.getPrettifiedName());
-        tray.setTooltip(String.format("Dismu playing: %s", track.getPrettifiedFileName()));
+        tray.setTooltip(String.format("Dismu | %s", track.getPrettifiedName()));
         tray.setTogglePlaybackInfo("Pause");
-
-        setStatus(track.getPrettifiedName(), Icons.getPlayIcon());
+        mainWindow.updateNowPlayingTrack(track);
         showInfoMessage("Now playing", track.getPrettifiedName());
     }
 
@@ -357,7 +358,6 @@ public class Dismu {
             tray.setNowPlaying("Not playing");
         } else {
             tray.setNowPlaying(track.getPrettifiedName() + " (PAUSED)");
-            setStatus(track.getPrettifiedName(), Icons.getPauseIcon());
         }
         tray.setTogglePlaybackInfo("Play");
         tray.setTooltip("Dismu");
@@ -365,12 +365,11 @@ public class Dismu {
 
     private void updateStopped() {
         isPlaying = false;
+        mainWindow.setScrobblerStatus("");
         tray.setNotPlaying();
         tray.setTooltip("Dismu");
         tray.setTogglePlaybackInfo("Play");
-        setStatus("Stopped", Icons.getStopIcon());
         mainWindow.updateControl(false);
-        mainWindow.updateCurrentTrack();
     }
 
     public void run() {
@@ -533,7 +532,7 @@ public class Dismu {
         }
     }
 
-    public static void removeSystemTrayIcon() {
+    public void removeSystemTrayIcon() {
         SystemTray systemTray = SystemTray.getSystemTray();
         for (TrayIcon icon : systemTray.getTrayIcons()) {
             systemTray.remove(icon);
@@ -541,7 +540,7 @@ public class Dismu {
         Loggers.uiLogger.info("removed tray icons");
     }
 
-    public static void closeAllFrames() {
+    public void closeAllFrames() {
         int cnt = 0;
         for (Frame frame : JFrame.getFrames()) {
             Loggers.uiLogger.debug("got frame {} to close", frame);
@@ -552,7 +551,7 @@ public class Dismu {
         Loggers.uiLogger.info("closed {} frames", cnt);
     }
 
-    public static void fullExit(int exitCode) {
+    public void exit() {
         isRunning = false;
         Thread closingStoragesThread = Utils.runThread(new Runnable() {
             @Override
@@ -622,10 +621,14 @@ public class Dismu {
         }
         Loggers.uiLogger.info("{} active threads", Thread.activeCount());
         Loggers.uiLogger.info("everything is closed and saved, exiting");
+    }
+
+    public void fullExit(int exitCode) {
+        exit();
         System.exit(exitCode);
     }
 
-    private static void stopP2P() {
+    private void stopP2P() {
         API api = new APIImpl();
         String userId = accountSettingsManager.getString("user.userId", "b");
         api.unregister(userId);
@@ -634,7 +637,7 @@ public class Dismu {
         server.stop();
     }
 
-    private static void stopClients() {
+    private void stopClients() {
         int cnt = 0;
         for (Client client : clients) {
             try {
@@ -670,6 +673,17 @@ public class Dismu {
         playlistWindow.getFrame().setVisible(true);
         playlistWindow.setPlaylist(playlist);
         mainWindow.update();
+    }
+
+    public Playlist createPlaylist(Track[] tracks) {
+        Playlist playlist = playlistStorage.createPlaylist();
+        for (Track track : tracks) {
+            playlist.addTrack(track);
+        }
+        String name = (String) JOptionPane.showInputDialog(mainWindow.getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
+        playlist.setName(name);
+        playlistStorage.addPlaylist(playlist);
+        return playlist;
     }
 
     public void setStatus(String message, ImageIcon icon) {
@@ -759,13 +773,13 @@ public class Dismu {
         return isPlaying;
     }
 
-    public static void restartP2P() {
+    public void restartP2P() {
         stopP2P();
         startP2P();
         Loggers.serverLogger.info("Restarted P2P");
     }
 
-    public static void startSync() {
+    public void startSync() {
         for (Client client : clients) {
             try {
                 client.synchronize();
@@ -799,7 +813,16 @@ public class Dismu {
         this.password = password;
     }
 
-    public static boolean isRunning() {
+    public boolean isRunning() {
         return isRunning;
+    }
+
+    public void setRepeatOne(boolean repeatOne) {
+        Loggers.uiLogger.debug("repeat one set to {}", repeatOne);
+        this.repeatOne = repeatOne;
+    }
+
+    public boolean isRepeatOne() {
+        return repeatOne;
     }
 }

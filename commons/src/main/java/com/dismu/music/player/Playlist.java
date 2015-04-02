@@ -11,6 +11,7 @@ import com.dismu.logging.Loggers;
 import com.dismu.music.core.Track;
 
 public class Playlist {
+    private int id;
     private ArrayList<Track> tracks;
     private int currentTrackIndex = 0;
     private String name = "Untitled";
@@ -35,7 +36,7 @@ public class Playlist {
     }
 
     public int hashCode() {
-        return name.hashCode() ^ currentTrackIndex ^ getTrackCount() ^ tracks.hashCode();
+        return getId();
     }
 
     public boolean isEmpty() {
@@ -108,6 +109,7 @@ public class Playlist {
 
     public void writeToStream(DataOutputStream stream) throws IOException {
         stream.writeUTF(getName());
+        stream.writeInt(getId());
         stream.writeInt(tracks.size());
         stream.writeInt(currentTrackIndex);
         for (Track track : tracks) {
@@ -118,6 +120,7 @@ public class Playlist {
     public static Playlist readFromStream(DataInputStream stream) throws IOException {
         Playlist playlist = new Playlist();
         playlist.setName(stream.readUTF());
+        playlist.setId(stream.readInt());
         int trackCount = stream.readInt();
         playlist.currentTrackIndex = stream.readInt();
         for (int i = 0; i < trackCount; i++) {
@@ -133,5 +136,17 @@ public class Playlist {
 
     public void setRemoved(boolean isRemoved) {
         this.isRemoved = isRemoved;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String toString() {
+        return name;
     }
 }

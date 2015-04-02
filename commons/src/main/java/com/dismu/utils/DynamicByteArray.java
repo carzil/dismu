@@ -5,30 +5,35 @@ import com.dismu.logging.Loggers;
 import java.util.Arrays;
 
 public class DynamicByteArray {
-    private final static double GROW_FACTOR = 1.5;
-    private final static int INITIAL_SIZE = 1 << 16;
+    private static final double GROWTH_FACTOR = 2.3;
+    private int initialSize = 1 << 16;
     private int currentPosition = 0;
     private byte[] byteBuffer;
 
-    public DynamicByteArray() {
-        byteBuffer = new byte[INITIAL_SIZE];
+    public DynamicByteArray(int initialSize) {
+        byteBuffer = new byte[initialSize];
+        this.initialSize = initialSize;
     }
 
     public void addBytes(byte[] bytes, int length) {
-        if (currentPosition + bytes.length >= byteBuffer.length) {
-            resize();
-        }
+        ensureCapacity(currentPosition + bytes.length);
         System.arraycopy(bytes, 0, byteBuffer, currentPosition, length);
         currentPosition += length;
     }
 
-    private void resize() {
-        int newSize = (int) (GROW_FACTOR * byteBuffer.length);
-        byteBuffer = Arrays.copyOf(byteBuffer, newSize);
+    private void ensureCapacity(int size) {
+        if (size > byteBuffer.length) {
+            resize();
+        }
     }
 
-    public byte[] getBuffer() {
-        return byteBuffer;
+    private void resize() {
+        int newSize = (int) GROWTH_FACTOR * byteBuffer.length;
+        byteBuffer = Arrays.copyOf(byteBuffer, newSize);
+        Loggers.playerLogger.debug("resize called, new size={}", size());
+        // This GC-call is needed because when we create new byte buffer and copy, we create a new
+        // object in memory, but it's is very memory-expensive because this class is used to store media streams
+        System.gc();
     }
 
     public int size() {
@@ -44,7 +49,7 @@ public class DynamicByteArray {
     }
 
     public void clear() {
-        byteBuffer = new byte[INITIAL_SIZE];
+        Arrays.fill(byteBuffer, (byte) 0);
         currentPosition = 0;
     }
 

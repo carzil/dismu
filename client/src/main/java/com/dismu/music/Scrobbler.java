@@ -20,8 +20,8 @@ public class Scrobbler {
     private boolean isUpdatedNowPlaying = false;
 
     public Scrobbler() {
-        if (Dismu.scrobblerSettingsManager.getBoolean("isEnabled", false) && Dismu.scrobblerSettingsManager.getBoolean("isConnected", false)) {
-            session = Session.createSession(LASTFM_KEY, LASTFM_SECRET, Dismu.scrobblerSettingsManager.getString("lastFmSessionKey", ""));
+        if (Dismu.getInstance().scrobblerSettingsManager.getBoolean("isEnabled", false) && Dismu.getInstance().scrobblerSettingsManager.getBoolean("isConnected", false)) {
+            session = Session.createSession(LASTFM_KEY, LASTFM_SECRET, Dismu.getInstance().scrobblerSettingsManager.getString("lastFmSessionKey", ""));
             isScrobblingEnabled = true;
         }
     }

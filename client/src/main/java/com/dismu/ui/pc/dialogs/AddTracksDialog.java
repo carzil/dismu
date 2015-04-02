@@ -1,7 +1,8 @@
-package com.dismu.ui.pc;
+package com.dismu.ui.pc.dialogs;
 
 import com.dismu.music.core.Track;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.ui.pc.TrackListTable;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;

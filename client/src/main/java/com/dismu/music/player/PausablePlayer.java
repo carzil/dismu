@@ -33,7 +33,7 @@ public class PausablePlayer {
     private Lock playerLock = new ReentrantLock();
     private ArrayList<EventListener> listeners = new ArrayList<>();
     private volatile boolean isBuffering = false;
-    private DynamicByteArray byteArray = new DynamicByteArray();
+    private DynamicByteArray byteArray = new DynamicByteArray(50 * Utils.MEGABYTE);
 
     public PausablePlayer() {
         playerStatus = NOT_STARTED;
@@ -184,7 +184,6 @@ public class PausablePlayer {
         }
         playerStatus = PAUSED;
         playerLock.unlock();
-        notify(PlayerEvent.PAUSED);
         return playerStatus == PAUSED;
     }
 
@@ -209,9 +208,11 @@ public class PausablePlayer {
     private void playerInternal() {
         byte[] data = new byte[bufferSize];
         int readBytes = 0, writtenBytes = 0;
+        boolean pauseNotified = false;
         while (playerStatus != FULL_STOP) {
             try {
                 if (playerStatus == PLAYING) {
+                    pauseNotified = false;
                     while ((readBytes = byteArray.read(data, currentPosition)) == 0 && isBuffering) {
                         Thread.yield();
                     }
@@ -228,6 +229,10 @@ public class PausablePlayer {
                     }
                     Thread.yield();
                 } else {
+                    if (playerStatus == PAUSED && !pauseNotified) {
+                        notify(PlayerEvent.PAUSED);
+                        pauseNotified = true;
+                    }
                     Thread.sleep(10);
                 }
             } catch (Exception e) {

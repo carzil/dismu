@@ -1,9 +1,11 @@
-package com.dismu.ui.pc;
+package com.dismu.ui.pc.dialogs;
 
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.music.player.Playlist;
 import com.dismu.music.core.Track;
 import com.dismu.music.storages.PlaylistStorage;
+import com.dismu.ui.pc.Dismu;
+import com.dismu.ui.pc.TrackListTable;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

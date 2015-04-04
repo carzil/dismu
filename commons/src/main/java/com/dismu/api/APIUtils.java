@@ -15,8 +15,7 @@ import java.net.URL;
 
 public class APIUtils {
     public static String getMasterServerAPIUrl() {
-//        return "http://dismu.herokuapp.com/api/";
-        return "http://localhost:3000/api/";
+        return "http://dismu.herokuapp.com/api/";
     }
 
     public static String generateSignature(String method, DismuSession session) {

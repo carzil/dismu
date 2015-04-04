@@ -1,14 +1,11 @@
 package com.dismu.p2p;
 
 import com.dismu.logging.Loggers;
-import com.dismu.p2p.apiclient.API;
-import com.dismu.p2p.apiclient.APIImpl;
-import com.dismu.p2p.apiclient.Seed;
+import com.dismu.api.ConnectionAPI;
+import com.dismu.api.Seed;
 import com.dismu.p2p.client.Client;
-import com.dismu.p2p.server.ClassicalServer;
 import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
-import com.dismu.utils.Utils;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -66,7 +63,7 @@ public class App {
         this.localIP = localIP;
         this.port = port;
 
-        final API api = new APIImpl();
+        final ConnectionAPI api = new ConnectionAPI();
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -80,35 +77,35 @@ public class App {
                 } catch (Exception e) {
                     Loggers.serverLogger.error("", e);
                 } finally {
-                    api.unregister(userId);
+//                    api.unregister(userId);
                 }
             }
         });
         serverThread.start();
-        api.register(userId, groupId, localIP, port);
-        Seed[] seeds = api.getNeighbours(userId);
-        System.out.print(seeds.length);
-        for (final Seed s : seeds) {
-            if (s.userId.equals(userId)) {
-                continue;
-            }
-
-            Thread clientThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    Client client = new Client(s.localIP, s.port, userId);
-                    try {
-                        client.start();
-                        clients.add(client);
-                        client.synchronize();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            clientThread.start();
-
-        }
+//        api.register(userId, groupId, localIP, port);
+//        Seed[] seeds = api.getNeighbours(userId);
+//        System.out.print(seeds.length);
+//        for (final Seed s : seeds) {
+//            if (s.userId.equals(userId)) {
+//                continue;
+//            }
+//
+//            Thread clientThread = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    Client client = new Client(s.localIP, s.port, userId);
+//                    try {
+//                        client.start();
+//                        clients.add(client);
+//                        client.synchronize();
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            });
+//            clientThread.start();
+//
+//        }
     }
 
     synchronized public void restart(String localIP) {
@@ -129,8 +126,8 @@ public class App {
         }
         clients.clear();
         server.stop();
-        final API api = new APIImpl();
-        api.unregister(userId);
+        final ConnectionAPI api = new ConnectionAPI();
+//        api.unregister(userId);
         hasStarted = false;
     }
 }

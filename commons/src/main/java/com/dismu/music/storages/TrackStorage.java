@@ -26,7 +26,6 @@ public class TrackStorage {
     private ArrayList<EventListener> listeners = new ArrayList<>();
     private static volatile TrackStorage instance;
     private long checkHash;
-    private boolean needReindex = false;
     private ExecutorService pool = Executors.newSingleThreadExecutor();
 
     private void notify(final Event event) {
@@ -146,11 +145,6 @@ public class TrackStorage {
             readFromStream(new DataInputStream(byteArrayInputStream));
         } catch (EOFException | UTFDataFormatException e) {
             Loggers.playerLogger.error("corrupted track index, need re-indexing", e);
-            needReindex = true;
-        }
-        if (isCorrupted()) {
-            Loggers.playerLogger.info("got corrupted track index, re-indexing");
-            needReindex = true;
         }
     }
 
@@ -176,30 +170,6 @@ public class TrackStorage {
             tracks.clear();
             trackFileHashes.clear();
             trackFileHashesInv.clear();
-        } finally {
-            storageLock.unlock();
-        }
-    }
-
-    public void reindex() {
-        storageLock.lock();
-        try {
-            notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_STARTED));
-            clear();
-            File[] files = getTrackFolder().listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    saveTrack(file, false);
-                }
-                try {
-                    saveIndex();
-                } catch (IOException e) {
-                    Loggers.playerLogger.error("error while reindexing", e);
-                }
-            } else {
-                Loggers.playerLogger.info("no tracks in '{}'", getTrackFolder().getAbsolutePath());
-            }
-            notify(new TrackStorageEvent(TrackStorageEvent.REINDEX_FINISHED));
         } finally {
             storageLock.unlock();
         }
@@ -318,10 +288,6 @@ public class TrackStorage {
             Loggers.playerLogger.error("cannot save index", e);
         }
         pool.shutdown();
-    }
-
-    public boolean isNeedReindex() {
-        return needReindex;
     }
 
     public void addEventListener(EventListener listener) {

@@ -15,6 +15,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Utils {
     static PlatformUtils platformUtils = null;
@@ -24,36 +26,6 @@ public class Utils {
 
     public static synchronized void setPlatformUtils(PlatformUtils cl) {
         platformUtils = cl;
-    }
-
-    public static JSONObject sendJSONRequest(String address, String s) {
-        try {
-            String type = "application/json";
-            URL u = new URL(address);
-            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", type);
-            conn.setRequestProperty("Content-Length", String.valueOf(s.length()));
-            OutputStream os = conn.getOutputStream();
-            os.write(s.getBytes());
-            os.flush();
-            InputStream is = conn.getInputStream();
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            int len;
-            byte[] buffer = new byte[4096];
-            while (-1 != (len = is.read(buffer))) {
-                bos.write(buffer, 0, len);
-            }
-            bos.flush();
-            JSONParser parser = new JSONParser();
-            String str = new String(bos.toByteArray());
-            return (JSONObject)parser.parse(str);
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     /**
@@ -106,10 +78,6 @@ public class Utils {
         destination.transferFrom(source, 0, source.size());
     }
 
-    public static String getMasterServerAPIUrl() {
-        return "http://dismu.herokuapp.com/api/";
-    }
-
     /**
      * Returns remote IP of current host.
      * @return String, containing IP address
@@ -160,6 +128,25 @@ public class Utils {
 
         buffer.flush();
         return buffer.toByteArray();
+    }
+
+    public static String getSalt() {
+        return "$deedbeaf12341";
+    }
+
+    public static String getMD5(String string) {
+        try {
+            MessageDigest md5hasher = MessageDigest.getInstance("MD5");
+            md5hasher.update(string.getBytes());
+            StringBuilder stringBuffer = new StringBuilder();
+            for (byte b : md5hasher.digest()) {
+                stringBuffer.append(String.format("%02x", b & 0xff));
+            }
+            return stringBuffer.toString();
+        } catch (NoSuchAlgorithmException e) {
+            Loggers.miscLogger.error("cannot get md5 hash", e);
+            return null;
+        }
     }
 
     public static Thread runThread(Runnable runnable) {

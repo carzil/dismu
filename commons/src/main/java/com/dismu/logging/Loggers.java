@@ -11,4 +11,5 @@ public class Loggers {
     public static final Logger uiLogger = LoggerFactory.getLogger("Dismu.ui");
     public static final Logger p2pLogger = LoggerFactory.getLogger("Dismu.p2p");
     public static final Logger miscLogger = LoggerFactory.getLogger("Dismu.misc");
+    public static final Logger apiLogger = LoggerFactory.getLogger("Dismu.api");
 }

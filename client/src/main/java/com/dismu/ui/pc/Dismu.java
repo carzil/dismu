@@ -1,5 +1,6 @@
 package com.dismu.ui.pc;
 
+import com.dismu.api.*;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.Scrobbler;
@@ -12,9 +13,7 @@ import com.dismu.music.core.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.p2p.apiclient.API;
-import com.dismu.p2p.apiclient.APIImpl;
-import com.dismu.p2p.apiclient.Seed;
+import com.dismu.api.ConnectionAPI;
 import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
@@ -89,6 +88,8 @@ public class Dismu {
         public void dispatchEvent(Event e) {
             if (e.getType() == TrackStorageEvent.TRACK_ADDED) {
                 trackAdded(((TrackStorageEvent) e).getTrack());
+            } else if (e.getType() == TrackStorageEvent.TRACK_REMOVED) {
+                updateTracks();
             }
         }
     };
@@ -97,7 +98,6 @@ public class Dismu {
     public SettingsManager networkSettingsManager = SettingsManager.getSection("network");
     public SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
     public SettingsManager scrobblerSettingsManager = SettingsManager.getSection("scrobbler");
-
     public SettingsManager globalSettingsManager = SettingsManager.getSection("global");
 
     private HashMap<Seed, Client> seedsTable = new HashMap<>();
@@ -105,6 +105,7 @@ public class Dismu {
     private String username;
     private String password;
     private boolean repeatOne = false;
+    private DismuSession session = null;
 
 
     public static void main(String[] args) {
@@ -136,8 +137,8 @@ public class Dismu {
     private Dismu() {
     }
 
-    private void initDismu(String username, String password) {
-        Loggers.uiLogger.debug("called initDismu, username={}, password={}", username, password);
+    private void initDismu(String username, DismuSession session) {
+        Loggers.uiLogger.debug("called initDismu, username={}, session={}", username, session);
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
             return;
@@ -146,7 +147,7 @@ public class Dismu {
         Dismu.getInstance().accountSettingsManager.setString("user.groupID", username);
 
         this.username = username;
-        this.password = password;
+        this.session = session;
 
         trackStorage = TrackStorage.getInstance();
         playerBackend = PlayerBackend.getInstance();
@@ -200,19 +201,6 @@ public class Dismu {
         trackStorage.addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
-                if (e.getType() == TrackStorageEvent.REINDEX_STARTED) {
-                    setStatus("Re-indexing media library...", Icons.getLoaderIcon());
-                } else if (e.getType() == TrackStorageEvent.REINDEX_FINISHED) {
-                    setStatus(String.format("Re-indexing finished (found %d tracks)", trackStorage.getTracks().length));
-                    mainWindow.update();
-                } else if (e.getType() == TrackStorageEvent.TRACK_REMOVED) {
-                    updateTracks();
-                }
-            }
-        });
-        trackStorage.addEventListener(new EventListener() {
-            @Override
-            public void dispatchEvent(Event e) {
                 if (e instanceof TrackStorageEvent) {
                     TrackStorageEvent tse = (TrackStorageEvent) e;
                     int type = tse.getType();
@@ -243,7 +231,7 @@ public class Dismu {
     }
 
     private void startP2P() {
-        final API api = new APIImpl();
+        final ConnectionAPI api = new ConnectionAPI();
         final String userId = getUserID();
         final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
         final int serverPort = networkSettingsManager.getInt("server.port", 1337);
@@ -280,7 +268,7 @@ public class Dismu {
 
     public void updateSeeds() {
         final String userId = getUserID();
-        final API api = new APIImpl();
+        final ConnectionAPI api = new ConnectionAPI();
         Seed[] seeds = api.getNeighbours(userId);
         Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
         Loggers.p2pLogger.info("userID={}", userId);
@@ -379,11 +367,11 @@ public class Dismu {
         while (!loginScreen.isLogged() && frame.isVisible()) {
             Thread.yield();
         }
-        frame.dispose();
         if (!loginScreen.isLogged()) {
             return;
         }
-        initDismu(loginScreen.getUsername(), loginScreen.getPassword());
+        frame.dispose();
+        initDismu(loginScreen.getUsername(), loginScreen.getSession());
         Thread uiThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
@@ -401,12 +389,6 @@ public class Dismu {
             uiThread.join();
         } catch (InterruptedException e) {
             Loggers.uiLogger.error("error while joining", e);
-        }
-
-        if (trackStorage.isNeedReindex()) {
-            trackStorage.removeEventListener(trackListener);
-            trackStorage.reindex();
-            trackStorage.addEventListener(trackListener);
         }
     }
 
@@ -584,7 +566,7 @@ public class Dismu {
         Thread apiUnregisteringThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
-                API api = new APIImpl();
+                ConnectionAPI api = new ConnectionAPI();
                 String userId = accountSettingsManager.getString("user.userId", "b");
                 api.unregister(userId);
                 Loggers.uiLogger.info("unregistered by api");
@@ -599,8 +581,7 @@ public class Dismu {
                 Loggers.uiLogger.info("server stopped");
             }
         });
-        closeAllFrames();
-        removeSystemTrayIcon();
+        uiStop();
         try {
             Loggers.uiLogger.info("joining storages thread");
             closingStoragesThread.join();
@@ -619,8 +600,14 @@ public class Dismu {
         } catch (InterruptedException e) {
             Loggers.uiLogger.error("error while joining", e);
         }
+        AuthAPI.deauth();
         Loggers.uiLogger.info("{} active threads", Thread.activeCount());
         Loggers.uiLogger.info("everything is closed and saved, exiting");
+    }
+
+    private void uiStop() {
+        closeAllFrames();
+        removeSystemTrayIcon();
     }
 
     public void fullExit(int exitCode) {
@@ -629,7 +616,7 @@ public class Dismu {
     }
 
     private void stopP2P() {
-        API api = new APIImpl();
+        ConnectionAPI api = new ConnectionAPI();
         String userId = accountSettingsManager.getString("user.userId", "b");
         api.unregister(userId);
 
@@ -776,7 +763,7 @@ public class Dismu {
     public void restartP2P() {
         stopP2P();
         startP2P();
-        Loggers.serverLogger.info("Restarted P2P");
+        Loggers.serverLogger.info("restarted P2P");
     }
 
     public void startSync() {

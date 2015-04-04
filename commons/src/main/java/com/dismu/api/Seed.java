@@ -1,4 +1,4 @@
-package com.dismu.p2p.apiclient;
+package com.dismu.api;
 
 import java.net.InetAddress;
 

@@ -28,6 +28,7 @@ public class InfoWindow {
         logAppender = new AppenderSkeleton() {
             @Override
             protected void append(LoggingEvent event) {
+                Dismu.getInstance().appendLogMessage(layout.format(event));
                 logArea.append(layout.format(event));
             }
 

@@ -1,5 +1,6 @@
 package com.dismu.api;
 
+import com.dismu.utils.Utils;
 import org.json.simple.JSONObject;
 
 
@@ -11,7 +12,7 @@ public class AuthAPI {
     }
 
     public static APIResult auth(String username, String password) {
-        APIResult result = APIUtils.sendRequest("auth", String.format("username=%s&password=%s", username, password));
+        APIResult result = APIUtils.sendRequest("auth", String.format("username=%s&password=%s&deviceInfo=%s", username, password, Utils.getInfo()));
         if (result.isSuccessful()) {
             JSONObject json = result.getResponse();
             session = DismuSession.fromJSON(json);

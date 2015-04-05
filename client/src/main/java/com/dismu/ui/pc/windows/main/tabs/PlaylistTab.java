@@ -10,6 +10,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 public class PlaylistTab extends Tab {
     private Playlist playlist;
@@ -38,7 +39,8 @@ public class PlaylistTab extends Tab {
                 }
             }
         });
-        trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
+        ArrayList<Track> tracks = playlist.getTracks();
+        trackTable.updateTracks(tracks.toArray(new Track[tracks.size()]));
         scrollPane.setViewportView(trackTable);
     }
 
@@ -47,7 +49,8 @@ public class PlaylistTab extends Tab {
     }
 
     public void update() {
-        trackTable.updateTracks(playlist.getTracks().toArray(new Track[0]));
+        ArrayList<Track> tracks = playlist.getTracks();
+        trackTable.updateTracks(tracks.toArray(new Track[tracks.size()]));
     }
 
     public PlaylistPopup getPopup() {

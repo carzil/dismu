@@ -5,6 +5,7 @@
 var gp = require('../data/groupprovider.js');
 var up = require('../data/userprovider.js');
 var sp = require('../data/sessionprovider.js');
+var cp = require('../data/reportsprovider.js');
 var apiStatus = require('./apiStatus.js');
 var crypto = require('crypto');
 var console = require('console');
@@ -15,59 +16,55 @@ function generateSignature(method, sessionId, sessionSecret) {
     return hash.digest('hex');
 }
 
-function signatureCheck(method, requestSignature, sessionId, callback) {
+function securityCheck(res, req, method, callback) {
+    var requestSignature = req.body.signature;
+    var sessionId = req.body.sessionId;
+    var remoteAddress = req.connection.remoteAddress;
     sp.getSession(sessionId, function(err, result) {
         if (!err && result) {
             var signature = generateSignature(method, sessionId, result.sessionSecret);
             if (signature == requestSignature) {
-                callback(null);
+                console.log(remoteAddress, result.remoteAddress);
+                if (remoteAddress == result.remoteAddress) {
+                    apiStatus.ok(res, callback());
+                } else {
+                    apiStatus.permissionDenied(res);
+                }
             } else {
-                callback(JSON.stringify({error: "invalid signature"}));
+                apiStatus.invalidSignature(res);
             }
         } else {
-            callback(JSON.stringify({error: "invalid session id"}));
+            apiStatus.invalidSessionId(res);
         }
     });
 }
 
 exports.seedlist = function(req, res) {
-    signatureCheck("seedlist", req.body.signature, req.body.sessionId, function(error) {
-        if (!error) {
-            gp.getGroupNeighbours(req.body.userId, function(error, seeds) {
-                apiStatus.ok(res, {seeds: seeds});
-            });
-        } else {
-            apiStatus.internalError(res);
-        }
+    securityCheck(res, req, "seedlist", function() {
+        gp.getGroupNeighbours(req.body.userId, function(error, seeds) {
+            apiStatus.ok(res, {seeds: seeds});
+        });
     });
 };
 
 exports.register = function(req, res) {
-    signatureCheck("register", req.body.signature, req.body.sessionId, function(error) {
-        if (!error) {
-            gp.addUser(
-                req.body.userId, req.body.groupId,
-                req.body.localIP, req.body.remoteIP,
-                parseInt(req.body.port),
-                function(error) {
-                    apiStatus.ok(res);
-                }
-            );
-        } else {
-            apiStatus.internalError();
-        }
+    securityCheck(res, req, "register", function() {
+        gp.addUser(
+            req.body.userId, req.body.groupId,
+            req.body.localIP, req.body.remoteIP,
+            parseInt(req.body.port),
+            function(error) {
+                apiStatus.ok(res);
+            }
+        );
     });
 };
 
 exports.unregister = function(req, res) {
-    signatureCheck("unregister", req.body.signature, req.body.sessionId, function(error) {
-        if (!error) {
-            gp.removeUser(req.body.userId, function(error) {
-                apiStatus.ok()
-            });
-        } else {
-            apiStatus.internalError();
-        }
+    securityCheck(res, req, "unregister", function() {
+        gp.removeUser(req.body.userId, function(error) {
+            apiStatus.ok(res);
+        });
     })
 };
 
@@ -77,22 +74,37 @@ exports.auth = function(req, res) {
             if (result.password != req.body.password) {
                 apiStatus.wrongUserNameOrPassword(res);
             } else {
-                sp.createSession(req.body.username, function(error, result) {
+                console.log(req.connection.remoteAddress);
+                sp.createSession(req.body.username, req.body.deviceInfo, req.connection.remoteAddress, function(error, result) {
                     apiStatus.ok(res, {sessionId: result.sessionId, sessionSecret: result.sessionSecret});
                 });
             }
-        } else {
+        } else if (!result) {
             apiStatus.wrongUserNameOrPassword(res);
+        } else {
+            apiStatus.internalError(res);
         }
     });
 }
 
 exports.deauth = function(req, res) {
-    signatureCheck("deauth", req.body.signature, req.body.sessionId, function(error) {
-        if (!error) {
+    securityCheck(res, req, "deauth", function() {
+        sp.removeSession(req.body.sessionId, function(error, result) {
+            if (!error && result) {
+                apiStatus.ok(res);
+            } else {
+                apiStatus.internalError(res);
+            }
+        });
+    })
+}
+
+exports.crash = function(req, res) {
+    cp.createCrashReport(req.body.report, function(error, result) {
+        if (!error && result) {
             apiStatus.ok(res);
         } else {
             apiStatus.internalError(res);
         }
-    })
+    });
 }

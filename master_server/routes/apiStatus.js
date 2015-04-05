@@ -1,24 +1,31 @@
 var extend = require("extend");
 
-exports.ok = function(res, obj) {
-    var r = extend(true, {status: 0, error: ""}, obj);
-    console.log(r);
+function send(res, obj1, obj2) {
+    var r = obj1;
+    extend(r, obj2)
     res.send(JSON.stringify(r));
 }
 
-exports.invalidSignature = function(res) {
-    res.send(JSON.stringify({status: 1, error: "invalid signature"}));
+exports.ok = function(res, obj) {
+    send(res, {status: 0, error: ""}, obj);
 }
 
-exports.invalidSessionId = function(res) {
-    res.send(JSON.stringify({status: 2, error: "invalid session id"}));
+exports.invalidSignature = function(res, obj) {
+    send(res, {status: 1, error: "invalid signature"}, obj);
 }
 
-exports.wrongUserNameOrPassword = function(res) {
-    res.send(JSON.stringify({status: 3, error: "wrong username or password"}));
+exports.invalidSessionId = function(res,  obj) {
+    send(res, {status: 2, error: "invalid session id"}, obj);
 }
 
-exports.internalError = function(res) {
-    res.send(JSON.stringify({status: 4, error: "internal error"}));
+exports.wrongUserNameOrPassword = function(res, obj) {
+    send(res, {status: 3, error: "wrong username or password"}, obj);
 }
 
+exports.internalError = function(res, obj) {
+    send(res, {status: 4, error: "internal error"}, obj);
+}
+
+exports.permissionDenied = function(res, obj) {
+    send(res, {status: 5, error: "permission denied"}, obj);
+}

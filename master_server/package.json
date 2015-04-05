@@ -1,5 +1,5 @@
 {
-  "name": "application-name",
+  "name": "dismu-masterserver",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -11,6 +11,7 @@
     "stylus": "*",
     "bootstrap3-stylus": "*",
     "bson": "*",
-    "mongojs": "*"
+    "mongojs": "*",
+    "extend": "^2.0.0"
   }
 }

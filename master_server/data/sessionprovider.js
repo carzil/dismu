@@ -9,16 +9,16 @@ function generateSessionId(username) {
     return hash.digest('hex');
 }
 
-function generateSessionSecret(sessioId) {
+function generateSessionSecret(sessionId) {
     var hash = crypto.createHash('md5');
-    hash.update(sessioId + Date.now());
+    hash.update(sessionId + Date.now());
     return hash.digest('hex');
 }
 
-exports.createSession = function(username, callback) {
+exports.createSession = function(username, deviceInfo, remoteAddress, callback) {
     var sessionId = generateSessionId(username);
     var sessionSecret = generateSessionSecret(sessionId);
-    db.sessions.insert({sessionId: sessionId, sessionSecret: sessionSecret}, {$set:{username: username}}, callback);
+    db.sessions.insert({sessionId: sessionId, sessionSecret: sessionSecret, username: username, deviceInfo: deviceInfo, remoteAddress: remoteAddress}, {}, callback);
 }
 
 exports.removeSession = function(sessionId, callback) {

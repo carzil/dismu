@@ -10,18 +10,24 @@ public class APIResult {
     public static final long WRONG_NAME_OR_PASSWORD = 3;
     public static final long INTERNAL_ERROR = 4;
 
-    private JSONObject response;
+    private JSONObject response = null;
+    private boolean successful;
 
     public APIResult() {
-
+        successful = false;
     }
 
     public APIResult(JSONObject response) {
         this.response = response;
+        successful = true;
     }
 
     public boolean isSuccessful() {
-        return response != null && response.get("status").equals(OK);
+        return successful;
+    }
+
+    public boolean isRejected() {
+        return response == null || !response.get("status").equals(OK);
     }
 
     public String getError() {

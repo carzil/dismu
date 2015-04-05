@@ -18,6 +18,7 @@ import com.dismu.p2p.client.Client;
 import com.dismu.p2p.server.NIOServer;
 import com.dismu.p2p.server.Server;
 import com.dismu.ui.pc.dialogs.AddTracksDialog;
+import com.dismu.ui.pc.dialogs.CrashReportDialog;
 import com.dismu.ui.pc.dialogs.PlaylistWindow;
 import com.dismu.ui.pc.dialogs.SettingsDialog;
 import com.dismu.ui.pc.windows.LoginScreen;
@@ -27,12 +28,18 @@ import com.dismu.utils.SettingsManager;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
+import org.apache.log4j.Appender;
+import org.apache.log4j.AppenderSkeleton;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.spi.LoggingEvent;
 
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.io.IOException;
 import java.util.*;
@@ -83,6 +90,8 @@ public class Dismu {
 
     private Scrobbler scrobbler = null;
 
+    private StringBuilder logBuilder = new StringBuilder();
+
     private EventListener trackListener = new EventListener() {
         @Override
         public void dispatchEvent(Event e) {
@@ -105,7 +114,6 @@ public class Dismu {
     private String username;
     private String password;
     private boolean repeatOne = false;
-    private DismuSession session = null;
 
 
     public static void main(String[] args) {
@@ -137,8 +145,9 @@ public class Dismu {
     private Dismu() {
     }
 
-    private void initDismu(String username, DismuSession session) {
-        Loggers.uiLogger.debug("called initDismu, username={}, session={}", username, session);
+    private void initDismu(String username) {
+        Loggers.miscLogger.info("Dismu {} running on {}", Utils.getDismuVersion(), Utils.getOsInfo());
+        Loggers.uiLogger.debug("called initDismu, username={}", username);
         if (!SystemTray.isSupported()) {
             Loggers.uiLogger.error("OS doesn't support system tray");
             return;
@@ -147,7 +156,6 @@ public class Dismu {
         Dismu.getInstance().accountSettingsManager.setString("user.groupID", username);
 
         this.username = username;
-        this.session = session;
 
         trackStorage = TrackStorage.getInstance();
         playerBackend = PlayerBackend.getInstance();
@@ -361,6 +369,35 @@ public class Dismu {
     }
 
     public void run() {
+        Appender logAppender = new AppenderSkeleton() {
+            @Override
+            protected void append(LoggingEvent event) {
+                appendLogMessage(layout.format(event));
+            }
+
+            @Override
+            public void close() {
+
+            }
+
+            @Override
+            public boolean requiresLayout() {
+                return false;
+            }
+        };
+        logAppender.setLayout(new PatternLayout("%-4r {%p}[%c](%C{1}.%M): %m%n"));
+        Logger.getRootLogger().addAppender(logAppender);
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                CrashReportDialog crashReportDialog = new CrashReportDialog(t, e);
+                crashReportDialog.setIconImage(getIcon());
+                crashReportDialog.pack();
+                crashReportDialog.setSize(new Dimension(800, 600));
+                crashReportDialog.setLocationRelativeTo(null);
+                crashReportDialog.setVisible(true);
+            }
+        });
         LoginScreen loginScreen = new LoginScreen();
         JFrame frame = loginScreen.getFrame();
         frame.setVisible(true);
@@ -371,7 +408,7 @@ public class Dismu {
             return;
         }
         frame.dispose();
-        initDismu(loginScreen.getUsername(), loginScreen.getSession());
+        initDismu(loginScreen.getUsername());
         Thread uiThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
@@ -811,5 +848,13 @@ public class Dismu {
 
     public boolean isRepeatOne() {
         return repeatOne;
+    }
+
+    public void appendLogMessage(String message) {
+        logBuilder.append(message);
+    }
+
+    public String getLog() {
+        return logBuilder.toString();
     }
 }

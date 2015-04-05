@@ -1,5 +1,6 @@
 package com.dismu.ui.pc.windows;
 
+import com.dismu.api.APIResult;
 import com.dismu.api.AuthAPI;
 import com.dismu.api.DismuSession;
 import com.dismu.logging.Loggers;
@@ -30,7 +31,7 @@ public class LoginScreen {
     private volatile boolean isLogged = false;
     private JFrame frame;
     private AuthAPI api = new AuthAPI();
-    private DismuSession session;
+    private String reason;
 
     public LoginScreen() {
         $$$setupUI$$$();
@@ -70,12 +71,22 @@ public class LoginScreen {
 
     private void login() {
         String md5 = Utils.getMD5(new String(passwordField.getPassword()) + Utils.getSalt());
-        isLogged = api.auth(getUsername(), md5);
+        APIResult result = AuthAPI.auth(getUsername(), md5);
+        isLogged = result.isSuccessful() && !result.isRejected();
+        if (!isLogged) {
+            if (!result.isSuccessful()) {
+                reason = "Connection problems, try again later";
+            } else if (result.getStatus() == APIResult.WRONG_NAME_OR_PASSWORD) {
+                reason = "Wrong username or password";
+            } else {
+                reason = "Internal error, try again later";
+            }
+        }
     }
 
     private void onFailedLogin() {
         statusField.setForeground(Color.RED);
-        statusField.setText("incorrect user or password");
+        statusField.setText(reason);
     }
 
     private void onLoggedIn() {
@@ -133,10 +144,6 @@ public class LoginScreen {
 
     public String getPassword() {
         return new String(passwordField.getPassword());
-    }
-
-    public DismuSession getSession() {
-        return session;
     }
 
     /**

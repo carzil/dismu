@@ -45,11 +45,13 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/download', routes.download);
+app.get('/signup', routes.signup);
 app.post('/api/seedlist', api.seedlist);
 app.post('/api/register', api.register);
 app.post('/api/unregister', api.unregister);
 app.post('/api/auth', api.auth);
 app.post('/api/deauth', api.deauth)
+app.post('/api/crash', api.crash);
 
 http.createServer(app).listen(app.get('port'), function(){
   console.log('Express server listening on port ' + app.get('port'));

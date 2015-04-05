@@ -238,7 +238,7 @@ public class Utils {
         String osName = System.getProperty("os.name");
         String osArch = System.getProperty("os.arch");
         String osVersion = System.getProperty("os.version");
-        return String.format("%s (%s) %s", osName, osArch, osVersion);
+        return String.format("OS: %s (%s), OS Version: %s", osName, osArch, osVersion);
     }
 
     public static String getDismuVersion() {
@@ -248,6 +248,10 @@ public class Utils {
     public static String getMasterServerUrl() {
 //        return "http://dismu.herokuapp.com/api/";
         return "http://localhost:3000/";
+    }
+
+    public static String getInfo() {
+        return String.format("Dismu %s, %s", getDismuVersion(), getOsInfo());
     }
 
     public static String getSignUpUrl() {

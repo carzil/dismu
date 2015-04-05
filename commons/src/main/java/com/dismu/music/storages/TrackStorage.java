@@ -286,8 +286,9 @@ public class TrackStorage {
             saveIndex();
         } catch (IOException e) {
             Loggers.playerLogger.error("cannot save index", e);
+        } finally {
+            pool.shutdown();
         }
-        pool.shutdown();
     }
 
     public void addEventListener(EventListener listener) {

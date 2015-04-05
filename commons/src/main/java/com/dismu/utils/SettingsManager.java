@@ -76,7 +76,7 @@ public class SettingsManager {
     }
 
     public int getInt(String key, int def) {
-        return (int)getValue(key, def);
+        return ((Long) getValue(key, def)).intValue();
     }
 
     public String getString(String key, String def) {

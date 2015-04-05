@@ -32,7 +32,6 @@ public class APIUtils {
     }
 
     public static APIResult sendRequest(String method, String s) {
-        APIResult result = new APIResult();
         try {
             String type = "application/x-www-form-urlencoded";
             URL u = new URL(getMasterServerAPIUrl() + method);
@@ -42,7 +41,7 @@ public class APIUtils {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", type);
             conn.setRequestProperty("Content-Length", String.valueOf(s.length()));
-            Loggers.apiLogger.debug("send request, method={}, body='{}'", method, s);
+            Loggers.apiLogger.debug("send request, method={}", method, s);
             OutputStream os = conn.getOutputStream();
             os.write(s.getBytes());
             os.flush();
@@ -51,11 +50,11 @@ public class APIUtils {
             Utils.copyStream(is, bos);
             JSONParser parser = new JSONParser();
             JSONObject json = (JSONObject) parser.parse(new String(bos.toByteArray()));
-            result = new APIResult(json);
-            Loggers.apiLogger.debug("got response {}", new String(bos.toByteArray()));
+            Loggers.apiLogger.debug("got response '{}'", new String(bos.toByteArray()));
+            return new APIResult(json);
         } catch (IOException | ParseException e) {
             Loggers.apiLogger.error("cannot send API request", e);
+            return new APIResult();
         }
-        return result;
     }
 }

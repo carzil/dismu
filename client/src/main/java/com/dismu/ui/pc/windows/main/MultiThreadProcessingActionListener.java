@@ -7,6 +7,7 @@ import com.dismu.ui.pc.Icons;
 import com.dismu.utils.ITrackFinderActionListener;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -24,10 +25,14 @@ public class MultiThreadProcessingActionListener implements ITrackFinderActionLi
             @Override
             public void run() {
                 Loggers.uiLogger.debug("saving of '{}' started", file);
-                storage.saveTrack(file, false);
-                processedTracks++;
-                dismuInstance.setStatus(String.format("Processing selected files... (%d done)", processedTracks), Icons.getLoaderIcon());
-                Loggers.uiLogger.debug("saving of '{}' done", file);
+                try {
+                    storage.saveTrack(file, false);
+                    processedTracks++;
+                    dismuInstance.setStatus(String.format("Processing selected files... (%d done)", processedTracks), Icons.getLoaderIcon());
+                    Loggers.uiLogger.debug("saving of '{}' done", file);
+                } catch (IOException e) {
+                    Loggers.uiLogger.error("cannot process file '{}'", file, e);
+                }
             }
         };
         Future<?> future = pool.submit(task);

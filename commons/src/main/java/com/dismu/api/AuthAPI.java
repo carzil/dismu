@@ -10,21 +10,20 @@ public class AuthAPI {
         return session;
     }
 
-    public static boolean auth(String username, String password) {
-        APIResult response = APIUtils.sendRequest("auth", String.format("username=%s&password=%s", username, password));
-        if (response.isSuccessful()) {
-            JSONObject json = response.getResponse();
+    public static APIResult auth(String username, String password) {
+        APIResult result = APIUtils.sendRequest("auth", String.format("username=%s&password=%s", username, password));
+        if (result.isSuccessful()) {
+            JSONObject json = result.getResponse();
             session = DismuSession.fromJSON(json);
-            return true;
-        } else {
-            return false;
         }
+        return result;
     }
 
-    public static boolean deauth() {
-        APIResult result = APIUtils.sendSignedRequest("deauth", String.format("sessionId=%s", session.getId()));
+    public static APIResult deauth() {
+        // Here we don't need to send anything because sendSignedRequest will send sessionId
+        APIResult result = APIUtils.sendSignedRequest("deauth", "");
         session = null;
-        return result.isSuccessful();
+        return result;
     }
 
 }

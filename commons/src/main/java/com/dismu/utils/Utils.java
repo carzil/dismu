@@ -156,6 +156,15 @@ public class Utils {
         return thread;
     }
 
+    public static void copyStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        int readSize;
+        byte[] buffer = new byte[4096];
+        while ((readSize = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, readSize);
+        }
+        outputStream.flush();
+    }
+
     private static String[] splitFilename(String filename) {
         return filename.split("\\.(?=[^\\.]+$)");
     }
@@ -223,5 +232,25 @@ public class Utils {
             }
         }
         return true;
+    }
+
+    public static String getOsInfo() {
+        String osName = System.getProperty("os.name");
+        String osArch = System.getProperty("os.arch");
+        String osVersion = System.getProperty("os.version");
+        return String.format("%s (%s) %s", osName, osArch, osVersion);
+    }
+
+    public static String getDismuVersion() {
+        return "v0.1";
+    }
+
+    public static String getMasterServerUrl() {
+//        return "http://dismu.herokuapp.com/api/";
+        return "http://localhost:3000/";
+    }
+
+    public static String getSignUpUrl() {
+        return getMasterServerUrl() + "signup/";
     }
 }

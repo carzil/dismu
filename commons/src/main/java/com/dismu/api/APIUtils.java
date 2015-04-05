@@ -15,7 +15,7 @@ import java.net.URL;
 
 public class APIUtils {
     public static String getMasterServerAPIUrl() {
-        return "http://dismu.herokuapp.com/api/";
+        return Utils.getMasterServerUrl() + "api/";
     }
 
     public static String generateSignature(String method, DismuSession session) {
@@ -32,6 +32,7 @@ public class APIUtils {
     }
 
     public static APIResult sendRequest(String method, String s) {
+        APIResult result = new APIResult();
         try {
             String type = "application/x-www-form-urlencoded";
             URL u = new URL(getMasterServerAPIUrl() + method);
@@ -47,26 +48,14 @@ public class APIUtils {
             os.flush();
             InputStream is = conn.getInputStream();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            int len;
-            byte[] buffer = new byte[4096];
-            while (-1 != (len = is.read(buffer))) {
-                bos.write(buffer, 0, len);
-            }
-            bos.flush();
+            Utils.copyStream(is, bos);
             JSONParser parser = new JSONParser();
-            String str = new String(bos.toByteArray());
-            JSONObject json = (JSONObject)parser.parse(str);
-            APIResult result;
-            if (json.get("error") != null) {
-                result = new APIResult((String) json.get("error"));
-            } else {
-                result = new APIResult(json);
-            }
+            JSONObject json = (JSONObject) parser.parse(new String(bos.toByteArray()));
+            result = new APIResult(json);
             Loggers.apiLogger.debug("got response {}", new String(bos.toByteArray()));
-            return result;
         } catch (IOException | ParseException e) {
             Loggers.apiLogger.error("cannot send API request", e);
         }
-        return null;
+        return result;
     }
 }

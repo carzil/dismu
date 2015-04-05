@@ -4,7 +4,12 @@ import com.dismu.logging.Loggers;
 import org.json.simple.JSONObject;
 
 public class APIResult {
-    private String error;
+    public static final long OK = 0;
+    public static final long INVALID_SIGNATURE = 1;
+    public static final long INVALID_SESSION_ID = 2;
+    public static final long WRONG_NAME_OR_PASSWORD = 3;
+    public static final long INTERNAL_ERROR = 4;
+
     private JSONObject response;
 
     public APIResult() {
@@ -15,20 +20,19 @@ public class APIResult {
         this.response = response;
     }
 
-    public APIResult(String error) {
-        this.error = error;
-    }
-
     public boolean isSuccessful() {
-        return response.get("status").equals(0l);
+        return response != null && response.get("status").equals(OK);
     }
 
     public String getError() {
-        return error;
+        if (response == null) {
+            return "response is null";
+        }
+        return response.get("error").toString();
     }
 
-    public void setError(String error) {
-        this.error = error;
+    public long getStatus() {
+        return (long) response.get("status");
     }
 
     public JSONObject getResponse() {

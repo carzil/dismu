@@ -41,7 +41,7 @@ public class APIUtils {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", type);
             conn.setRequestProperty("Content-Length", String.valueOf(s.length()));
-            Loggers.apiLogger.debug("send request, method={}", method, s);
+            Loggers.apiLogger.debug("sent request, method={}", method, s);
             OutputStream os = conn.getOutputStream();
             os.write(s.getBytes());
             os.flush();

@@ -1,4 +1,4 @@
-package com.dismu.p2p.scenarios;
+package com.dismu.p2p.scenarios.transactions;
 
 import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
@@ -6,11 +6,12 @@ import com.dismu.p2p.packets.transaction.AcceptTransactionPacket;
 import com.dismu.p2p.packets.transaction.EndTransactionPacket;
 import com.dismu.p2p.packets.transaction.RequestChunkPacket;
 import com.dismu.p2p.packets.transaction.ResponseChunkPacket;
+import com.dismu.p2p.scenarios.IScenario;
 import com.dismu.utils.Utils;
 
 import java.io.*;
 
-public class RequestFileScenario extends Scenario {
+public class RequestFileScenario implements IScenario {
     private static final int ST_WAITING_FOR_ACCEPT = 0;
     private static final int ST_WAITING_FOR_CHUNKS = 1;
     private static final int ST_FINISHED = 2;
@@ -42,7 +43,7 @@ public class RequestFileScenario extends Scenario {
         return false;
     }
 
-    private RequestChunkPacket generateChunkRequestPacket(int offset, int count) {
+    private RequestChunkPacket createChunkRequestPacket(int offset, int count) {
         RequestChunkPacket result = new RequestChunkPacket();
         result.transactionId = this.transactionId;
         result.offset = offset;
@@ -61,7 +62,6 @@ public class RequestFileScenario extends Scenario {
                 Loggers.clientLogger.error("Error while accepting: {}", packet.error);
                 this.state = ST_FINISHED;
                 throw new IOException(packet.error);
-                //return new Packet[0];
             }
 
             this.transactionId = packet.transactionId;
@@ -74,14 +74,14 @@ public class RequestFileScenario extends Scenario {
             this.guaranteedGot = 0;
 
             Loggers.clientLogger.info(
-                    "Accepted file request: transactionId = {}, size = {}, hash = {}",
+                    "accepted file request: transactionId = {}, size = {}, hash = {}",
                     this.transactionId, this.fileSize, this.fileHash
             );
 
-            RequestChunkPacket request = generateChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
+            RequestChunkPacket request = createChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
 
             Loggers.clientLogger.info(
-                    "Requesting new chunk: transactionId = {}, offset = {}, count = {}",
+                    "requesting new chunk: transactionId = {}, offset = {}, count = {}",
                     this.transactionId, request.offset, request.count
             );
 
@@ -94,23 +94,23 @@ public class RequestFileScenario extends Scenario {
             assert(packet.transactionId == this.transactionId);
 
             Loggers.clientLogger.info(
-                    "Got new chunk: transactionId = {}, offset = {}, count = {}, hash = {}",
+                    "got new chunk: transactionId = {}, offset = {}, count = {}, hash = {}",
                     packet.transactionId, packet.offset, packet.count, packet.chunkHash
             );
 
             if (packet.offset != this.guaranteedGot) {
-                RequestChunkPacket request = generateChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
+                RequestChunkPacket request = createChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
                 Loggers.clientLogger.info(
-                        "Wrong chunk sent, resending request: transactionId = {}, offset = {}, count = {}",
+                        "wrong chunk sent, resending request: transactionId = {}, offset = {}, count = {}",
                         this.transactionId, request.offset, request.count
                 );
                 return new Packet[]{request};
             }
 
             if (!packet.checkHash()) {
-                RequestChunkPacket request = generateChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
+                RequestChunkPacket request = createChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
                 Loggers.clientLogger.info(
-                        "Chunk hash check failed, resending request: transactionId = {}, offset = {}, count = {}",
+                        "chunk hash check failed, resending request: transactionId = {}, offset = {}, count = {}",
                         this.transactionId, request.offset, request.count
                 );
                 return new Packet[]{request};
@@ -121,14 +121,14 @@ public class RequestFileScenario extends Scenario {
             this.guaranteedGot += packet.count;
 
             Loggers.clientLogger.info(
-                    "Processed chunk: transactionId = {}, offset = {}, count = {}",
+                    "processed chunk: transactionId = {}, offset = {}, count = {}",
                     this.transactionId, packet.offset, packet.count
             );
 
             if (this.guaranteedGot >= this.fileSize) {
                 this.state = ST_FINISHED;
                 Loggers.clientLogger.info(
-                        "Finished receiving file: transactionId = {}",
+                        "finished receiving file: transactionId = {}",
                         this.transactionId
                 );
                 this.data_os.flush();
@@ -138,9 +138,9 @@ public class RequestFileScenario extends Scenario {
                 return new Packet[]{response};
             }
 
-            RequestChunkPacket request = generateChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
+            RequestChunkPacket request = createChunkRequestPacket(this.guaranteedGot, BLOCK_SIZE);
             Loggers.clientLogger.info(
-                    "Requesting new chunk: transactionId = {}, offset = {}, count = {}",
+                    "requesting new chunk: transactionId = {}, offset = {}, count = {}",
                     this.transactionId, request.offset, request.count
             );
 

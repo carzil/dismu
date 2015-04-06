@@ -9,8 +9,11 @@ import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;
 
 import java.io.IOException;
 
-public class NewTrackAvailableDownloadScenario extends Scenario {
-    public NewTrackAvailableDownloadScenario() {
+public class NewTrackAvailableDownloadScenario implements IScenario {
+    private final TrackStorage storage;
+
+    public NewTrackAvailableDownloadScenario(TrackStorage storage) {
+        this.storage = storage;
     }
 
     @Override
@@ -21,7 +24,7 @@ public class NewTrackAvailableDownloadScenario extends Scenario {
     @Override
     public Packet[] handle(Packet p) throws IOException {
         final NewTrackAvailablePacket packet = (NewTrackAvailablePacket) p;
-        if (TrackStorage.getInstance().getTrackFile(packet.track) != null) {
+        if (storage.getTrackFile(packet.track) != null) {
             return new Packet[0];
         }
         new Thread(new Runnable() {
@@ -39,7 +42,7 @@ public class NewTrackAvailableDownloadScenario extends Scenario {
                 if (seed == null) {
                     return;
                 }
-                Client client = new Client(seed.localIP, seed.port, "");
+                Client client = new Client(seed.localIP, seed.port, "", storage);
                 try {
                     client.start();
                     client.receiveTrack(packet.track);

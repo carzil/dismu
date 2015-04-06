@@ -1,14 +1,15 @@
 package com.dismu.p2p.server;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.PacketManager;
 import com.dismu.p2p.packets.node_control.RequestSeedsPacket;
 import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;
 import com.dismu.p2p.packets.transaction.StartTransactionPacket;
 import com.dismu.p2p.scenarios.NewTrackAvailableDownloadScenario;
-import com.dismu.p2p.scenarios.RespondFileScenario;
-import com.dismu.p2p.scenarios.Scenario;
+import com.dismu.p2p.scenarios.transactions.RespondFileScenario;
+import com.dismu.p2p.scenarios.IScenario;
 import com.dismu.p2p.scenarios.SendSeedListScenario;
 
 import java.io.*;
@@ -16,7 +17,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 
 public class WorkerObject {
     private final int INT_SIZE = 4;
@@ -25,6 +25,7 @@ public class WorkerObject {
     private final int ST_READ_TYPE = 1;
     private final int ST_READ_SIZE = 2;
 
+    private final TrackStorage storage;
     int state = ST_NOPE;
     int readCount = 0;
 
@@ -36,7 +37,11 @@ public class WorkerObject {
     Queue<Byte> partiallyRead = new LinkedList<>();
     Queue<ByteBuffer> partiallyWrote = new LinkedList<>();
 
-    LinkedList<Scenario> activeScenarios = new LinkedList<>();
+    LinkedList<IScenario> activeScenarios = new LinkedList<>();
+
+    public WorkerObject(TrackStorage storage) {
+        this.storage = storage;
+    }
 
     public void parsePackets(byte[] array, int numRead) throws IOException {
         for (int i = 0; i < numRead; ++i) {
@@ -58,9 +63,7 @@ public class WorkerObject {
                 int packetType = dataInputStream.readInt();
                 try {
                     currentPacket = (Packet) packetManager.getPacket(packetType).newInstance();
-                } catch (IllegalAccessException e) {
-
-                } catch (InstantiationException e) {
+                } catch (IllegalAccessException | InstantiationException ignored) {
 
                 }
                 state = ST_READ_TYPE;
@@ -97,8 +100,8 @@ public class WorkerObject {
 
         while (!inPacketQueue.isEmpty()) {
             Packet packet = inPacketQueue.remove();
-            Scenario sc = null;
-            for (Scenario s : activeScenarios) {
+            IScenario sc = null;
+            for (IScenario s : activeScenarios) {
                 if (s.isMine(packet)) {
                     sc = s;
                 }
@@ -110,11 +113,11 @@ public class WorkerObject {
                     activeScenarios.add(sc);
                     activated = true;
                 } else if (packet instanceof StartTransactionPacket) {
-                    sc = new RespondFileScenario();
+                    sc = new RespondFileScenario(storage);
                     activeScenarios.add(sc);
                     activated = true;
                 } else if (packet instanceof NewTrackAvailablePacket) {
-                    sc = new NewTrackAvailableDownloadScenario();
+                    sc = new NewTrackAvailableDownloadScenario(storage);
                 }
                 if (activated) {
                     Loggers.serverLogger.info("activated {}", sc.getClass().getSimpleName());

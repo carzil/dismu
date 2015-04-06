@@ -157,8 +157,8 @@ public class Dismu {
 
         this.username = username;
 
-        trackStorage = TrackStorage.getInstance();
-        playerBackend = PlayerBackend.getInstance();
+        trackStorage = new TrackStorage(Utils.getAppFolderPath());
+        playerBackend = new PlayerBackend(trackStorage);
         playlistStorage = PlaylistStorage.getInstance();
 
         mainWindow = new MainWindow();
@@ -172,7 +172,9 @@ public class Dismu {
                     updateNowPlaying(track);
                 } else if (e.getType() == PlayerEvent.PAUSED) {
                     updatePaused(playerBackend.getCurrentTrack());
-                    mainWindow.setScrobblerStatus("", null, "");
+                    if (!scrobbler.isScrobbled()) {
+                        mainWindow.setScrobblerStatus("", null, "");
+                    }
                 } else if (e.getType() == PlayerEvent.STOPPED) {
                     scrobbler.stopScrobbling();
                     mainWindow.setScrobblerStatus("", null, "");
@@ -241,17 +243,16 @@ public class Dismu {
     private void startP2P() {
         final ConnectionAPI api = new ConnectionAPI();
         final String userId = getUserID();
-        final String groupId = accountSettingsManager.getString("user.groupId", "alpha");
         final int serverPort = networkSettingsManager.getInt("server.port", 1337);
 
         Thread serverThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    server = new NIOServer(serverPort);
+                    server = new NIOServer(serverPort, trackStorage);
                 } catch (IOException e) {
                     Loggers.p2pLogger.error("starting server failed", e);
-                    return;
+                    throw new RuntimeException(e);
                 }
                 try {
                     Loggers.p2pLogger.info("starting server at port={}", serverPort);
@@ -270,14 +271,18 @@ public class Dismu {
             Loggers.p2pLogger.debug("we will not register new seed");
         }
 
-        api.register(userId, groupId, localIP, serverPort);
+        api.register(userId, getGroupID(), localIP, serverPort);
         initClients();
+    }
+
+    public String getGroupID() {
+        return accountSettingsManager.getString("user.groupId", "alpha");
     }
 
     public void updateSeeds() {
         final String userId = getUserID();
         final ConnectionAPI api = new ConnectionAPI();
-        Seed[] seeds = api.getNeighbours(userId);
+        Seed[] seeds = api.getNeighbours(getGroupID());
         Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
         Loggers.p2pLogger.info("userID={}", userId);
         for (final Seed s : seeds) {
@@ -288,7 +293,7 @@ public class Dismu {
 
                 Loggers.p2pLogger.info("got new seed {}", s);
 
-                final Client client = new Client(s.localIP, s.port, userId);
+                final Client client = new Client(s.localIP, s.port, userId, trackStorage);
                 seedsTable.put(s, client);
                 Thread clientThread = new Thread(new Runnable() {
                     @Override
@@ -390,6 +395,7 @@ public class Dismu {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
+                Thread.setDefaultUncaughtExceptionHandler(null);
                 CrashReportDialog crashReportDialog = new CrashReportDialog(t, e);
                 crashReportDialog.setIconImage(getIcon());
                 crashReportDialog.pack();
@@ -576,13 +582,13 @@ public class Dismu {
             @Override
             public void run() {
                 try {
-                    PlayerBackend.getInstance().close();
+                    playerBackend.close();
                     Loggers.uiLogger.info("closed player backend");
                 } catch (Exception e) {
                     Loggers.uiLogger.error("error while closing player backend", e);
                 }
                 try {
-                    TrackStorage.getInstance().close();
+                    trackStorage.close();
                     Loggers.uiLogger.info("track storage closed");
                 } catch (Exception e) {
                     Loggers.uiLogger.error("error while closing track storage", e);
@@ -767,7 +773,7 @@ public class Dismu {
                         removed++;
                     }
                     try {
-                        TrackStorage.getInstance().commit();
+                        trackStorage.commit();
                     } catch (IOException e) {
                         Loggers.playerLogger.error("cannot commit changes", e);
                         setStatus("");
@@ -856,5 +862,17 @@ public class Dismu {
 
     public String getLog() {
         return logBuilder.toString();
+    }
+
+    public TrackStorage getTrackStorage() {
+        return trackStorage;
+    }
+
+    public PlaylistStorage getPlaylistStorage() {
+        return playlistStorage;
+    }
+
+    public PlayerBackend getPlayerBackend() {
+        return playerBackend;
     }
 }

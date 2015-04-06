@@ -113,7 +113,10 @@ public class Track {
     public String getPrettifiedFileName() {
         String filename;
         String prettifiedArtist = trackArtist.toLowerCase().replaceAll("\\s+", "_");
-        String prettifiedName = trackName.toLowerCase().replaceAll("\\s+", "_");
+        String prettifiedName = "";
+        if (trackName != null) {
+            prettifiedName = trackName.toLowerCase().replaceAll("\\s+", "_");
+        }
         String filenameExtension = "";
         if (trackFormat == FORMAT_MP3) {
             filenameExtension += ".mp3";
@@ -125,6 +128,7 @@ public class Track {
         } else {
             filename = prettifiedName;
         }
+        filename += "_" + hashCode();
         filename = FileNameEscaper.escape(filename);
         return filename + filenameExtension;
     }

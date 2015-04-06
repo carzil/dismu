@@ -1,29 +1,38 @@
-package com.dismu.p2p.scenarios;
+package com.dismu.p2p.scenarios.transactions;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.core.Track;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
+import com.dismu.p2p.scenarios.IScenario;
+import com.dismu.p2p.scenarios.TransactionTypes;
 import com.dismu.p2p.utils.TransactionIdPool;
-import com.dismu.utils.FileNameEscaper;
 import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collection;
 
-public class RespondFileScenario extends Scenario {
+public class RespondFileScenario implements IScenario {
+    private static final int CHUNK_SIZE = 8192;
     private static final int ST_WAITING_FOR_START = 0;
     private static final int ST_WAITING_FOR_CHUNKS = 1;
     private static final int ST_FINISHED = 2;
 
     private int state = ST_WAITING_FOR_START;
+
+    private final TrackStorage storage;
     private int transactionId = -1;
 
     private InputStream stream;
     private int size;
     private long lastPos;
+
+    public RespondFileScenario(TrackStorage storage) {
+        this.storage = storage;
+    }
 
     @Override
     public boolean isMine(Packet p) {
@@ -58,47 +67,25 @@ public class RespondFileScenario extends Scenario {
             AcceptTransactionPacket response = new AcceptTransactionPacket();
             response.transactionId = this.transactionId;
 
-            TrackStorage ts = TrackStorage.getInstance();
-            Track[] tracks = ts.getTracks();
+            Collection<Track> tracks = storage.getTracks();
 
-            if (packet.filename.equals("tracklist")) {
-                byte[] tracklist = MediaUtils.TrackListToByteArray(tracks);
-                stream = new ByteArrayInputStream(tracklist);
-                response.fileSize = tracklist.length;
-                this.size = tracklist.length;
-                try {
-                    response.fileHash = Utils.getStreamHash64(new ByteArrayInputStream(tracklist));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if (packet.getTransactionType() == TransactionTypes.GET_TRACK_LIST) {
+                byte[] trackListToByteArray = MediaUtils.trackListToByteArray(tracks);
+                stream = new ByteArrayInputStream(trackListToByteArray);
+                response.fileSize = trackListToByteArray.length;
+                this.size = trackListToByteArray.length;
+                response.fileHash = Utils.getByteArrayHash(trackListToByteArray);
                 this.lastPos = 0;
-            } else if (packet.filename.startsWith("tracks/")) {
-                Loggers.p2pLogger.debug("got packet.filename '{}'", packet.filename);
-                packet.filename = packet.filename.replaceFirst("tracks/", "");
-                String[] exploded = packet.filename.split("/");
-                if (exploded.length != 3) {
-                    response.error = "400";
-                    return new Packet[]{response};
-                }
+            } else if (packet.getTransactionType() == TransactionTypes.GET_TRACK) {
+                Loggers.p2pLogger.debug("start GET_TRACK transaction, track hash = '{}'", packet.getTrackHash());
 
-                Track track = null;
-                for (Track curr : tracks) {
-                    if (!FileNameEscaper.escape(curr.getTrackArtist()).equals(exploded[0])) {
-                        continue;
-                    }
-                    if (!FileNameEscaper.escape(curr.getTrackName()).equals(exploded[1])) {
-                        continue;
-                    }
-                    if (!FileNameEscaper.escape(curr.getTrackAlbum()).equals(exploded[2])) {
-                        continue;
-                    }
-                    track = curr;
-                }
+                Track track = storage.getTrackByHash(packet.getTrackHash());
+
                 if (track == null) {
                     response.error = "404";
                     return new Packet[]{response};
                 } else {
-                    File file = ts.getTrackFile(track);
+                    File file = storage.getTrackFile(track);
                     try {
                         response.fileHash = Utils.getFileHash64(file);
                         response.fileSize = (int) file.length();
@@ -120,40 +107,31 @@ public class RespondFileScenario extends Scenario {
             assert(this.state == ST_WAITING_FOR_CHUNKS);
             RequestChunkPacket packet = (RequestChunkPacket) p;
             assert(packet.transactionId == this.transactionId);
+            Loggers.p2pLogger.debug("got RequestChunkPacket, offset = {}, count = {}", packet.offset, packet.count);
 
             ResponseChunkPacket response = new ResponseChunkPacket();
             response.transactionId = this.transactionId;
 
-            ArrayList<Byte> sb = new ArrayList<>();
             try {
                 if (this.lastPos > packet.offset) {
                     this.stream.reset();
                     this.stream.skip(packet.offset);
                     this.lastPos = packet.offset;
                 } else if (this.lastPos < packet.offset) {
-                    this.stream.skip(packet.offset-this.lastPos);
+                    this.stream.skip(packet.offset - this.lastPos);
                 }
-                for (int i = packet.offset; i < Math.min(packet.count+packet.offset, this.size); ++i) {
-                    int a = this.stream.read();
-                    if (a == -1) {
-                        break;
-                    }
-                    sb.add((byte) a);
-                    ++this.lastPos;
-                }
+                response.chunk = new byte[packet.count];
+                int readCount = stream.read(response.chunk, 0, packet.count);
+                lastPos += readCount;
+                response.offset = packet.offset;
+                response.count = readCount;
+
+                response.computeHash();
+                return new Packet[] {response};
             } catch (IOException e) {
-                e.printStackTrace();
+                Loggers.p2pLogger.error("i/o error while sending chunk", e);
+                return new Packet[0];
             }
-
-            response.chunk = new byte[sb.size()];
-            for (int i = 0; i < sb.size(); ++i) {
-                response.chunk[i] = sb.get(i);
-            }
-            response.offset = packet.offset;
-            response.count = sb.size();
-
-            response.computeHash();
-            return new Packet[]{response};
         }
 
         if (p instanceof EndTransactionPacket) {

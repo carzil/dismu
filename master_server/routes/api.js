@@ -26,7 +26,7 @@ function securityCheck(res, req, method, callback) {
             if (signature == requestSignature) {
                 console.log(remoteAddress, result.remoteAddress);
                 if (remoteAddress == result.remoteAddress) {
-                    apiStatus.ok(res, callback());
+                    callback();
                 } else {
                     apiStatus.permissionDenied(res);
                 }
@@ -41,7 +41,7 @@ function securityCheck(res, req, method, callback) {
 
 exports.seedlist = function(req, res) {
     securityCheck(res, req, "seedlist", function() {
-        gp.getGroupNeighbours(req.body.userId, function(error, seeds) {
+        gp.getGroupNeighbours(req.body.groupId, function(error, seeds) {
             apiStatus.ok(res, {seeds: seeds});
         });
     });

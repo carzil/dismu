@@ -155,7 +155,7 @@ public class PausablePlayer {
     }
 
     private int convertMicrosecondsToFrames(long m) {
-        return (int) (m * playerLine.getFormat().getFrameRate() / 1000);
+        return (int) Math.ceil(m * playerLine.getFormat().getFrameRate() / 1000);
     }
 
     public void setMicrosecondsPosition(long position) {
@@ -210,34 +210,33 @@ public class PausablePlayer {
         int readBytes = 0, writtenBytes = 0;
         boolean pauseNotified = false;
         while (playerStatus != FULL_STOP) {
-            try {
-                if (playerStatus == PLAYING) {
-                    pauseNotified = false;
-                    while ((readBytes = byteArray.read(data, currentPosition)) == 0 && isBuffering) {
-                        Thread.yield();
-                    }
+            if (playerStatus == PLAYING) {
+                pauseNotified = false;
+                while ((readBytes = byteArray.read(data, currentPosition)) == 0 && isBuffering) {
                     Thread.yield();
-                    currentPosition = currentPosition + readBytes;
-                    if (readBytes == 0 && !isBuffering) {
-                        playerLine.drain();
-                        playerLine.stop();
-                        playerLine.close();
-                        notify(PlayerEvent.FINISHED);
-                    } else if (readBytes > 0) {
-                        writtenBytes = playerLine.write(data, 0, readBytes);
-                        notify(PlayerEvent.FRAME_PLAYED);
-                    }
-                    Thread.yield();
-                } else {
-                    if (playerStatus == PAUSED && !pauseNotified) {
-                        notify(PlayerEvent.PAUSED);
-                        pauseNotified = true;
-                    }
-                    Thread.sleep(10);
                 }
-            } catch (Exception e) {
-                Loggers.playerLogger.error("exception in playerInternal", e);
-                return;
+                Thread.yield();
+                currentPosition = currentPosition + readBytes;
+                if (readBytes == 0 && !isBuffering) {
+                    playerLine.drain();
+                    playerLine.stop();
+                    playerLine.close();
+                    notify(PlayerEvent.FINISHED);
+                } else if (readBytes > 0) {
+                    writtenBytes = playerLine.write(data, 0, readBytes);
+                    notify(PlayerEvent.FRAME_PLAYED);
+                }
+                Thread.yield();
+            } else {
+                if (playerStatus == PAUSED && !pauseNotified) {
+                    notify(PlayerEvent.PAUSED);
+                    pauseNotified = true;
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    return;
+                }
             }
         }
     }

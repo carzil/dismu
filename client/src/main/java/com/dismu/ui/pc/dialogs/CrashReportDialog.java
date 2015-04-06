@@ -8,6 +8,7 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 
 import javax.swing.*;
+import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.PrintWriter;
@@ -45,6 +46,7 @@ public class CrashReportDialog extends JDialog {
         });
 
         crashReportText.setText(collectDebugInfo());
+        crashReportText.setCaretPosition(0);
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {

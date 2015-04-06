@@ -1,9 +1,9 @@
 var extend = require("extend");
 
 function send(res, obj1, obj2) {
-    var r = obj1;
-    extend(r, obj2)
-    res.send(JSON.stringify(r));
+    extend(obj1, obj2);
+    console.log(JSON.stringify(obj1));
+    res.send(JSON.stringify(obj1));
 }
 
 exports.ok = function(res, obj) {

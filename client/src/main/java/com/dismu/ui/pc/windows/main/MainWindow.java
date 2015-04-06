@@ -98,7 +98,6 @@ public class MainWindow {
         statusLabel.setBorder(new EmptyBorder(0, 2, 0, 0));
         playbackPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
         playlistList.setBorder(BorderFactory.createEmptyBorder());
-//        trackInfoPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 1, Color.GRAY));
     }
 
     public void setupCosmetic() {
@@ -310,9 +309,13 @@ public class MainWindow {
         seekBar.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                if (seekBar.isChangedByUser()) {
-                    PlayerBackend playerBackend = PlayerBackend.getInstance();
-                    playerBackend.setMicrosecondsPosition(seekBar.getValueM(playerBackend.getCurrentTrack().getTrackDuration()));
+                if (seekBar.isChangedByUser() && seekBar.getValueIsAdjusting()) {
+                    PlayerBackend playerBackend = Dismu.getInstance().getPlayerBackend();
+                    Track currentTrack = playerBackend.getCurrentTrack();
+                    if (currentTrack == null) {
+                        return;
+                    }
+                    playerBackend.setMicrosecondsPosition(seekBar.getValueM(currentTrack.getTrackDuration()));
                 }
             }
         });
@@ -416,7 +419,7 @@ public class MainWindow {
     private void processTracks() {
         final File[] selectedFiles = fileChooser.getSelectedFiles();
         final Dismu dismuInstance = Dismu.getInstance();
-        final TrackStorage storage = TrackStorage.getInstance();
+        final TrackStorage storage = dismuInstance.getTrackStorage();
         TrackFinder finder = new TrackFinder();
         MultiThreadProcessingActionListener actionListener = new MultiThreadProcessingActionListener();
         for (File file : selectedFiles) {
@@ -472,7 +475,7 @@ public class MainWindow {
     }
 
     public void updateSeekBar() {
-        PlayerBackend playerBackend = PlayerBackend.getInstance();
+        PlayerBackend playerBackend = Dismu.getInstance().getPlayerBackend();
         long position = playerBackend.getPosition();
         Track currentTrack = playerBackend.getCurrentTrack();
         if (currentTrack == null) {
@@ -571,7 +574,7 @@ public class MainWindow {
         playbackPanel.setBackground(new Color(-1));
         panel1.add(playbackPanel, BorderLayout.NORTH);
         final JPanel panel2 = new JPanel();
-        panel2.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), 10, -1));
+        panel2.setLayout(new GridLayoutManager(1, 3, new Insets(0, 15, 0, 0), 10, -1));
         panel2.setOpaque(false);
         playbackPanel.add(panel2, new GridConstraints(0, 0, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel2.add(prevIcon, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
@@ -582,12 +585,12 @@ public class MainWindow {
         final Spacer spacer2 = new Spacer();
         playbackPanel.add(spacer2, new GridConstraints(0, 3, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         trackInfoPanel = new JPanel();
-        trackInfoPanel.setLayout(new GridLayoutManager(3, 19, new Insets(0, 2, 0, 2), 0, 0));
+        trackInfoPanel.setLayout(new GridLayoutManager(3, 21, new Insets(0, 2, 0, 2), 0, 0));
         trackInfoPanel.setBackground(new Color(-986896));
-        playbackPanel.add(trackInfoPanel, new GridConstraints(0, 2, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        playbackPanel.add(trackInfoPanel, new GridConstraints(0, 2, 2, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         trackExtraInfoLabel = new JLabel();
         trackExtraInfoLabel.setText("Not playing");
-        trackInfoPanel.add(trackExtraInfoLabel, new GridConstraints(1, 1, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        trackInfoPanel.add(trackExtraInfoLabel, new GridConstraints(1, 2, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         trackTitleLabel = new JLabel();
         trackTitleLabel.setAlignmentX(0.0f);
         trackTitleLabel.setFocusTraversalPolicyProvider(false);
@@ -596,15 +599,15 @@ public class MainWindow {
         trackTitleLabel.setHorizontalTextPosition(11);
         trackTitleLabel.setText("Dismu");
         trackTitleLabel.setVerticalAlignment(0);
-        trackInfoPanel.add(trackTitleLabel, new GridConstraints(0, 1, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        trackInfoPanel.add(trackTitleLabel, new GridConstraints(0, 2, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         scrobblerStatus = new JLabel();
         scrobblerStatus.setText("");
-        trackInfoPanel.add(scrobblerStatus, new GridConstraints(0, 18, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(16, -1), null, null, 0, false));
+        trackInfoPanel.add(scrobblerStatus, new GridConstraints(0, 19, 1, 1, GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(16, -1), null, null, 0, false));
         seekbarPanel = new JPanel();
         seekbarPanel.setLayout(new BorderLayout(0, 0));
         seekbarPanel.setBackground(new Color(-1));
         seekbarPanel.setOpaque(false);
-        trackInfoPanel.add(seekbarPanel, new GridConstraints(2, 1, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(400, -1), null, 0, false));
+        trackInfoPanel.add(seekbarPanel, new GridConstraints(2, 2, 1, 17, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(400, -1), null, 0, false));
         seekbarPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0), null));
         final JPanel panel3 = new JPanel();
         panel3.setLayout(new BorderLayout(0, 0));
@@ -620,7 +623,11 @@ public class MainWindow {
         elapsedTimeLabel.setText("Label");
         panel3.add(elapsedTimeLabel, BorderLayout.WEST);
         repeatOneIcon = new Icon();
-        trackInfoPanel.add(repeatOneIcon, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        trackInfoPanel.add(repeatOneIcon, new GridConstraints(2, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final Spacer spacer3 = new Spacer();
+        trackInfoPanel.add(spacer3, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        final Spacer spacer4 = new Spacer();
+        trackInfoPanel.add(spacer4, new GridConstraints(2, 20, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         finderPanel = new JPanel();
         finderPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 25), -1, -1));
         finderPanel.setOpaque(false);
@@ -643,7 +650,7 @@ public class MainWindow {
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         panel5.setOpaque(false);
-        contentPanel.add(panel5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        contentPanel.add(panel5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, 1, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         playlistListScrollPane.setHorizontalScrollBarPolicy(31);
         playlistListScrollPane.setOpaque(false);

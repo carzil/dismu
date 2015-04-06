@@ -1,9 +1,7 @@
 package com.dismu.music.storages;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
@@ -17,6 +15,7 @@ import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
 
 public class TrackStorage {
+    private final File baseDirectory;
     private HashMap<Track, File> tracks = new HashMap<>();
     private HashMap<Integer, Track> trackHashes = new HashMap<>();
     private HashMap<Long, Track> trackFileHashes = new HashMap<>();
@@ -24,7 +23,6 @@ public class TrackStorage {
     private File trackIndex;
     private final Lock storageLock = new ReentrantLock();
     private ArrayList<EventListener> listeners = new ArrayList<>();
-    private static volatile TrackStorage instance;
     private long checkHash;
     private ExecutorService pool = Executors.newSingleThreadExecutor();
 
@@ -40,34 +38,22 @@ public class TrackStorage {
         pool.submit(task);
     }
 
-    private File getTrackFolder() {
-        File trackFolder = new File(Utils.getAppFolderPath(), "tracks");
+    public File getTracksDirectory() {
+        File trackFolder = new File(baseDirectory, "tracks");
         if (!trackFolder.exists()) {
             trackFolder.mkdirs();
         }
         return trackFolder;
     }
 
-    private TrackStorage() {
+    public TrackStorage(File baseDirectory) {
+        this.baseDirectory = baseDirectory;
         try {
-            trackIndex = new File(Utils.getAppFolderPath(), "tracks.index");
+            trackIndex = new File(baseDirectory, "tracks.index");
             parseIndex();
         } catch (IOException e) {
             Loggers.storageLogger.error("exception occurred while parsing track index", e);
         }
-    }
-
-    public static TrackStorage getInstance() {
-        TrackStorage localInstance = instance;
-        if (localInstance == null) {
-            synchronized (TrackStorage.class) {
-                localInstance = instance;
-                if (localInstance == null) {
-                    instance = localInstance = new TrackStorage();
-                }
-            }
-        }
-        return localInstance;
     }
 
     public void readFromStream(DataInputStream stream) throws IOException {
@@ -136,7 +122,7 @@ public class TrackStorage {
         if (!trackIndex.exists()) {
             Loggers.storageLogger.info("index doesn't exists");
             trackIndex.createNewFile();
-            getTrackFolder().mkdir();
+            getTracksDirectory().mkdir();
             new DataOutputStream(new FileOutputStream(trackIndex)).writeInt(0);
         }
         Loggers.storageLogger.info("index exists");
@@ -179,8 +165,12 @@ public class TrackStorage {
      * Get all tracks registered in track index.
      * @return array of tracks registered in index
      */
-    public Track[] getTracks() {
-        return tracks.keySet().toArray(new Track[0]);
+//    public Track[] getTracks() {
+//        Set<Track> trackSet = tracks.keySet();
+//        return trackSet.toArray(new Track[trackSet.size()]);
+//    }
+    public Collection<Track> getTracks() {
+        return tracks.keySet();
     }
 
     public boolean isFileInStorage(File sourceFile) throws IOException {

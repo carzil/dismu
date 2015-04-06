@@ -2,6 +2,7 @@ package com.dismu.p2p.client;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.core.Track;
+import com.dismu.music.storages.TrackStorage;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;
 import com.dismu.p2p.utils.SyncManager;
@@ -23,20 +24,15 @@ public class Client {
     private String userId;
     private final static int TIMEOUT = 10 * 1000; // in ms
     private boolean isConnected = false;
+    private final TrackStorage storage;
+    private SyncManager syncManager;
 
-    public static void main(String[] args) throws IOException {
-        Client client = new Client(InetAddress.getLocalHost(), 1775, "a");
-        try {
-            client.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public Client(InetAddress addr, int port, String userId) {
+    public Client(InetAddress addr, int port, String userId, TrackStorage storage) {
         this.address = addr;
         this.port = port;
         this.userId = userId;
+        this.storage = storage;
+        this.syncManager = new SyncManager(storage);
     }
 
     public void start() throws IOException {
@@ -62,13 +58,11 @@ public class Client {
     }
 
     public void synchronize() throws IOException {
-        SyncManager sm = new SyncManager();
-        sm.synchronize(in, os);
+        syncManager.synchronize(in, os);
     }
 
     public void receiveTrack(Track track) throws IOException {
-        SyncManager sm = new SyncManager();
-        sm.receiveTrack(track, in, os);
+        syncManager.receiveTrack(track, in, os);
     }
 
     public void emitNewTrackEvent(Track track) throws IOException {

@@ -2,6 +2,7 @@ package com.dismu.utils;
 
 import com.dismu.logging.Loggers;
 import net.jpountz.xxhash.StreamingXXHash64;
+import net.jpountz.xxhash.XXHash64;
 import net.jpountz.xxhash.XXHashFactory;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -105,6 +106,10 @@ public class Utils {
             hasher.update(chunk, 0, readCount);
         }
         return hasher.getValue();
+    }
+
+    public static long getByteArrayHash(byte[] buf) {
+        return hashFactory.hash64().hash(buf, 0, buf.length, HASH_SEED);
     }
 
     /**
@@ -246,8 +251,8 @@ public class Utils {
     }
 
     public static String getMasterServerUrl() {
-//        return "http://dismu.herokuapp.com/api/";
-        return "http://localhost:3000/";
+        return "http://dismu.herokuapp.com/";
+//        return "http://localhost:3000/";
     }
 
     public static String getInfo() {

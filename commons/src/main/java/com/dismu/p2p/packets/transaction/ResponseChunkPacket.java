@@ -2,6 +2,7 @@ package com.dismu.p2p.packets.transaction;
 
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.PacketType;
+import com.dismu.utils.Utils;
 
 import java.io.*;
 import java.util.zip.Adler32;
@@ -18,16 +19,11 @@ public class ResponseChunkPacket extends Packet {
     }
 
     public void computeHash() {
-        Checksum checksum = new Adler32();
-        checksum.update(this.chunk, 0, this.chunk.length);
-        this.chunkHash = checksum.getValue();
+        this.chunkHash = Utils.getByteArrayHash(chunk);
     }
 
     public boolean checkHash() {
-        Checksum checksum = new Adler32();
-        checksum.update(this.chunk, 0, this.chunk.length);
-
-        long seen = checksum.getValue();
+        long seen = Utils.getByteArrayHash(chunk);
         long expected = this.chunkHash;
 
         return seen == expected;
@@ -45,18 +41,14 @@ public class ResponseChunkPacket extends Packet {
 
         this.chunkHash = dis.readLong();
 
-        {
-            int len = dis.readInt();
-            this.chunk = new byte[len];
-            dis.read(this.chunk);
-        }
+        int len = dis.readInt();
+        this.chunk = new byte[len];
+        dis.read(this.chunk);
     }
 
     @Override
     public void serialize() throws IOException {
-        ByteArrayOutputStream bos;
-        bos = new ByteArrayOutputStream();
-
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
         dos.writeInt(this.transactionId);

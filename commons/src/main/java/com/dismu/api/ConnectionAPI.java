@@ -11,9 +11,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 public class ConnectionAPI {
-    public Seed[] getNeighbours(String userId) {
+    public Seed[] getNeighbours(String groupId) {
         try {
-            APIResult response = APIUtils.sendSignedRequest("seedlist", String.format("userId=%s", userId));
+            APIResult response = APIUtils.sendSignedRequest("seedlist", String.format("groupId=%s", groupId));
             ArrayList<Seed> result = new ArrayList<Seed>();
             if (response.isSuccessful()) {
                 JSONObject json = response.getResponse();

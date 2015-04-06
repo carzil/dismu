@@ -76,7 +76,7 @@ public class InfoWindow {
 
     public void updateInfo() {
         activeThreadsCountLabel.setText(Integer.toString(Thread.activeCount()));
-        tracksCountLabel.setText(Integer.toString(TrackStorage.getInstance().size()));
+        tracksCountLabel.setText(Integer.toString(Dismu.getInstance().getTrackStorage().size()));
     }
 
     {

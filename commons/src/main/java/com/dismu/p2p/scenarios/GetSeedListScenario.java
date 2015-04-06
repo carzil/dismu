@@ -5,7 +5,7 @@ import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 
 import java.net.InetAddress;
 
-public class GetSeedListScenario extends Scenario {
+public class GetSeedListScenario implements IScenario {
     public InetAddress[] addresses = null;
     private boolean handled = false;
 
@@ -18,8 +18,7 @@ public class GetSeedListScenario extends Scenario {
     public Packet[] handle(Packet p) {
         assert (p instanceof RequestSeedsResponsePacket);
 
-        this.addresses =
-                ((RequestSeedsResponsePacket) p).addresses;
+        this.addresses = ((RequestSeedsResponsePacket) p).addresses;
 
         this.handled = true;
 

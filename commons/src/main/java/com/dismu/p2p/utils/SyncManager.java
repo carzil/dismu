@@ -2,42 +2,41 @@ package com.dismu.p2p.utils;
 
 import com.dismu.music.core.Track;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.utils.FileNameEscaper;
+import com.dismu.p2p.packets.transaction.StartTransactionPacket;
 import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
 import java.io.*;
 
 public class SyncManager {
-    public void receiveTrack(Track curr, InputStream is, OutputStream os) throws IOException {
+    private final TrackStorage storage;
+
+    public SyncManager(TrackStorage storage) {
+        this.storage = storage;
+    }
+
+    public void receiveTrack(Track track, InputStream is, OutputStream os) throws IOException {
         TransactionHelper helper = new TransactionHelper(os, is);
-        TrackStorage ts = TrackStorage.getInstance();
 
-        InputStream fin = helper.receiveFile("tracks/" + curr.hashCode());
+        InputStream fin = helper.startTransaction(StartTransactionPacket.createGetTrack(track.hashCode()));
 
-        File tempfile = File.createTempFile("dismu-", curr.getExtension(), Utils.getAppFolderPath());
-        OutputStream fos = new BufferedOutputStream(new FileOutputStream(tempfile)); // TODO
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = fin.read(buffer)) != -1) {
-            fos.write(buffer, 0, bytesRead);
-        }
-        fos.flush();
+        File trackFile = new File(storage.getTracksDirectory(), track.getPrettifiedFileName());
+        OutputStream fos = new BufferedOutputStream(new FileOutputStream(trackFile));
+        Utils.copyStream(fin, fos);
         fos.close();
-        ts.saveTrack(tempfile);
+        storage.saveTrack(trackFile);
     }
 
     public void synchronize(InputStream is, OutputStream os) throws IOException {
         TransactionHelper helper = new TransactionHelper(os, is);
-        InputStream tis = helper.receiveFile("tracklist");
+        InputStream tis = helper.startTransaction(StartTransactionPacket.createGetTrackList());
 
         byte[] tracks_bytes = Utils.readStreamToBytes(tis);
         Track[] tracks = MediaUtils.ByteArrayToTrackList(tracks_bytes);
 
-        TrackStorage ts = TrackStorage.getInstance();
         for (Track curr : tracks) {
             try {
-                File file = ts.getTrackFile(curr);
+                File file = storage.getTrackFile(curr);
                 if (file == null) {
                     receiveTrack(curr, is, os);
                 }

@@ -7,7 +7,7 @@ import com.dismu.p2p.packets.node_control.RequestSeedsResponsePacket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-public class SendSeedListScenario extends Scenario {
+public class SendSeedListScenario implements IScenario {
     private boolean handled = false;
 
     public SendSeedListScenario() {

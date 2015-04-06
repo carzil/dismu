@@ -15,7 +15,6 @@ import java.awt.event.MouseEvent;
 public class AllTracksTab extends Tab {
     private TrackListTable trackTable;
     private JScrollPane scrollPane;
-    private TrackStorage storage = TrackStorage.getInstance();
 
     public AllTracksTab() {
         super();
@@ -41,7 +40,7 @@ public class AllTracksTab extends Tab {
                 }
             }
         });
-        trackTable.updateTracks(storage.getTracks());
+        trackTable.updateTracks(Dismu.getInstance().getTrackStorage().getTracks());
         scrollPane.setViewportView(trackTable);
     }
 
@@ -50,7 +49,7 @@ public class AllTracksTab extends Tab {
     }
 
     public void update() {
-        trackTable.updateTracks(storage.getTracks());
+        trackTable.updateTracks(Dismu.getInstance().getTrackStorage().getTracks());
     }
 
     public PlaylistPopup getPopup() {

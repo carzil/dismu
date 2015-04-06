@@ -40,7 +40,7 @@ public class PlaylistWindow {
     }
 
     private void refreshPlaylist(Playlist playlist) {
-        table1.updateTracks(playlist.getTracks().toArray(new Track[0]));
+        table1.updateTracks(playlist.getTracks());
     }
 
     public JFrame getFrame() {

@@ -9,26 +9,15 @@ import com.dismu.music.core.Track;
 import com.dismu.utils.events.EventListener;
 
 public class PlayerBackend {
+    private final TrackStorage storage;
     private Track currentTrack;
     private File currentTrackFile;
     private InputStream currentInputStream;
     private PausablePlayer player = new PausablePlayer();
     private static volatile PlayerBackend instance;
 
-    private PlayerBackend() {
-    }
-
-    public static PlayerBackend getInstance() {
-        PlayerBackend localInstance = instance;
-        if (localInstance == null) {
-            synchronized (PlayerBackend.class) {
-                localInstance = instance;
-                if (localInstance == null) {
-                    instance = localInstance = new PlayerBackend();
-                }
-            }
-        }
-        return localInstance;
+    public PlayerBackend(TrackStorage storage) {
+        this.storage = storage;
     }
 
     public long getPosition() {
@@ -37,6 +26,7 @@ public class PlayerBackend {
 
     public boolean stop() {
         player.stop();
+        currentTrack = null;
         return true;
     }
 
@@ -52,12 +42,7 @@ public class PlayerBackend {
      * starting playing track, last indicated by setTrack(); async method
      */
     public boolean play() {
-        try {
-            player.play();
-        } catch (Exception e) {
-            Loggers.playerLogger.error("exception occurred while playing track {}", currentTrack, e);
-            return false;
-        }
+        player.play();
         return true;
     }
 
@@ -81,7 +66,7 @@ public class PlayerBackend {
 
     public void setTrack(Track track) throws TrackNotFoundException {
         currentTrack = track;
-        currentTrackFile = TrackStorage.getInstance().getTrackFile(track);
+        currentTrackFile = storage.getTrackFile(track);
         Loggers.playerLogger.info("TrackStorage yielded file '{}'", currentTrackFile);
         try {
             currentInputStream = new BufferedInputStream(new FileInputStream(currentTrackFile));
@@ -103,5 +88,9 @@ public class PlayerBackend {
 
     public Track getCurrentTrack() {
         return currentTrack;
+    }
+
+    public TrackStorage getStorage() {
+        return storage;
     }
 }

@@ -39,8 +39,7 @@ public class PlaylistTab extends Tab {
                 }
             }
         });
-        ArrayList<Track> tracks = playlist.getTracks();
-        trackTable.updateTracks(tracks.toArray(new Track[tracks.size()]));
+        trackTable.updateTracks(playlist.getTracks());
         scrollPane.setViewportView(trackTable);
     }
 
@@ -49,8 +48,7 @@ public class PlaylistTab extends Tab {
     }
 
     public void update() {
-        ArrayList<Track> tracks = playlist.getTracks();
-        trackTable.updateTracks(tracks.toArray(new Track[tracks.size()]));
+        trackTable.updateTracks(playlist.getTracks());
     }
 
     public PlaylistPopup getPopup() {

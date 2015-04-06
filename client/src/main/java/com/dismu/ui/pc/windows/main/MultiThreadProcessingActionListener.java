@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class MultiThreadProcessingActionListener implements ITrackFinderActionListener {
     private int processedTracks = 0;
     private ExecutorService pool = Executors.newFixedThreadPool(8);
-    private final TrackStorage storage = TrackStorage.getInstance();
+    private final TrackStorage storage = Dismu.getInstance().getTrackStorage();
     private final Dismu dismuInstance = Dismu.getInstance();
 
     @Override

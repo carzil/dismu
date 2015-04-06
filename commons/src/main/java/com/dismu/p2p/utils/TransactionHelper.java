@@ -3,7 +3,7 @@ package com.dismu.p2p.utils;
 import com.dismu.logging.Loggers;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.StartTransactionPacket;
-import com.dismu.p2p.scenarios.RequestFileScenario;
+import com.dismu.p2p.scenarios.transactions.RequestFileScenario;
 
 import java.io.*;
 import java.net.SocketException;
@@ -17,9 +17,7 @@ public class TransactionHelper {
         this.in = in;
     }
 
-    public InputStream receiveFile(String filename) throws IOException {
-        StartTransactionPacket stp = new StartTransactionPacket();
-        stp.filename = filename;
+    public InputStream startTransaction(StartTransactionPacket stp) throws IOException {
         stp.write(os);
 
         RequestFileScenario rfc = new RequestFileScenario();

@@ -1,6 +1,7 @@
 package com.dismu.p2p.server;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.storages.TrackStorage;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -23,9 +24,12 @@ public class NIOServer extends Server {
     private Selector selector;
     private ByteBuffer readBuffer = ByteBuffer.allocate(8192);
     private boolean isRunning = false;
+    private final TrackStorage storage;
 
-    public NIOServer(int port) throws IOException {
+    public NIOServer(int port, TrackStorage storage) throws IOException {
         super(port);
+
+        this.storage = storage;
 
         try {
             this.hostAddress = InetAddress.getLocalHost();
@@ -52,6 +56,7 @@ public class NIOServer extends Server {
     @Override
     public void start() {
         isRunning = true;
+        Loggers.p2pLogger.debug("server started");
 
         while (true) {
             try {
@@ -76,7 +81,7 @@ public class NIOServer extends Server {
                     }
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                Loggers.p2pLogger.error("error in server", e);
             }
         }
     }
@@ -94,22 +99,22 @@ public class NIOServer extends Server {
         try {
             numRead = socketChannel.read(this.readBuffer);
         } catch (IOException e) {
-            e.printStackTrace();
+            Loggers.p2pLogger.error("error while reading", e);
             key.cancel();
             socketChannel.close();
-            Loggers.serverLogger.info("Closed client connection");
+            Loggers.serverLogger.info("closed client connection");
             return;
         }
 
         if (numRead == -1) {
             key.channel().close();
             key.cancel();
-            Loggers.serverLogger.info("Closed client connection");
+            Loggers.serverLogger.info("closed client connection, numRead == -1");
             return;
         }
 
         if (key.attachment() == null) {
-            key.attach(new WorkerObject());
+            key.attach(new WorkerObject(storage));
         }
         WorkerObject workerObject = (WorkerObject) key.attachment();
         processData(socketChannel, this.readBuffer.array(), numRead, workerObject);
@@ -134,7 +139,7 @@ public class NIOServer extends Server {
         socketChannel.configureBlocking(false);
 
         socketChannel.register(this.selector, SelectionKey.OP_READ);
-        Loggers.serverLogger.info("New client");
+        Loggers.serverLogger.info("new client, socket={}", socket);
     }
 
     @Override

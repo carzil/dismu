@@ -24,14 +24,7 @@ exports.removeUser = function (userId, callback) {
     });
 }
 
-exports.getGroupNeighbours = function (userId, callback) {
-    db.groups.findOne({userId:userId}, function (err, data) {
-        if (!err && data) {
-            exports.getGroupUsers(data.groupId, function (error, result) {
-                callback(error, result);
-            });
-        } else {
-            callback(err, null);
-        }
-    });
+exports.getGroupNeighbours = function (groupId, callback) {
+    console.log(groupId);
+    db.groups.find({groupId: groupId}, callback);
 }

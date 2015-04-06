@@ -3,14 +3,15 @@ package com.dismu.utils;
 import com.dismu.music.core.Track;
 
 import java.io.*;
+import java.util.Collection;
 
 public class MediaUtils {
-    public static byte[] TrackListToByteArray(Track[] tracks) {
+    public static byte[] trackListToByteArray(Collection<Track> tracks) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
         try {
-            dos.writeInt(tracks.length);
+            dos.writeInt(tracks.size());
             for (Track t : tracks) {
                 t.writeToStream(dos);
             }

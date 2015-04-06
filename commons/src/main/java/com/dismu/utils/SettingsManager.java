@@ -7,12 +7,11 @@ import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Set;
-import java.util.logging.Logger;
 
 public class SettingsManager {
     private JSONObject jsonObject;
     private String section;
+    public boolean changed = false;
     private static ArrayList<SettingsManager> settingsManagers = new ArrayList<>();
 
     public static SettingsManager getSection(String section) {
@@ -47,20 +46,25 @@ public class SettingsManager {
         return new File(settingsFolder, section + ".json");
     }
 
+    private void setValue(String key, Object obj) {
+        changed = true;
+        jsonObject.put(key, obj);
+    }
+
     public void setBoolean(String key, boolean value) {
-        jsonObject.put(key, value);
+        setValue(key, value);
     }
 
     public void setInt(String key, int value) {
-        jsonObject.put(key, value);
+        setValue(key, value);
     }
 
     public void setString(String key, String value) {
-        jsonObject.put(key, value);
+        setValue(key, value);
     }
 
     public void setDouble(String key, double value) {
-        jsonObject.put(key, value);
+        setValue(key, value);
     }
 
     public Object getValue(String key, Object def) {
@@ -72,24 +76,30 @@ public class SettingsManager {
     }
 
     public boolean getBoolean(String key, boolean def) {
-        return (boolean)getValue(key, def);
+        return (boolean) getValue(key, def);
     }
 
     public int getInt(String key, int def) {
-        return ((Long) getValue(key, def)).intValue();
+        return ((Integer) getValue(key, def));
     }
 
     public String getString(String key, String def) {
-        return (String)getValue(key, def);
+        return (String) getValue(key, def);
     }
 
     public double getDouble(String key, double def) {
-        return (double)getValue(key, def);
+        return (double) getValue(key, def);
+    }
+
+    public boolean isChanged() {
+        return changed;
     }
 
     public static void save() {
         for (SettingsManager settingsManager : settingsManagers) {
-            settingsManager.saveSection();
+            if (settingsManager.isChanged()) {
+                settingsManager.saveSection();
+            }
         }
         Loggers.miscLogger.info("all sections was saved");
     }

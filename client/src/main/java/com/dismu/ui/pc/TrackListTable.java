@@ -13,6 +13,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.locks.Lock;
@@ -158,7 +159,7 @@ public class TrackListTable extends JTable {
                 }
             }
         });
-        TrackStorage.getInstance().addEventListener(new EventListener() {
+        Dismu.getInstance().getTrackStorage().addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
                 TrackStorageEvent ev = (TrackStorageEvent) e;
@@ -205,7 +206,7 @@ public class TrackListTable extends JTable {
         return track;
     }
 
-    public void updateTracks(Track[] tracks) {
+    public void updateTracks(Collection<Track> tracks) {
         tableLock.lock();
         DefaultTableModel model = (DefaultTableModel) getModel();
         model.setRowCount(0);

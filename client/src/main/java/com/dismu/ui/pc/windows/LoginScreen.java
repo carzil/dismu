@@ -87,16 +87,17 @@ public class LoginScreen {
     private void onFailedLogin() {
         statusField.setForeground(Color.RED);
         statusField.setText(reason);
+        requestFocus();
     }
 
     private void onLoggedIn() {
         boolean keepMeLoggedIn = keepMeLoggedInCheckBox.isSelected();
         Dismu.getInstance().accountSettingsManager.setBoolean("keepLoggedIn", keepMeLoggedIn);
+        Dismu.getInstance().accountSettingsManager.setString("username", getUsername());
         if (keepMeLoggedIn) {
-            Dismu.getInstance().accountSettingsManager.setString("username", getUsername());
-            Dismu.getInstance().accountSettingsManager.setString("password", getPassword());
+            Dismu.getInstance().accountSettingsManager.setString("passwordMd5", Utils.getMD5(new String(passwordField.getPassword())));
         } else {
-            Dismu.getInstance().accountSettingsManager.setString("password", "");
+            Dismu.getInstance().accountSettingsManager.setString("passwordMd5", "");
         }
     }
 
@@ -119,16 +120,25 @@ public class LoginScreen {
                 Loggers.uiLogger.error("cannot load logo", e);
             }
             boolean keepLoggedIn = Dismu.getInstance().accountSettingsManager.getBoolean("keepLoggedIn", false);
+            String username = Dismu.getInstance().accountSettingsManager.getString("username", "");
+            usernameField.setText(username);
+            requestFocus();
             if (keepLoggedIn) {
-                String username = Dismu.getInstance().accountSettingsManager.getString("username", "");
                 String password = Dismu.getInstance().accountSettingsManager.getString("password", "");
                 keepMeLoggedInCheckBox.setSelected(true);
-                usernameField.setText(username);
                 passwordField.setText(password);
                 startLogin();
             }
         }
         return frame;
+    }
+
+    private void requestFocus() {
+        if (usernameField.getText().length() == 0) {
+            usernameField.requestFocusInWindow();
+        } else {
+            passwordField.requestFocusInWindow();
+        }
     }
 
     private void createUIComponents() {

@@ -2,6 +2,7 @@ package com.dismu.ui.pc.dialogs;
 
 import com.dismu.music.core.Track;
 import com.dismu.music.storages.TrackStorage;
+import com.dismu.ui.pc.Dismu;
 import com.dismu.ui.pc.TrackListTable;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
@@ -83,7 +84,7 @@ public class AddTracksDialog extends JDialog {
     }
 
     public void updateTracks() {
-        table1.updateTracks(TrackStorage.getInstance().getTracks());
+        table1.updateTracks(Dismu.getInstance().getTrackStorage().getTracks());
     }
 
     private void onOK() {

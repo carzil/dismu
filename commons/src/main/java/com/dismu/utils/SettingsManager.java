@@ -63,6 +63,10 @@ public class SettingsManager {
         setValue(key, value);
     }
 
+    public void setFloat(String key, float value) {
+        setValue(key, value);
+    }
+
     public void setDouble(String key, double value) {
         setValue(key, value);
     }
@@ -80,7 +84,7 @@ public class SettingsManager {
     }
 
     public int getInt(String key, int def) {
-        return ((Integer) getValue(key, def));
+        return Integer.parseInt(String.valueOf(getValue(key, String.valueOf(def))));
     }
 
     public String getString(String key, String def) {
@@ -89,6 +93,10 @@ public class SettingsManager {
 
     public double getDouble(String key, double def) {
         return (double) getValue(key, def);
+    }
+
+    public float getFloat(String key, float def) {
+        return Float.parseFloat(String.valueOf(getValue(key, String.valueOf(def))));
     }
 
     public boolean isChanged() {
@@ -121,5 +129,4 @@ public class SettingsManager {
         }
         Loggers.miscLogger.info("done saving settings, section='{}'", section);
     }
-
 }

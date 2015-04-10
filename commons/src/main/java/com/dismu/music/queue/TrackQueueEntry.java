@@ -1,6 +1,6 @@
-package com.dismu.music.core.queue;
+package com.dismu.music.queue;
 
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 
 public class TrackQueueEntry {
     private Track item;

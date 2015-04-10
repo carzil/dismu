@@ -2,7 +2,7 @@ package com.dismu.p2p.scenarios.transactions;
 
 import com.dismu.logging.Loggers;
 import com.dismu.music.storages.TrackStorage;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.p2p.packets.Packet;
 import com.dismu.p2p.packets.transaction.*;
 import com.dismu.p2p.scenarios.IScenario;
@@ -12,7 +12,6 @@ import com.dismu.utils.MediaUtils;
 import com.dismu.utils.Utils;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Collection;
 
 public class RespondFileScenario implements IScenario {

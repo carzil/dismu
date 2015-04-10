@@ -1,7 +1,6 @@
 package com.dismu.music;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
 import com.dismu.ui.pc.Dismu;
 import de.umass.lastfm.Session;
 import de.umass.lastfm.scrobble.ScrobbleData;

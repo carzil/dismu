@@ -5,7 +5,7 @@ import java.io.*;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.player.PausablePlayer;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.utils.events.EventListener;
 
 public class PlayerBackend {

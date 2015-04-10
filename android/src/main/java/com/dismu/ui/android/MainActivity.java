@@ -14,7 +14,7 @@ import android.text.format.Formatter;
 import android.view.*;
 import android.widget.*;
 import com.dismu.android1.R;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.p2p.App;

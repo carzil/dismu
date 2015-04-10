@@ -1,6 +1,6 @@
 package com.dismu.ui.pc.windows.main.tabs;
 
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.player.Playlist;
 import com.dismu.ui.pc.Dismu;
 import com.dismu.ui.pc.TrackListTable;
@@ -10,7 +10,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 
 public class PlaylistTab extends Tab {
     private Playlist playlist;

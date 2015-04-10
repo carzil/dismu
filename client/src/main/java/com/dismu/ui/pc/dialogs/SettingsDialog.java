@@ -1,6 +1,7 @@
 package com.dismu.ui.pc.dialogs;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.Equalizer;
 import com.dismu.music.Scrobbler;
 import com.dismu.ui.pc.Dismu;
 import com.dismu.ui.pc.Icons;
@@ -15,6 +16,8 @@ import de.umass.lastfm.Result;
 import de.umass.lastfm.Session;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.*;
 

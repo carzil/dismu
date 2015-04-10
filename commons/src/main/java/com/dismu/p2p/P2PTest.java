@@ -23,7 +23,6 @@ public class P2PTest {
                     server.start();
                 }
             });
-
         } else {
             Utils.setPlatformUtils(new PlatformUtils() {
                 @Override

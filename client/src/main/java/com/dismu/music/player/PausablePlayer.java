@@ -1,16 +1,20 @@
 package com.dismu.music.player;
 
 import com.dismu.logging.Loggers;
+import com.dismu.music.Equalizer;
 import com.dismu.music.events.PlayerEvent;
 import com.dismu.utils.DynamicByteArray;
 import com.dismu.utils.Utils;
 import com.dismu.utils.events.Event;
 import com.dismu.utils.events.EventListener;
-import sun.rmi.runtime.Log;
+import davaguine.jeq.core.EqualizerInputStream;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -29,6 +33,9 @@ public class PausablePlayer {
     private volatile AudioInputStream currentStream;
     private volatile int currentPosition = 0;
     private Thread playerThread;
+    private byte[] workBuf = new byte[bufferSize];
+    private ByteArrayInputStream workBufStreamWrapper = new ByteArrayInputStream(workBuf);
+    private EqualizerInputStream equalizerInputStream;
 
     private Lock playerLock = new ReentrantLock();
     private ArrayList<EventListener> listeners = new ArrayList<>();
@@ -69,8 +76,14 @@ public class PausablePlayer {
                 Loggers.playerLogger.debug("current stream = {}", currentStream);
                 playerLine.open(decodedFormat, bufferSize);
                 playerLine.start();
+                equalizerInputStream = new EqualizerInputStream(workBufStreamWrapper,
+                        decodedFormat.getSampleRate(), decodedFormat.getChannels(),
+                        decodedFormat.getEncoding().equals(AudioFormat.Encoding.PCM_SIGNED),
+                        decodedFormat.getSampleSizeInBits(), decodedFormat.isBigEndian(), Equalizer.BANDS);
                 Loggers.playerLogger.info("line opened and started");
-                Loggers.playerLogger.info("sample rate = {}", playerLine.getFormat().getSampleRate());
+                Loggers.playerLogger.info("channels count = {}", decodedFormat.getChannels());
+                Loggers.playerLogger.info("sample rate = {}", decodedFormat.getSampleRate());
+                Loggers.playerLogger.info("sample size = {}", decodedFormat.getSampleSizeInBits());
                 byteArray.clear();
                 startBuffering();
                 currentPosition = 0;
@@ -104,8 +117,10 @@ public class PausablePlayer {
                     Loggers.playerLogger.debug("stream buffered");
                 } catch (IOException e) {
                     Loggers.playerLogger.error("cannot buffer stream", e);
+                    throw new RuntimeException(e);
+                } finally {
+                    isBuffering = false;
                 }
-                isBuffering = false;
             }
         });
     }
@@ -212,8 +227,25 @@ public class PausablePlayer {
         while (playerStatus != FULL_STOP) {
             if (playerStatus == PLAYING) {
                 pauseNotified = false;
-                while ((readBytes = byteArray.read(data, currentPosition)) == 0 && isBuffering) {
+                // need for bytes available to read at currentPosition
+                while ((readBytes = byteArray.read(workBuf, currentPosition)) == 0 && isBuffering) {
                     Thread.yield();
+                }
+                equalizerInputStream.getControls().setPreampValue(0, Equalizer.getPreampValue());
+                equalizerInputStream.getControls().setPreampValue(1, Equalizer.getPreampValue());
+                for (int i = 0; i < Equalizer.BANDS; i++) {
+                    equalizerInputStream.getControls().setBandValue(i, 0, Equalizer.getBandValue(i));
+                    equalizerInputStream.getControls().setBandValue(i, 1, Equalizer.getBandValue(i));
+                }
+                workBufStreamWrapper.reset();
+                if (Equalizer.isEnabled()) {
+                    try {
+                        equalizerInputStream.read(data);
+                    } catch (IOException e) {
+                        Loggers.playerLogger.error("error", e);
+                    }
+                } else {
+                    System.arraycopy(workBuf, 0, data, 0, readBytes);
                 }
                 Thread.yield();
                 currentPosition = currentPosition + readBytes;

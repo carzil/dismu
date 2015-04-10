@@ -1,8 +1,7 @@
 package com.dismu.ui.pc.dialogs;
 
-import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.ui.pc.Dismu;
 import com.dismu.ui.pc.TrackListTable;
@@ -58,14 +57,8 @@ public class PlaylistWindow {
                     if (e.getClickCount() >= 2) {
                         if (SwingUtilities.isLeftMouseButton(e)) {
                             Track track = table1.getTrackByRow(table1.rowAtPoint(e.getPoint()));
-                            try {
-                                Dismu dismu = Dismu.getInstance();
-                                dismu.setCurrentPlaylist(playlist);
-                                playlist.setCurrentTrack(track);
-                                dismu.addTrackAfterCurrent(track);
-                            } catch (TrackNotFoundException ex) {
-
-                            }
+                            Dismu dismu = Dismu.getInstance();
+                            dismu.addTrackAfterCurrent(track);
                         }
                     }
                 }
@@ -115,10 +108,6 @@ public class PlaylistWindow {
                         playlistStorage.addPlaylist(playlist);
                     } else {
                         PlaylistStorage.getInstance().save();
-                    }
-                    Playlist currentPlaylist = dismu.getCurrentPlaylist();
-                    if (dismu.getCurrentPlaylist() != null) {
-                        dismu.setCurrentPlaylist(currentPlaylist); // WTF?
                     }
                     frame.dispose();
                     dismu.updatePlaylists();

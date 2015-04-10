@@ -1,7 +1,7 @@
-package com.dismu.music.core.queue;
+package com.dismu.music.queue;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 
 import java.util.Iterator;
 
@@ -78,7 +78,7 @@ public class TrackQueue implements Iterable<TrackQueueEntry> {
     }
 
     /**
-     * Returns {@link com.dismu.music.core.queue.TrackQueueEntry} at the top of queue
+     * Returns {@link com.dismu.music.queue.TrackQueueEntry} at the top of queue
      * @return element at top of queue or null, if queue os empty
      */
     public TrackQueueEntry peek() {

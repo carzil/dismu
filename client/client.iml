@@ -50,5 +50,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" exported="" name="com.nativelibs4java:bridj:0.7.0" level="project" />
   </component>
 </module>

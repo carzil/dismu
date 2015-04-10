@@ -7,8 +7,7 @@ import java.util.ArrayList;
 
 import com.dismu.exceptions.EmptyPlaylistException;
 import com.dismu.exceptions.TrackNotFoundException;
-import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 
 public class Playlist {
     private int id;

@@ -3,12 +3,13 @@ package com.dismu.ui.pc.windows.main;
 import com.dismu.logging.Loggers;
 import com.dismu.music.events.PlaylistStorageEvent;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.ui.pc.*;
 import com.dismu.ui.pc.Icon;
+import com.dismu.ui.pc.dialogs.EqualizerDialog;
 import com.dismu.ui.pc.windows.InfoWindow;
 import com.dismu.ui.pc.windows.main.tabs.AllTracksTab;
 import com.dismu.ui.pc.windows.main.tabs.Tab;
@@ -56,6 +57,7 @@ public class MainWindow {
     private Icon nextIcon;
     private JPanel contentPanel;
     private Icon repeatOneIcon;
+    private JSplitPane splitPane;
     private JLabel cycleIcon;
     private JPanel scrobblerStatusPanel;
     private JLayeredPane layeredPane;
@@ -65,6 +67,7 @@ public class MainWindow {
     private HashMap<Playlist, PlaylistTab> playlistTabs = new HashMap<>();
     private InfoWindow infoWindow = new InfoWindow();
     private AllTracksTab allTracksTab = new AllTracksTab();
+    private EqualizerDialog equalizerDialog = new EqualizerDialog();
 
     public JFrame getFrame() {
         if (dismuFrame == null) {
@@ -85,7 +88,7 @@ public class MainWindow {
             updateTracks();
             updatePlaylists();
             setupCosmetic();
-            setupBarMenu();
+            setupMenuBar();
             setupListeners();
             playlistList.setSelectedIndex(0);
         }
@@ -93,11 +96,13 @@ public class MainWindow {
     }
 
     public void setupBorders() {
-        playlistListScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.GRAY));
+//        playlistListScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, Color.GRAY));
+        playlistListScrollPane.setBorder(BorderFactory.createEmptyBorder());
         statusPanel.setBorder(BorderFactory.createLoweredBevelBorder());
         statusLabel.setBorder(new EmptyBorder(0, 2, 0, 0));
         playbackPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.GRAY));
         playlistList.setBorder(BorderFactory.createEmptyBorder());
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
     }
 
     public void setupCosmetic() {
@@ -121,55 +126,7 @@ public class MainWindow {
         repeatOneIcon.setAlpha(0.5f);
     }
 
-    public void setupBarMenu() {
-        JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu("File");
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem exitItem = new JMenuItem("Exit");
-        JMenuItem addTrackItem = new JMenuItem("Add tracks...");
-        JMenuItem createPlaylist = new JMenuItem("Create playlist...");
-        JMenuItem settingsItem = new JMenuItem("Settings...");
-        JMenuItem findSeeds = new JMenuItem("Find seeds");
-        findSeeds.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                Dismu.getInstance().updateSeeds();
-                Dismu.getInstance().startSync();
-            }
-        });
-        exitItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Dismu.getInstance().fullExit(0);
-            }
-        });
-        fileMenu.add(addTrackItem);
-        fileMenu.add(createPlaylist);
-        fileMenu.add(findSeeds);
-        fileMenu.add(settingsItem);
-        fileMenu.addSeparator();
-        fileMenu.add(exitItem);
-        menuBar.add(fileMenu);
-        menuBar.add(helpMenu);
-        addTrackItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                addTracks();
-            }
-        });
-        createPlaylist.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                createPlaylist();
-            }
-        });
-        settingsItem.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                Dismu.getInstance().showSettings();
-            }
-        });
-        dismuFrame.setJMenuBar(menuBar);
+    public void setupMenuBar() {
     }
 
     public void setupListeners() {
@@ -178,14 +135,12 @@ public class MainWindow {
             public boolean dispatchKeyEvent(KeyEvent e) {
                 if (e.getID() == KeyEvent.KEY_PRESSED) {
                     if (e.isControlDown()) {
-                        if (e.getKeyCode() == KeyEvent.VK_O) {
-                            addTracks();
-                        } else if (e.getKeyCode() == KeyEvent.VK_N) {
-                            createPlaylist();
-                        } else if (e.getKeyCode() == KeyEvent.VK_I) {
+                        if (e.getKeyCode() == KeyEvent.VK_I) {
                             showInfoWindow();
                         } else if (e.getKeyCode() == KeyEvent.VK_F) {
                             patternField.requestFocusInWindow();
+                        } else if (e.getKeyCode() == KeyEvent.VK_E) {
+                            equalizerDialog.showDialog(getFrame());
                         }
                     }
                 }
@@ -438,7 +393,7 @@ public class MainWindow {
         }
     }
 
-    private void addTracks() {
+    public void addTracks() {
         int result = fileChooser.showOpenDialog(mainPanel);
         if (result == JFileChooser.APPROVE_OPTION) {
             Utils.runThread(new Runnable() {
@@ -448,14 +403,6 @@ public class MainWindow {
                 }
             });
         }
-    }
-
-    private void createPlaylist() {
-        String name = (String) JOptionPane.showInputDialog(getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
-        Playlist newPlaylist = PlaylistStorage.getInstance().createPlaylist();
-        newPlaylist.setName(name);
-        Dismu.getInstance().editPlaylist(newPlaylist);
-        update();
     }
 
     public void updateCurrentTrack() {
@@ -639,18 +586,20 @@ public class MainWindow {
         patternField = new JTextField();
         panel4.add(patternField, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         contentPanel = new JPanel();
-        contentPanel.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), 0, 0));
+        contentPanel.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), 0, 0));
         contentPanel.setOpaque(false);
         panel1.add(contentPanel, BorderLayout.CENTER);
-        displayPanel = new JPanel();
-        displayPanel.setLayout(new BorderLayout(0, 0));
-        displayPanel.setOpaque(false);
-        contentPanel.add(displayPanel, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(600, -1), null, null, 0, false));
-        displayPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
+        splitPane = new JSplitPane();
+        splitPane.setContinuousLayout(true);
+        splitPane.setDividerLocation(200);
+        splitPane.setDividerSize(2);
+        splitPane.setOneTouchExpandable(false);
+        splitPane.setOrientation(1);
+        contentPanel.add(splitPane, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
         final JPanel panel5 = new JPanel();
         panel5.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
         panel5.setOpaque(false);
-        contentPanel.add(panel5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, 1, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        splitPane.setLeftComponent(panel5);
         panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
         playlistListScrollPane.setHorizontalScrollBarPolicy(31);
         playlistListScrollPane.setOpaque(false);
@@ -659,6 +608,11 @@ public class MainWindow {
         playlistList.setOpaque(false);
         playlistList.setSelectionMode(0);
         playlistListScrollPane.setViewportView(playlistList);
+        displayPanel = new JPanel();
+        displayPanel.setLayout(new BorderLayout(0, 0));
+        displayPanel.setOpaque(false);
+        splitPane.setRightComponent(displayPanel);
+        displayPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEmptyBorder(), null));
     }
 
     /**

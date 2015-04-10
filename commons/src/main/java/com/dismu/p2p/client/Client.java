@@ -1,7 +1,7 @@
 package com.dismu.p2p.client;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.p2p.packets.node_control.ExitPacket;
 import com.dismu.p2p.packets.transaction.NewTrackAvailablePacket;

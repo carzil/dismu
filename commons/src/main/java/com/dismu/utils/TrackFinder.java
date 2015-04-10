@@ -1,7 +1,7 @@
 package com.dismu.utils;
 
 import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 
 import java.io.File;
 import java.io.IOException;

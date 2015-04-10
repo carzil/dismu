@@ -45,12 +45,11 @@ public class DynamicByteArray {
         if (readCnt > 0) {
             System.arraycopy(byteBuffer, position, buffer, 0, readCnt);
         }
-        return Math.max(-1, readCnt);
+        return Math.max(0, readCnt);
     }
 
     public void clear() {
         Arrays.fill(byteBuffer, (byte) 0);
         currentPosition = 0;
     }
-
 }

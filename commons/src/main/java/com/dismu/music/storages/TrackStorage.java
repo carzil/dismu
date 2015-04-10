@@ -7,7 +7,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.utils.Utils;
 import com.dismu.logging.Loggers;

@@ -1,6 +1,6 @@
 package com.dismu.ui.android.albumart;
 
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 
 public class AlbumArtDownloaderBasic implements AlbumArtDownloader {
     @Override

@@ -1,9 +1,7 @@
 package com.dismu.ui.pc;
 
-import com.dismu.logging.Loggers;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.events.TrackStorageEvent;
-import com.dismu.music.storages.TrackStorage;
 import com.dismu.utils.events.*;
 import com.dismu.utils.events.Event;
 
@@ -15,7 +13,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;

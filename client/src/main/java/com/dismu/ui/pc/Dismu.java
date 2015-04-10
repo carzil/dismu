@@ -4,19 +4,19 @@ import com.dismu.api.*;
 import com.dismu.exceptions.TrackNotFoundException;
 import com.dismu.logging.Loggers;
 import com.dismu.music.Scrobbler;
-import com.dismu.music.core.queue.TrackQueue;
-import com.dismu.music.core.queue.TrackQueueEntry;
+import com.dismu.music.queue.TrackQueue;
+import com.dismu.music.queue.TrackQueueEntry;
 import com.dismu.music.events.PlayerEvent;
 import com.dismu.music.events.TrackStorageEvent;
 import com.dismu.music.player.Playlist;
-import com.dismu.music.core.Track;
+import com.dismu.music.Track;
 import com.dismu.music.storages.PlayerBackend;
 import com.dismu.music.storages.PlaylistStorage;
 import com.dismu.music.storages.TrackStorage;
 import com.dismu.api.ConnectionAPI;
-import com.dismu.p2p.client.Client;
-import com.dismu.p2p.server.NIOServer;
+import com.dismu.p2p.Peer;
 import com.dismu.p2p.server.Server;
+import com.dismu.ui.pc.taskbar.DismuTaskBar;
 import com.dismu.ui.pc.dialogs.AddTracksDialog;
 import com.dismu.ui.pc.dialogs.CrashReportDialog;
 import com.dismu.ui.pc.dialogs.PlaylistWindow;
@@ -35,11 +35,8 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.spi.LoggingEvent;
 
 import java.io.InputStream;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 import javax.swing.*;
-import javax.swing.text.DefaultCaret;
 import java.awt.*;
 import java.io.IOException;
 import java.util.*;
@@ -67,22 +64,20 @@ public class Dismu {
         }
     }
 
-    public ArrayList<Client> clients = new ArrayList<>();
     public Server server;
-
     private MainWindow mainWindow;
 
     private TrackStorage trackStorage;
+
     private PlayerBackend playerBackend;
     private PlaylistStorage playlistStorage;
 
-    private boolean isVisible = false;
     private volatile boolean isRunning = true;
-    private boolean isPlaying = false;
+    private volatile boolean isPlaying = false;
 
     private DismuTray tray = new DismuTray();
-
-    private Playlist currentPlaylist;
+    private DismuMenuBar menuBar = new DismuMenuBar();
+    private DismuTaskBar taskBar = new DismuTaskBar();
 
     private static Dismu instance;
 
@@ -104,16 +99,18 @@ public class Dismu {
     };
 
     public SettingsManager accountSettingsManager = SettingsManager.getSection("account");
+
     public SettingsManager networkSettingsManager = SettingsManager.getSection("network");
     public SettingsManager uiSettingsManager = SettingsManager.getSection("ui");
     public SettingsManager scrobblerSettingsManager = SettingsManager.getSection("scrobbler");
     public SettingsManager globalSettingsManager = SettingsManager.getSection("global");
-
-    private HashMap<Seed, Client> seedsTable = new HashMap<>();
+    public SettingsManager eqSettingsManager = SettingsManager.getSection("eq");
 
     private String username;
-    private String password;
+
     private boolean repeatOne = false;
+
+    private Peer peer;
 
 
     public static void main(String[] args) {
@@ -132,7 +129,7 @@ public class Dismu {
     }
 
     /**
-     * If Dismu isn't initialized, initilize it and returns instance
+     * If Dismu isn't initialized, initialize it and returns instance
      * @return {@link Dismu} instance
      */
     public static Dismu getInstance() {
@@ -161,31 +158,26 @@ public class Dismu {
         playerBackend = new PlayerBackend(trackStorage);
         playlistStorage = PlaylistStorage.getInstance();
 
+        menuBar.init();
+        menuBar.updatePlaying(false);
+        tray.init();
+
         mainWindow = new MainWindow();
+        JFrame frame = mainWindow.getFrame();
+        frame.setJMenuBar(menuBar);
+        taskBar.init(frame);
 
         playerBackend.addEventListener(new EventListener() {
             @Override
             public void dispatchEvent(Event e) {
                 if (e.getType() == PlayerEvent.PLAYING) {
-                    Track track = playerBackend.getCurrentTrack();
-                    scrobbler.startScrobbling(track);
-                    updateNowPlaying(track);
+                    updatePlaying(playerBackend.getCurrentTrack());
                 } else if (e.getType() == PlayerEvent.PAUSED) {
                     updatePaused(playerBackend.getCurrentTrack());
-                    if (!scrobbler.isScrobbled()) {
-                        mainWindow.setScrobblerStatus("", null, "");
-                    }
                 } else if (e.getType() == PlayerEvent.STOPPED) {
-                    scrobbler.stopScrobbling();
-                    mainWindow.setScrobblerStatus("", null, "");
                     updateStopped();
                 } else if (e.getType() == PlayerEvent.FINISHED) {
-                    scrobbler.stopScrobbling();
-                    mainWindow.setScrobblerStatus("", null, "");
-                    if (!repeatOne) {
-                        trackQueue.popFirst();
-                    }
-                    play();
+                    updateFinished(playerBackend.getCurrentTrack());
                 } else if (e.getType() == PlayerEvent.FRAME_PLAYED) {
                     Utils.runThread(new Runnable() {
                         @Override
@@ -216,20 +208,11 @@ public class Dismu {
                     int type = tse.getType();
                     if (type == TrackStorageEvent.TRACK_ADDED) {
                         Track t = tse.getTrack();
-                        initClients();
-                        for (Client cl : clients) {
-                            try {
-                                cl.emitNewTrackEvent(t);
-                            } catch (IOException e1) {
-                                Loggers.clientLogger.error("error while emitting new package", e);
-                            }
-                        }
+                        peer.newTrackAvailable(t);
                     }
                 }
             }
         });
-
-        tray.init();
 
         try {
             scrobbler = new Scrobbler();
@@ -240,82 +223,23 @@ public class Dismu {
         isRunning = true;
     }
 
-    private void startP2P() {
-        final ConnectionAPI api = new ConnectionAPI();
-        final String userId = getUserID();
-        final int serverPort = networkSettingsManager.getInt("server.port", 1337);
-
-        Thread serverThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    server = new NIOServer(serverPort, trackStorage);
-                } catch (IOException e) {
-                    Loggers.p2pLogger.error("starting server failed", e);
-                    throw new RuntimeException(e);
-                }
-                try {
-                    Loggers.p2pLogger.info("starting server at port={}", serverPort);
-                    server.start();
-                } finally {
-                    api.unregister(userId);
-                }
-            }
-        });
-        serverThread.start();
-        String localIP = "";
-         try {
-            localIP = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
-            Loggers.p2pLogger.debug("cannot resolve local host IP");
-            Loggers.p2pLogger.debug("we will not register new seed");
+    private void updateFinished(Track finishedTrack) {
+        scrobbler.stopScrobbling();
+        mainWindow.setScrobblerStatus("", null, "");
+        if (!repeatOne) {
+            trackQueue.popFirst();
         }
+        play();
+    }
 
-        api.register(userId, getGroupID(), localIP, serverPort);
-        initClients();
+    private void startP2P() {
+        int serverPort = networkSettingsManager.getInt("server.port", 1337);
+        peer = new Peer(getUserID(), getGroupID(), serverPort, getTrackStorage());
+        peer.start();
     }
 
     public String getGroupID() {
         return accountSettingsManager.getString("user.groupId", "alpha");
-    }
-
-    public void updateSeeds() {
-        final String userId = getUserID();
-        final ConnectionAPI api = new ConnectionAPI();
-        Seed[] seeds = api.getNeighbours(getGroupID());
-        Loggers.p2pLogger.info("found {} seed(s)", seeds.length);
-        Loggers.p2pLogger.info("userID={}", userId);
-        for (final Seed s : seeds) {
-            if (!seedsTable.containsKey(s)) {
-                if (s.userId.equals(userId)) {
-                    continue;
-                }
-
-                Loggers.p2pLogger.info("got new seed {}", s);
-
-                final Client client = new Client(s.localIP, s.port, userId, trackStorage);
-                seedsTable.put(s, client);
-                Thread clientThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            client.start();
-                            if (client.isConnected()) {
-                                clients.add(client);
-                                client.synchronize();
-                            }
-                        } catch (IOException e) {
-                            Loggers.uiLogger.error("error in client", e);
-                        }
-                    }
-                });
-                clientThread.start();
-            }
-        }
-    }
-
-    public void initClients() {
-        updateSeeds();
     }
 
     public String getUserID() {
@@ -338,12 +262,16 @@ public class Dismu {
         mainWindow.update();
     }
 
-    private void updateNowPlaying(Track track) {
+    private void updatePlaying(Track track) {
         tray.setNowPlaying(track.getPrettifiedName());
         tray.setTooltip(String.format("Dismu | %s", track.getPrettifiedName()));
         tray.setTogglePlaybackInfo("Pause");
         mainWindow.updateNowPlayingTrack(track);
         showInfoMessage("Now playing", track.getPrettifiedName());
+
+        scrobbler.startScrobbling(track);
+        menuBar.updatePlaying(true);
+        taskBar.setProgressBarValue(50);
     }
 
     private void updateNext(Track track) {
@@ -362,15 +290,22 @@ public class Dismu {
         }
         tray.setTogglePlaybackInfo("Play");
         tray.setTooltip("Dismu");
+
+        if (!scrobbler.isScrobbled()) {
+            mainWindow.setScrobblerStatus("", null, "");
+        }
+        menuBar.updatePlaying(false);
     }
 
     private void updateStopped() {
         isPlaying = false;
-        mainWindow.setScrobblerStatus("");
         tray.setNotPlaying();
         tray.setTooltip("Dismu");
         tray.setTogglePlaybackInfo("Play");
         mainWindow.updateControl(false);
+        scrobbler.stopScrobbling();
+        mainWindow.setScrobblerStatus("", null, "");
+        menuBar.updatePlaying(false);
     }
 
     public void run() {
@@ -396,6 +331,7 @@ public class Dismu {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
                 Thread.setDefaultUncaughtExceptionHandler(null);
+                e.printStackTrace();
                 CrashReportDialog crashReportDialog = new CrashReportDialog(t, e);
                 crashReportDialog.setIconImage(getIcon());
                 crashReportDialog.pack();
@@ -549,8 +485,7 @@ public class Dismu {
     }
 
     public void toggleDismu() {
-        isVisible = !isVisible;
-        if (isVisible) {
+        if (!mainWindow.getFrame().isVisible()) {
             showDismu();
         } else {
             hideDismu();
@@ -619,8 +554,7 @@ public class Dismu {
         Thread p2pStoppingThread = Utils.runThread(new Runnable() {
             @Override
             public void run() {
-                stopClients();
-                server.stop();
+                peer.stop();
                 Loggers.uiLogger.info("server stopped");
             }
         });
@@ -659,25 +593,7 @@ public class Dismu {
     }
 
     private void stopP2P() {
-        ConnectionAPI api = new ConnectionAPI();
-        String userId = accountSettingsManager.getString("user.userId", "b");
-        api.unregister(userId);
-
-        stopClients();
-        server.stop();
-    }
-
-    private void stopClients() {
-        int cnt = 0;
-        for (Client client : clients) {
-            try {
-                client.stop();
-                cnt++;
-            } catch (IOException e) {
-                Loggers.uiLogger.error("error while stopping client", e);
-            }
-        }
-        Loggers.uiLogger.info("closed {} clients", cnt);
+        peer.stop();
     }
 
     public void showInfoMessage(String header, String message) {
@@ -711,9 +627,21 @@ public class Dismu {
             playlist.addTrack(track);
         }
         String name = (String) JOptionPane.showInputDialog(mainWindow.getFrame(), "Enter name of new playlist:", "Creating playlist", JOptionPane.PLAIN_MESSAGE, null, null, "Untitled");
+        if (name == null) {
+            return null;
+        }
         playlist.setName(name);
         playlistStorage.addPlaylist(playlist);
+        editPlaylist(playlist);
         return playlist;
+    }
+
+    public void createPlaylist() {
+        createPlaylist(new Track[0]);
+    }
+
+    public void addTracks() {
+        mainWindow.addTracks();
     }
 
     public void setStatus(String message, ImageIcon icon) {
@@ -722,17 +650,6 @@ public class Dismu {
 
     public void setStatus(String message) {
         setStatus(message, null);
-    }
-
-    public Playlist getCurrentPlaylist() {
-        return currentPlaylist;
-    }
-
-    public void setCurrentPlaylist(Playlist currentPlaylist) {
-        this.currentPlaylist = currentPlaylist;
-        globalSettingsManager.setInt("current.playlist", currentPlaylist.hashCode());
-        mainWindow.update();
-        Loggers.uiLogger.info("set current playlist to '{}'", currentPlaylist.getName());
     }
 
     public Track[] addTracksInPlaylist() {
@@ -810,13 +727,7 @@ public class Dismu {
     }
 
     public void startSync() {
-        for (Client client : clients) {
-            try {
-                client.synchronize();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        peer.startSync();
     }
 
     public boolean confirmAction(String header, String message) {
@@ -833,14 +744,6 @@ public class Dismu {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public boolean isRunning() {
@@ -874,5 +777,29 @@ public class Dismu {
 
     public PlayerBackend getPlayerBackend() {
         return playerBackend;
+    }
+
+    public SettingsManager getEqSettingsManager() {
+        return eqSettingsManager;
+    }
+
+    public SettingsManager getGlobalSettingsManager() {
+        return globalSettingsManager;
+    }
+
+    public SettingsManager getScrobblerSettingsManager() {
+        return scrobblerSettingsManager;
+    }
+
+    public SettingsManager getUiSettingsManager() {
+        return uiSettingsManager;
+    }
+
+    public SettingsManager getNetworkSettingsManager() {
+        return networkSettingsManager;
+    }
+
+    public SettingsManager getAccountSettingsManager() {
+        return accountSettingsManager;
     }
 }
